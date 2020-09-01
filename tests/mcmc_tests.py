@@ -419,12 +419,20 @@ def test_max_MOI():
     assert maxMOI == expected_MOI, f"{maxMOI} (expected {expected_MOI})"
 
 def test_getting_ids():
-    expected_ids = np.unique(["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"])
+    expected = np.unique(["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"])
 
     ids = np.unique(genotypedata_RR[genotypedata_RR["Sample.ID"].str.contains("Day 0")]["Sample.ID"].str.replace(" Day 0", ""))
 
-    assert np.array_equal(ids, expected_ids), f"{ids} (expected {expected_ids})"
+    assert np.array_equal(ids, expected), f"{ids} (expected {expected})"
+
+def test_getting_locinames():
+    expected = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490","TA109"])
+
+    locinames = np.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
+
+    assert np.array_equal(locinames, expected), f"{locinames} (expected {expected})"
 
 
 test_max_MOI()
 test_getting_ids()
+test_getting_locinames()
