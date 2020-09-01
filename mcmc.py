@@ -15,12 +15,13 @@ maxMOI = np.nanmax( # Return array max, ignoring NaNs
     pd.to_numeric(genotypedata_RR.columns.str.split("_").str[1])
 )
 
+# Get the unique Sample IDs in the dataset
+ids = np.unique(genotypedata_RR[genotypedata_RR["Sample.ID"].str.contains("Day 0")]["Sample.ID"].str.replace(" Day 0", ""))
+
 #===============================================================================
 #   THE LINE OF SANITY
 #   (code below this point has NOT been converted from R to Python)
 #===============================================================================
-
-ids = unique(unlist(strsplit(genotypedata_RR$Sample.ID[grepl("Day 0",genotypedata_RR$Sample.ID)]," Day 0")))
 
 locinames = unique(sapply(colnames(genotypedata_RR)[-1],function(x) strsplit(x,"_")[[1]][1]))
 nloci = length(locinames)
