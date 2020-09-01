@@ -432,7 +432,39 @@ def test_getting_locinames():
 
     assert np.array_equal(locinames, expected), f"{locinames} (expected {expected})"
 
+def test_calculate_MOI():
+    # NOTE: These are different orderings than the original (possibly np.unique changes ordering?); I THINK this is okay, but should ask Mat
+    expected_MOI0 = np.array([2, 3, 2, 3, 2, 3])
+    expected_MOIf = np.array([2, 2, 2, 2, 3, 2])
+
+    ids = np.unique(["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"])
+    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490","TA109"])
+
+    nids = ids.size
+    nloci = locinames.size
+
+    MOI0 = np.repeat(0,nids)
+    MOIf = np.repeat(0,nids)
+    for i in range(nids):
+        for j in range(nloci):
+            locicolumns = genotypedata_RR.columns.str.contains(f"{locinames[j]}_")
+
+            nalleles0 = np.count_nonzero(~genotypedata_RR.loc[
+                genotypedata_RR["Sample.ID"].str.contains(f"{ids[i]} Day 0"),
+                locicolumns]
+                .isna())
+            nallelesf = np.count_nonzero(~genotypedata_RR.loc[
+                genotypedata_RR["Sample.ID"].str.contains(f"{ids[i]} Day Failure"),
+                locicolumns]
+                .isna())
+
+            MOI0[i] = np.max([MOI0[i],nalleles0])
+            MOIf[i] = np.max([MOIf[i],nallelesf])
+
+    assert np.array_equal(MOI0, expected_MOI0), f"{MOI0} (expected {expected_MOI0})"
+    assert np.array_equal(MOIf, expected_MOIf), f"{MOIf} (expected {expected_MOIf})"
 
 test_max_MOI()
 test_getting_ids()
 test_getting_locinames()
+test_calculate_MOI()

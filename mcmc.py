@@ -17,57 +17,58 @@ maxMOI = np.nanmax( # Return array max, ignoring NaNs
 
 # Get the unique Sample IDs in the dataset
 ids = np.unique(genotypedata_RR[genotypedata_RR["Sample.ID"].str.contains("Day 0")]["Sample.ID"].str.replace(" Day 0", ""))
-locinames = unique(sapply(colnames(genotypedata_RR)[-1],function(x) strsplit(x,"_")[[1]][1]))
+locinames = np.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
 
 nids = ids.size
 nloci = locinames.size
 
 maxalleles=30
 
+k = np.repeat(maxalleles, nloci)
+
+alleles_definitions_RR  = define_alleles(pd.concat([genotypedata_RR,additional_neutral]), locirepeats, k)
+
+##### calculate MOI
+MOI0 = np.repeat(0,nids)
+MOIf = np.repeat(0,nids)
+for i in range(nids):
+    for j in range(nloci):
+        locicolumns = genotypedata_RR.columns.str.contains(f"{locinames[j]}_")
+
+        nalleles0 = np.count_nonzero(~genotypedata_RR.loc[
+            genotypedata_RR["Sample.ID"].str.contains(f"{ids[i]} Day 0"),
+            locicolumns]
+            .isna())
+        nallelesf = np.count_nonzero(~genotypedata_RR.loc[
+            genotypedata_RR["Sample.ID"].str.contains(f"{ids[i]} Day Failure"),
+            locicolumns]
+            .isna())
+
+        MOI0[i] = np.max([MOI0[i],nalleles0])
+        MOIf[i] = np.max([MOIf[i],nallelesf])
+
+##### define statevector (i.e. initial MCMC state)
+alleles0        = np.zeros((nids, maxMOI*nloci))
+recoded0        = np.zeros((nids, maxMOI*nloci))
+hidden0         = np.full_like(np.empty((nids, maxMOI*nloci)), np.nan)
+recr0           = np.full_like(np.empty((nids, nloci)), np.nan)
+recr_repeats0   = np.full_like(np.empty((nids, nloci)), np.nan) # number of times recrudescing allele is repeated on day 0
+recr_repeatsf   = np.full_like(np.empty((nids, nloci)), np.nan) # number of times recrudescing allele is repeated on day 0
+allelesf        = np.zeros((nids, maxMOI*nloci))
+recodedf        = np.zeros((nids, maxMOI*nloci))
+hiddenf         = np.full_like(np.empty((nids, maxMOI*nloci)), np.nan)
+recrf           = np.zeros((nids, maxMOI*nloci))
+mindistance     = np.zeros((nids, nloci))
+alldistance     = np.full_like(np.empty((nids, nloci, maxMOI**2)), np.nan)
+allrecrf        = np.full_like(np.empty((nids, nloci, maxMOI**2)), np.nan)
+classification = np.repeat(0, nids)
+
 #===============================================================================
 #   THE LINE OF SANITY
 #   (code below this point has NOT been converted from R to Python)
 #===============================================================================
-k = rep(maxalleles, nloci)
-alleles_definitions_RR  = define_alleles(rbind(genotypedata_RR,additional_neutral),locirepeats,k)
 
-##### calculate MOI
-MOI0 = rep(0,nids)
-MOIf = rep(0,nids)
-for (i in 1:nids) {
-    for (j in 1:nloci) {
-        locicolumns = grepl(paste(locinames[j],"_",sep=""),colnames(genotypedata_RR))
-        nalleles0 = sum(!is.na(genotypedata_RR[grepl(paste(ids[i],"Day 0"),genotypedata_RR$Sample.ID),locicolumns]))
-        nallelesf = sum(!is.na(genotypedata_RR[grepl(paste(ids[i],"Day Failure"),genotypedata_RR$Sample.ID),locicolumns]))
-
-        MOI0[i] = max(MOI0[i],nalleles0)
-        MOIf[i] = max(MOIf[i],nallelesf)
-    }
-}
-#maxMOI = max(MOI0,MOIf)
-
-
-##### define statevector
-
-alleles0 = matrix(0,nids,maxMOI*nloci)
-recoded0 = matrix(0,nids,maxMOI*nloci)
-hidden0 = matrix(NA,nids,maxMOI*nloci)
-recr0 = matrix(NA,nids,nloci)
-recr_repeats0 = matrix(NA,nids,nloci) # number of times recrudescing allele is repeated on day 0
-recr_repeatsf = matrix(NA,nids,nloci) # number of times recrudescing allele is repeated on day 0
-allelesf = matrix(0,nids,maxMOI*nloci)
-recodedf = matrix(0,nids,maxMOI*nloci)
-hiddenf = matrix(NA,nids,maxMOI*nloci)
-recrf = matrix(NA,nids,nloci)
-if (length(additional_neutral) > 0) { if (dim(additional_neutral)[1] > 0) {
-    recoded_additional_neutral = matrix(0,dim(additional_neutral)[1],maxMOI*nloci)
-}}
-mindistance = matrix(0,nids,nloci)
-alldistance = array(NA,c(nids,nloci,maxMOI*maxMOI))
-allrecrf = array(NA,c(nids,nloci,maxMOI*maxMOI))
-classification = rep(0,nids)
 ##### create state 0
-
 for (j in 1:nloci) {
     locus = locinames[j]
     locicolumns = grepl(paste(locus,"_",sep=""),colnames(genotypedata_RR))
