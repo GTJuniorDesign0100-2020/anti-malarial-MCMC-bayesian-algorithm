@@ -31,16 +31,16 @@ alleles_definitions_RR  = define_alleles(pd.concat([genotypedata_RR,additional_n
 ##### calculate MOI
 MOI0 = np.repeat(0,nids)
 MOIf = np.repeat(0,nids)
-for i in range(nids):
-    for j in range(nloci):
-        locicolumns = genotypedata_RR.columns.str.contains(f"{locinames[j]}_")
+for i, ID in enumerate(ids):
+    for lociname in locinames:
+        locicolumns = genotypedata_RR.columns.str.contains(f"{lociname}_")
 
         nalleles0 = np.count_nonzero(~genotypedata_RR.loc[
-            genotypedata_RR["Sample.ID"].str.contains(f"{ids[i]} Day 0"),
+            genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day 0"),
             locicolumns]
             .isna())
         nallelesf = np.count_nonzero(~genotypedata_RR.loc[
-            genotypedata_RR["Sample.ID"].str.contains(f"{ids[i]} Day Failure"),
+            genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day Failure"),
             locicolumns]
             .isna())
 
@@ -63,40 +63,51 @@ alldistance     = np.full_like(np.empty((nids, nloci, maxMOI**2)), np.nan)
 allrecrf        = np.full_like(np.empty((nids, nloci, maxMOI**2)), np.nan)
 classification = np.repeat(0, nids)
 
+##### create state 0
+for j, locus in enumerate(locinames):
+    # locicolumns code is duplicated from MOI calculations
+    locicolumns = genotypedata_RR.columns.str.contains(f"{locus}_")
+
+    oldalleles = genotypedata_RR.loc[:,locicolumns].to_numpy()
+    '''
+    # TODO: What is this code doing?
+    if (len(oldalleles.shape[1]) == 0) {
+        oldalleles = matrix(oldalleles,length(oldalleles),1)
+    }
+    '''
+    newalleles = np.copy(oldalleles)
+    ncolumns = oldalleles.shape[1]
+    '''
+    for i in range(ncolumns):
+        # TODO: Can't test until I have a recodeallele implementation
+        newalleles[:,i] = np.array(list(map(
+            range(0, oldalleles.shape[0]),
+            lambda x: recodeallele(alleles_definitions_RR[j], oldalleles[x,i]))))
+    '''
+    newalleles[np.isnan(newalleles)] = 0
+    oldalleles[np.isnan(oldalleles)] = 0
+
+    oldalleles[newalleles == 0] = 0
+
+    startColumn = maxMOI*(j-1)  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
+    endColumnOldAllele = maxMOI*(j-1) + oldalleles.shape[1]
+    endColumnNewAllele = maxMOI*(j-1) + newalleles.shape[1]
+    alleles0[:, startColumn:endColumnOldAllele] = oldalleles[genotypedata_RR["Sample.ID"].str.contains("Day 0"),:]
+    allelesf[:, startColumn:endColumnOldAllele] = oldalleles[genotypedata_RR["Sample.ID"].str.contains("Day Failure"),:]
+    recoded0[:, startColumn:endColumnNewAllele] = newalleles[genotypedata_RR["Sample.ID"].str.contains("Day 0"),:]
+    recodedf[:, startColumn:endColumnNewAllele] = newalleles[genotypedata_RR["Sample.ID"].str.contains("Day Failure"),:]
+
+##### recode additional_neutral, if needed
+if additional_neutral.size > 0 and additional_neutral.shape[0] > 0:
+    recoded_additional_neutral = np.zeros((additional_neutral.shape[0], maxMOI*nloci))
+
 #===============================================================================
 #   THE LINE OF SANITY
 #   (code below this point has NOT been converted from R to Python)
 #===============================================================================
 
-##### create state 0
-for (j in 1:nloci) {
-    locus = locinames[j]
-    locicolumns = grepl(paste(locus,"_",sep=""),colnames(genotypedata_RR))
-    oldalleles = as.vector(genotypedata_RR[,locicolumns])
-    if (length(dim(oldalleles)[2]) == 0) {
-        oldalleles = matrix(oldalleles,length(oldalleles),1)
-    }
-    newalleles = oldalleles
-    ncolumns = dim(oldalleles)[2]
-    for (i in 1:ncolumns) {
-        newalleles[,i] = (sapply(1:dim(oldalleles)[1],function (x) recodeallele(alleles_definitions_RR[[j]],oldalleles[x,i])))
-    }
-    newalleles = matrix(as.numeric(unlist(c(newalleles))),dim(newalleles)[1],dim(newalleles)[2])
-    newalleles[is.na(newalleles)] = 0
-    oldalleles = matrix(as.numeric(unlist(c(oldalleles))),dim(oldalleles)[1],dim(oldalleles)[2])
-    oldalleles[is.na(oldalleles)] = 0
-
-    oldalleles[newalleles == 0] = 0
-    alleles0[,(maxMOI*(j-1)+1) : (maxMOI*(j-1) + dim(oldalleles)[2])] = oldalleles[grepl("Day 0",genotypedata_RR$Sample.ID),]
-    allelesf[,(maxMOI*(j-1)+1) : (maxMOI*(j-1) + dim(oldalleles)[2])] = oldalleles[grepl("Day Failure",genotypedata_RR$Sample.ID),]
-    recoded0[,(maxMOI*(j-1)+1) : (maxMOI*(j-1) + dim(newalleles)[2])] = newalleles[grepl("Day 0",genotypedata_RR$Sample.ID),]
-    recodedf[,(maxMOI*(j-1)+1) : (maxMOI*(j-1) + dim(newalleles)[2])] = newalleles[grepl("Day Failure",genotypedata_RR$Sample.ID),]
-
-}
-
 if (length(additional_neutral) > 0) { if (dim(additional_neutral)[1] > 0) {
 recoded_additional_neutral = matrix(0,dim(additional_neutral)[1],maxMOI*nloci)
-##### recode additional_neutral
 for (j in 1:nloci) {
     locus = locinames[j]
     locicolumns = grepl(paste(locus,"_",sep=""),colnames(genotypedata_RR))

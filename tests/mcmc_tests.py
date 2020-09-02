@@ -435,7 +435,7 @@ def test_getting_locinames():
 def test_calculate_MOI():
     # NOTE: These are different orderings than the original (possibly np.unique changes ordering?); I THINK this is okay, but should ask Mat
     expected_MOI0 = np.array([2, 3, 2, 3, 2, 3])
-    expected_MOIf = np.array([2, 2, 2, 2, 3, 2])
+    expected_MOIf = np.array([2, 2, 2, 3, 2, 2])
 
     ids = np.unique(["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"])
     locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490","TA109"])
@@ -445,16 +445,16 @@ def test_calculate_MOI():
 
     MOI0 = np.repeat(0,nids)
     MOIf = np.repeat(0,nids)
-    for i in range(nids):
-        for j in range(nloci):
-            locicolumns = genotypedata_RR.columns.str.contains(f"{locinames[j]}_")
+    for i, ID in enumerate(ids):
+        for lociname in locinames:
+            locicolumns = genotypedata_RR.columns.str.contains(f"{lociname}_")
 
             nalleles0 = np.count_nonzero(~genotypedata_RR.loc[
-                genotypedata_RR["Sample.ID"].str.contains(f"{ids[i]} Day 0"),
+                genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day 0"),
                 locicolumns]
                 .isna())
             nallelesf = np.count_nonzero(~genotypedata_RR.loc[
-                genotypedata_RR["Sample.ID"].str.contains(f"{ids[i]} Day Failure"),
+                genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day Failure"),
                 locicolumns]
                 .isna())
 
@@ -464,7 +464,61 @@ def test_calculate_MOI():
     assert np.array_equal(MOI0, expected_MOI0), f"{MOI0} (expected {expected_MOI0})"
     assert np.array_equal(MOIf, expected_MOIf), f"{MOIf} (expected {expected_MOIf})"
 
+def test_create_initial_state():
+    # TODO: Finish implementing so test will pass
+    expected_alleles0_firstCol = np.array([223.4, 229.3, 221.3, 261.7, 261.7, 238.4])
+    expected_allelesf_firstCol = np.array([225.5, 243.6, 231.5, 239.6, 245.3, 219.4])
+    expected_recoded0_firstCol = np.array([5, 12, 2, 4, 4, 8])
+    expected_recodedf_firstCol = np.array([6, 3, 7, 9, 13, 1])
+
+    maxMOI = 5
+    ids = np.unique(["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"])
+    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490","TA109"])
+    alleles0 = np.zeros((ids.size, maxMOI*locinames.size))
+    recoded0 = np.zeros((ids.size, maxMOI*locinames.size))
+    allelesf = np.zeros((ids.size, maxMOI*locinames.size))
+    recodedf = np.zeros((ids.size, maxMOI*locinames.size))
+
+    for j, locus in enumerate(locinames):
+        # locicolumns code is duplicated from MOI calculations
+        locicolumns = genotypedata_RR.columns.str.contains(f"{locus}_")
+
+        oldalleles = genotypedata_RR.loc[:,locicolumns].to_numpy()
+        '''
+        # TODO: What is this code doing?
+        if (len(oldalleles.shape[1]) == 0) {
+            oldalleles = matrix(oldalleles,length(oldalleles),1)
+        }
+        '''
+        newalleles = np.copy(oldalleles)
+        ncolumns = oldalleles.shape[1]
+        '''
+        for i in range(ncolumns):
+            # TODO: Can't test until I have a recodeallele implementation
+            newalleles[:,i] = np.array(list(map(
+                range(0, oldalleles.shape[0]),
+                lambda x: recodeallele(alleles_definitions_RR[j], oldalleles[x,i]))))
+        '''
+        newalleles[np.isnan(newalleles)] = 0
+        oldalleles[np.isnan(oldalleles)] = 0
+
+        oldalleles[newalleles == 0] = 0
+
+        startColumn = maxMOI*(j-1)  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
+        endColumnOldAllele = maxMOI*(j-1) + oldalleles.shape[1]
+        endColumnNewAllele = maxMOI*(j-1) + newalleles.shape[1]
+        alleles0[:, startColumn:endColumnOldAllele] = oldalleles[genotypedata_RR["Sample.ID"].str.contains("Day 0"),:]
+        allelesf[:, startColumn:endColumnOldAllele] = oldalleles[genotypedata_RR["Sample.ID"].str.contains("Day Failure"),:]
+        recoded0[:, startColumn:endColumnNewAllele] = newalleles[genotypedata_RR["Sample.ID"].str.contains("Day 0"),:]
+        recodedf[:, startColumn:endColumnNewAllele] = newalleles[genotypedata_RR["Sample.ID"].str.contains("Day Failure"),:]
+
+    assert np.array_equal(alleles0[:,0], expected_alleles0_firstCol), f"{alleles0[:,0]} (expected {expected_alleles0_firstCol})"
+    assert np.array_equal(recoded0[:,0], expected_recoded0_firstCol), f"{recoded0[:,0]} (expected {expected_recoded0_firstCol})"
+    assert np.array_equal(allelesf[:,0], expected_allelesf_firstCol), f"{allelesf[:,0]} (expected {expected_allelesf_firstCol})"
+    assert np.array_equal(recodedf[:,0], expected_recodedf_firstCol), f"{recodedf[:,0]} (expected {expected_recodedf_firstCol})"
+
 test_max_MOI()
 test_getting_ids()
 test_getting_locinames()
 test_calculate_MOI()
+test_create_initial_state() # TODO: Code not fully implemented yet
