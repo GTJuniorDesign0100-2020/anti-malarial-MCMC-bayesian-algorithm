@@ -522,11 +522,10 @@ def test_create_initial_state():
 
         oldalleles[newalleles == 0] = 0
 
-        startColumn = maxMOI * (
-            i - 1
-        )  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
-        endColumnOldAllele = maxMOI * (i - 1) + oldalleles.shape[1]
-        endColumnNewAllele = maxMOI * (i - 1) + newalleles.shape[1]
+        startColumn = maxMOI*i
+        # TODO: Changed start/end for indexing reasons in Python vs R; double-check that's valid
+        endColumnOldAllele = maxMOI*i + oldalleles.shape[1]
+        endColumnNewAllele = maxMOI*i + newalleles.shape[1]
         alleles0[:, startColumn:endColumnOldAllele] = oldalleles[
             genotypedata_RR["Sample.ID"].str.contains("Day 0"), :
         ]
@@ -589,20 +588,101 @@ def test_recode_additional_neutral():
 
         oldalleles[newalleles == 0] = 0
 
-        startColumn = maxMOI * (
-            i - 1
-        )  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
-        endColumnOldAllele = maxMOI * (i - 1) + oldalleles.shape[1]
+        startColumn = maxMOI*i
+        # TODO: Changed start/end for indexing reasons in Python vs R; double-check that's valid
+        endColumnOldAllele = maxMOI*i + oldalleles.shape[1]
         recoded_additional_neutral[:, startColumn:endColumnOldAllele] = newalleles
 
     assert np.array_equal(
         recoded_additional_neutral[:, 0], expected_first_column
     ), f"{recoded_additional_neutral[:,0]} (expected {expected_first_column})"
 
+def test_initialize_hidden_alleles():
+    # TODO: How to do expected values for stochastic functions?
+    # ===============================
+    # Initialize
+    maxMOI = 5
+    nids = 6
+    nloci = 7
+
+    MOI0 = np.array([2, 3, 2, 3, 2, 3])
+    MOIf = np.array([2, 2, 2, 3, 2, 2])
+
+    alleles0    = np.zeros((nids, maxMOI*nloci))
+    recoded0    = np.zeros((nids, maxMOI*nloci))
+    hidden0     = np.full_like(np.empty((nids, maxMOI*nloci)), np.nan)
+    allelesf    = np.zeros((nids, maxMOI*nloci))
+    recodedf    = np.zeros((nids, maxMOI*nloci))
+    hiddenf     = np.full_like(np.empty((nids, maxMOI*nloci)), np.nan)
+
+    # TODO: Not sure what the proper shape of these are (frequencies_RR seems to have different-sized rows, with the 1st row all ints and the 2nd all floats???)
+    # TODO: These are stubbed (waiting on correct implementation)
+    frequencies_RR = np.random.random_sample((3, 7, 19))
+    frequencies_RR[0, :, 0] *= frequencies_RR.shape[1]
+    alleles_definitions_RR = np.zeros((13, 7, 2))
+    # ===============================
+
+    # TODO: Figure out what this code is overall trying to do (replace non-0 elements with random values? Why is it important that the values are assigned from frequencies_RR?)
+    for i in range(nids):
+        for j in range(nloci):
+            # TODO: Code almost duplicated between top/bottom portions; refactor into single function? (needs 9 inputs: maxMOI, nids, nloci, MOIarray, alleles/recoded/hidden array, alleles_definitions_RR, frequencies_RR)
+            # TODO: Start/end of what?
+            start = maxMOI*j
+            end = maxMOI*(j+1)
+
+            nalleles0 = np.count_nonzero(alleles0[i, start:end])
+            nmissing0 = MOI0[i] - nalleles0
+
+            # TODO: Rename "nonzero_indices" and "zero_indices"?
+            whichnotmissing0 = np.arange(start, end)[np.where(alleles0[i, start:start+MOI0[i]] != 0)]
+            whichmissing0 = np.arange(start, end)[np.where(alleles0[i, start:start+MOI0[i]] == 0)]
+
+            if nalleles0 > 0:
+                hidden0[i,whichnotmissing0] = 0
+            if nmissing0 > 0:
+                newhiddenalleles0 = np.random.choice(
+                    np.arange(0, int(frequencies_RR[0, j, 0])), # Select from first row (count of how many probabilities they are)
+                    size=nmissing0,
+                    replace=True,
+                    p=frequencies_RR[1, j, 0:int(frequencies_RR[0, j, 0])]
+                        / frequencies_RR[1, j, 0:int(frequencies_RR[0, j, 0])].sum()) # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
+                recoded0[i,whichmissing0] = newhiddenalleles0
+                # calculate row means
+                alleles0[i,whichmissing0] = np.mean(alleles_definitions_RR[j], axis=1)[newhiddenalleles0] # hidden alleles get mean allele length
+                hidden0[i,whichmissing0] = 1
+
+            nallelesf = np.count_nonzero(allelesf[i, start:end])
+            nmissingf = MOIf[i] - nallelesf
+
+            # TODO: Rename "nonzero_indices" and "zero_indices"?
+            whichnotmissingf = np.arange(start, end)[np.where(allelesf[i, start:start+MOIf[i]] != 0)]
+            whichmissingf = np.arange(start, end)[np.where(allelesf[i, start:start+MOIf[i]] == 0)]
+
+            if nallelesf > 0:
+                hiddenf[i,whichnotmissingf] = 0
+            if nmissingf > 0:
+                newhiddenallelesf = np.random.choice(
+                    np.arange(0, int(frequencies_RR[0, j, 0])), # Select from first row (count of how many probabilities they are)
+                    size=nmissingf,
+                    replace=True,
+                    p=frequencies_RR[1, j, 0:int(frequencies_RR[0, j, 0])]
+                        / frequencies_RR[1, j, 0:int(frequencies_RR[0, j, 0])].sum()) # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
+                recodedf[i,whichmissingf] = newhiddenallelesf
+                # calculate row means
+                allelesf[i,whichmissingf] = np.mean(alleles_definitions_RR[j], axis=1)[newhiddenallelesf] # hidden alleles get mean allele length
+                hiddenf[i,whichmissingf] = 1
+
+    # TODO: Figure out how to actually test this w/ random sampling?
+        assert False, "test_initialize_hidden_alleles() using stubbed data for now"
+
+#===============================================================================
+
+np.random.seed(0)
 
 test_max_MOI()
 test_getting_ids()
 test_getting_locinames()
 test_calculate_MOI()
-# test_create_initial_state() # TODO: Code not fully implemented yet
-# test_recode_additional_neutral() # TODO: Code not fully implemented yet
+# test_create_initial_state()       # TODO: Code not fully implemented yet
+# test_recode_additional_neutral()  # TODO: Code not fully implemented yet
+# test_initialize_hidden_alleles()  # TODO: Code not fully implemented yet

@@ -132,44 +132,61 @@ if additional_neutral.size > 0 and additional_neutral.shape[0] > 0:
 ## estimate frequencies
 frequencies_RR = calculate_frequencies3(pd.concat(genotypedata_RR,additional_neutral),alleles_definitions_RR)
 
+## assign random hidden alleles
+# TODO: Figure out what this code is overall trying to do (replace non-0 elements with random values? Why is it important that the values are assigned from frequencies_RR?)
+for i in range(nids):
+    for j in range(nloci):
+        # TODO: Code almost duplicated between top/bottom portions; refactor into single function? (needs 9 inputs: maxMOI, nids, nloci, MOIarray, alleles/recoded/hidden array, alleles_definitions_RR, frequencies_RR)
+        # TODO: Start/end of what?
+        start = maxMOI*j
+        end = maxMOI*(j+1)
+
+        nalleles0 = np.count_nonzero(alleles0[i, start:end])
+        nmissing0 = MOI0[i] - nalleles0
+
+        # TODO: Rename "nonzero_indices" and "zero_indices"?
+        whichnotmissing0 = np.arange(start, end)[np.where(alleles0[i, start:start+MOI0[i]] != 0)]
+        whichmissing0 = np.arange(start, end)[np.where(alleles0[i, start:start+MOI0[i]] == 0)]
+
+        if nalleles0 > 0:
+            hidden0[i,whichnotmissing0] = 0
+        if nmissing0 > 0:
+            newhiddenalleles0 = np.random.choice(
+                np.arange(0, int(frequencies_RR[0, j, 0])), # Select from first row (count of how many probabilities they are)
+                size=nmissing0,
+                replace=True,
+                p=frequencies_RR[1, j, 0:int(frequencies_RR[0, j, 0])]
+                    / frequencies_RR[1, j, 0:int(frequencies_RR[0, j, 0])].sum()) # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
+            recoded0[i,whichmissing0] = newhiddenalleles0
+            # calculate row means
+            alleles0[i,whichmissing0] = np.mean(alleles_definitions_RR[j], axis=1)[newhiddenalleles0] # hidden alleles get mean allele length
+            hidden0[i,whichmissing0] = 1
+
+        nallelesf = np.count_nonzero(allelesf[i, start:end])
+        nmissingf = MOIf[i] - nallelesf
+
+        # TODO: Rename "nonzero_indices" and "zero_indices"?
+        whichnotmissingf = np.arange(start, end)[np.where(allelesf[i, start:start+MOIf[i]] != 0)]
+        whichmissingf = np.arange(start, end)[np.where(allelesf[i, start:start+MOIf[i]] == 0)]
+
+        if nallelesf > 0:
+            hiddenf[i,whichnotmissingf] = 0
+        if nmissingf > 0:
+            newhiddenallelesf = np.random.choice(
+                np.arange(0, int(frequencies_RR[0, j, 0])), # Select from first row (count of how many probabilities they are)
+                size=nmissingf,
+                replace=True,
+                p=frequencies_RR[1, j, 0:int(frequencies_RR[0, j, 0])]
+                    / frequencies_RR[1, j, 0:int(frequencies_RR[0, j, 0])].sum()) # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
+            recodedf[i,whichmissingf] = newhiddenallelesf
+            # calculate row means
+            allelesf[i,whichmissingf] = np.mean(alleles_definitions_RR[j], axis=1)[newhiddenallelesf] # hidden alleles get mean allele length
+            hiddenf[i,whichmissingf] = 1
+
 #===============================================================================
 #   THE LINE OF SANITY
 #   (code below this point has NOT been converted from R to Python)
 #===============================================================================
-
-## assign random hidden alleles
-for (i in 1:nids) {
-    for (j in 1:nloci) {
-        nalleles0 = sum(alleles0[i,(maxMOI*(j-1)+1) : (maxMOI*(j))] != 0)
-        nmissing0 = MOI0[i] - nalleles0
-        whichnotmissing0 = ((maxMOI*(j-1)+1) : (maxMOI*(j)))[which(alleles0[i,(maxMOI*(j-1)+1) : (maxMOI*(j-1)+MOI0[i])] != 0)]
-        whichmissing0 = ((maxMOI*(j-1)+1) : (maxMOI*(j)))[which(alleles0[i,(maxMOI*(j-1)+1) : (maxMOI*(j-1)+MOI0[i])] == 0)]
-
-        if (nalleles0 > 0) {
-            hidden0[i,whichnotmissing0] = 0
-        }
-        if (nmissing0 > 0) {
-            newhiddenalleles0 = sample(1:(frequencies_RR[[1]][j]),nmissing0,replace=TRUE,frequencies_RR[[2]][j,1:(frequencies_RR[[1]][j])])
-            recoded0[i,whichmissing0] = newhiddenalleles0
-            alleles0[i,whichmissing0] = rowMeans(alleles_definitions_RR[[j]])[newhiddenalleles0] # hidden alleles get mean allele length
-            hidden0[i,whichmissing0] = 1
-        }
-        nallelesf = sum(allelesf[i,(maxMOI*(j-1)+1) : (maxMOI*(j))] != 0)
-        nmissingf = MOIf[i] - nallelesf
-        whichnotmissingf = ((maxMOI*(j-1)+1) : (maxMOI*(j)))[which(allelesf[i,(maxMOI*(j-1)+1) : (maxMOI*(j-1)+MOIf[i])] != 0)]
-        whichmissingf = ((maxMOI*(j-1)+1) : (maxMOI*(j)))[which(allelesf[i,(maxMOI*(j-1)+1) : (maxMOI*(j-1)+MOIf[i])] == 0)]
-
-        if (nallelesf > 0) {
-            hiddenf[i,whichnotmissingf] = 0
-        }
-        if (nmissingf > 0) {
-            newhiddenallelesf = sample(1:(frequencies_RR[[1]][j]),nmissingf,replace=TRUE,frequencies_RR[[2]][j,1:(frequencies_RR[[1]][j])])
-            recodedf[i,whichmissingf] = newhiddenallelesf
-            allelesf[i,whichmissingf] = rowMeans(alleles_definitions_RR[[j]])[newhiddenallelesf] # hidden alleles get mean allele length
-            hiddenf[i,whichmissingf] = 1
-        }
-    }
-}
 
 ## initial estimate of q (probability of an allele being missed)
 qq = mean(c(hidden0,hiddenf),na.rm=TRUE)
