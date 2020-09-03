@@ -66,7 +66,7 @@ genotypedata_RR = pd.DataFrame(
             "BD17-087_ Day 0",
             "BD17-087_ Day Failure",
             "BD17-090_ Day 0",
-            "BD17-090_ Day Failure"
+            "BD17-090_ Day Failure",
         ],
         "X313_1": [
             223.4,
@@ -80,7 +80,7 @@ genotypedata_RR = pd.DataFrame(
             261.7,
             245.3,
             238.4,
-            219.4
+            219.4,
         ],
         "X313_2": [
             np.nan,
@@ -94,7 +94,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
             np.nan,
-            249.7
+            249.7,
         ],
         "X313_3": [
             np.nan,
@@ -108,7 +108,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
             np.nan,
-            np.nan
+            np.nan,
         ],
         "X383_1": [
             103.7,
@@ -122,7 +122,7 @@ genotypedata_RR = pd.DataFrame(
             124.0,
             123.6,
             87.0,
-            87.0
+            87.0,
         ],
         "X383_2": [
             140.3,
@@ -136,7 +136,7 @@ genotypedata_RR = pd.DataFrame(
             89.0,
             140.2,
             123.9,
-            123.6
+            123.6,
         ],
         "X383_3": [
             np.nan,
@@ -150,7 +150,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
             np.nan,
-            np.nan
+            np.nan,
         ],
         "TA1_1": [
             169.0,
@@ -164,7 +164,7 @@ genotypedata_RR = pd.DataFrame(
             162.7,
             163.0,
             180.8,
-            165.8
+            165.8,
         ],
         "TA1_2": [
             np.nan,
@@ -178,7 +178,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             184.0,
             np.nan,
-            177.9
+            177.9,
         ],
         "TA1_3": [
             np.nan,
@@ -192,7 +192,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
             np.nan,
-            np.nan
+            np.nan,
         ],
         "POLYA_1": [
             167.3,
@@ -206,7 +206,7 @@ genotypedata_RR = pd.DataFrame(
             167.3,
             155.0,
             151.3,
-            151.3
+            151.3,
         ],
         "POLYA_2": [
             np.nan,
@@ -220,7 +220,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
             np.nan,
-            164.0
+            164.0,
         ],
         "POLYA_3": [
             np.nan,
@@ -234,7 +234,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
             np.nan,
-            np.nan
+            np.nan,
         ],
         "POLYA_4": [
             np.nan,
@@ -248,7 +248,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
             np.nan,
-            np.nan
+            np.nan,
         ],
         "POLYA_5": [
             np.nan,
@@ -262,7 +262,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
             np.nan,
-            np.nan
+            np.nan,
         ],
         "PFPK2_1": [
             149.8,
@@ -276,7 +276,7 @@ genotypedata_RR = pd.DataFrame(
             186.0,
             168.2,
             161.9,
-            161.9
+            161.9,
         ],
         "PFPK2_2": [
             158.0,
@@ -290,7 +290,7 @@ genotypedata_RR = pd.DataFrame(
             191.9,
             174.2,
             np.nan,
-            168.1
+            168.1,
         ],
         "PFPK2_3": [
             171.2,
@@ -304,7 +304,7 @@ genotypedata_RR = pd.DataFrame(
             194.8,
             177.2,
             np.nan,
-            np.nan
+            np.nan,
         ],
         "PFPK2_4": [
             np.nan,
@@ -318,7 +318,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
             np.nan,
-            np.nan
+            np.nan,
         ],
         "X2490_1": [
             81.6,
@@ -332,7 +332,7 @@ genotypedata_RR = pd.DataFrame(
             78.6,
             82.0,
             81.7,
-            81.7
+            81.7,
         ],
         "X2490_2": [
             np.nan,
@@ -346,7 +346,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
             np.nan,
-            np.nan
+            np.nan,
         ],
         "TA109_1": [
             164.6,
@@ -360,7 +360,7 @@ genotypedata_RR = pd.DataFrame(
             148.6,
             152.4,
             148.8,
-            163.2
+            163.2,
         ],
         "TA109_2": [
             175.0,
@@ -374,7 +374,7 @@ genotypedata_RR = pd.DataFrame(
             159.9,
             163.1,
             160.4,
-            175.3
+            175.3,
         ],
         "TA109_3": [
             np.nan,
@@ -388,7 +388,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
             np.nan,
-            np.nan
+            np.nan,
         ],
         "TA109_4": [
             np.nan,
@@ -402,7 +402,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
             np.nan,
-            np.nan
+            np.nan,
         ],
     }
 )
@@ -418,51 +418,67 @@ def test_max_MOI():
     expected_MOI = 5
     assert maxMOI == expected_MOI, f"{maxMOI} (expected {expected_MOI})"
 
-def test_getting_ids():
-    expected = np.unique(["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"])
 
-    ids = np.unique(genotypedata_RR[genotypedata_RR["Sample.ID"].str.contains("Day 0")]["Sample.ID"].str.replace(" Day 0", ""))
+def test_getting_ids():
+    expected = np.unique(
+        ["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"]
+    )
+
+    ids = np.unique(
+        genotypedata_RR[genotypedata_RR["Sample.ID"].str.contains("Day 0")][
+            "Sample.ID"
+        ].str.replace(" Day 0", "")
+    )
 
     assert np.array_equal(ids, expected), f"{ids} (expected {expected})"
 
+
 def test_getting_locinames():
-    expected = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490","TA109"])
+    expected = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
 
     locinames = np.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
 
     assert np.array_equal(locinames, expected), f"{locinames} (expected {expected})"
+
 
 def test_calculate_MOI():
     # NOTE: These are different orderings than the original (possibly np.unique changes ordering?); I THINK this is okay, but should ask Mat
     expected_MOI0 = np.array([2, 3, 2, 3, 2, 3])
     expected_MOIf = np.array([2, 2, 2, 3, 2, 2])
 
-    ids = np.unique(["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"])
-    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490","TA109"])
+    ids = np.unique(
+        ["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"]
+    )
+    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
 
     nids = ids.size
     nloci = locinames.size
 
-    MOI0 = np.repeat(0,nids)
-    MOIf = np.repeat(0,nids)
+    MOI0 = np.repeat(0, nids)
+    MOIf = np.repeat(0, nids)
     for i, ID in enumerate(ids):
         for lociname in locinames:
             locicolumns = genotypedata_RR.columns.str.contains(f"{lociname}_")
 
-            nalleles0 = np.count_nonzero(~genotypedata_RR.loc[
-                genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day 0"),
-                locicolumns]
-                .isna())
-            nallelesf = np.count_nonzero(~genotypedata_RR.loc[
-                genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day Failure"),
-                locicolumns]
-                .isna())
+            nalleles0 = np.count_nonzero(
+                ~genotypedata_RR.loc[
+                    genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day 0"),
+                    locicolumns,
+                ].isna()
+            )
+            nallelesf = np.count_nonzero(
+                ~genotypedata_RR.loc[
+                    genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day Failure"),
+                    locicolumns,
+                ].isna()
+            )
 
-            MOI0[i] = np.max([MOI0[i],nalleles0])
-            MOIf[i] = np.max([MOIf[i],nallelesf])
+            MOI0[i] = np.max([MOI0[i], nalleles0])
+            MOIf[i] = np.max([MOIf[i], nallelesf])
 
     assert np.array_equal(MOI0, expected_MOI0), f"{MOI0} (expected {expected_MOI0})"
     assert np.array_equal(MOIf, expected_MOIf), f"{MOIf} (expected {expected_MOIf})"
+
 
 def test_create_initial_state():
     # TODO: Finish implementing so test will pass
@@ -472,53 +488,121 @@ def test_create_initial_state():
     expected_recodedf_firstCol = np.array([6, 3, 7, 9, 13, 1])
 
     maxMOI = 5
-    ids = np.unique(["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"])
-    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490","TA109"])
-    alleles0 = np.zeros((ids.size, maxMOI*locinames.size))
-    recoded0 = np.zeros((ids.size, maxMOI*locinames.size))
-    allelesf = np.zeros((ids.size, maxMOI*locinames.size))
-    recodedf = np.zeros((ids.size, maxMOI*locinames.size))
+    ids = np.unique(
+        ["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"]
+    )
+    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
+    alleles0 = np.zeros((ids.size, maxMOI * locinames.size))
+    recoded0 = np.zeros((ids.size, maxMOI * locinames.size))
+    allelesf = np.zeros((ids.size, maxMOI * locinames.size))
+    recodedf = np.zeros((ids.size, maxMOI * locinames.size))
 
-    for j, locus in enumerate(locinames):
+    for i, locus in enumerate(locinames):
         # locicolumns code is duplicated from MOI calculations
         locicolumns = genotypedata_RR.columns.str.contains(f"{locus}_")
 
-        oldalleles = genotypedata_RR.loc[:,locicolumns].to_numpy()
-        '''
+        oldalleles = genotypedata_RR.loc[:, locicolumns].to_numpy()
+        """
         # TODO: What is this code doing?
         if (len(oldalleles.shape[1]) == 0) {
             oldalleles = matrix(oldalleles,length(oldalleles),1)
         }
-        '''
+        """
         newalleles = np.copy(oldalleles)
         ncolumns = oldalleles.shape[1]
-        '''
-        for i in range(ncolumns):
+        """
+        for j in range(ncolumns):
             # TODO: Can't test until I have a recodeallele implementation
-            newalleles[:,i] = np.array(list(map(
+            newalleles[:,j] = np.array(list(map(
                 range(0, oldalleles.shape[0]),
-                lambda x: recodeallele(alleles_definitions_RR[j], oldalleles[x,i]))))
-        '''
+                lambda x: recodeallele(alleles_definitions_RR[i], oldalleles[x,j]))))
+        """
         newalleles[np.isnan(newalleles)] = 0
         oldalleles[np.isnan(oldalleles)] = 0
 
         oldalleles[newalleles == 0] = 0
 
-        startColumn = maxMOI*(j-1)  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
-        endColumnOldAllele = maxMOI*(j-1) + oldalleles.shape[1]
-        endColumnNewAllele = maxMOI*(j-1) + newalleles.shape[1]
-        alleles0[:, startColumn:endColumnOldAllele] = oldalleles[genotypedata_RR["Sample.ID"].str.contains("Day 0"),:]
-        allelesf[:, startColumn:endColumnOldAllele] = oldalleles[genotypedata_RR["Sample.ID"].str.contains("Day Failure"),:]
-        recoded0[:, startColumn:endColumnNewAllele] = newalleles[genotypedata_RR["Sample.ID"].str.contains("Day 0"),:]
-        recodedf[:, startColumn:endColumnNewAllele] = newalleles[genotypedata_RR["Sample.ID"].str.contains("Day Failure"),:]
+        startColumn = maxMOI * (
+            i - 1
+        )  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
+        endColumnOldAllele = maxMOI * (i - 1) + oldalleles.shape[1]
+        endColumnNewAllele = maxMOI * (i - 1) + newalleles.shape[1]
+        alleles0[:, startColumn:endColumnOldAllele] = oldalleles[
+            genotypedata_RR["Sample.ID"].str.contains("Day 0"), :
+        ]
+        allelesf[:, startColumn:endColumnOldAllele] = oldalleles[
+            genotypedata_RR["Sample.ID"].str.contains("Day Failure"), :
+        ]
+        recoded0[:, startColumn:endColumnNewAllele] = newalleles[
+            genotypedata_RR["Sample.ID"].str.contains("Day 0"), :
+        ]
+        recodedf[:, startColumn:endColumnNewAllele] = newalleles[
+            genotypedata_RR["Sample.ID"].str.contains("Day Failure"), :
+        ]
 
-    assert np.array_equal(alleles0[:,0], expected_alleles0_firstCol), f"{alleles0[:,0]} (expected {expected_alleles0_firstCol})"
-    assert np.array_equal(recoded0[:,0], expected_recoded0_firstCol), f"{recoded0[:,0]} (expected {expected_recoded0_firstCol})"
-    assert np.array_equal(allelesf[:,0], expected_allelesf_firstCol), f"{allelesf[:,0]} (expected {expected_allelesf_firstCol})"
-    assert np.array_equal(recodedf[:,0], expected_recodedf_firstCol), f"{recodedf[:,0]} (expected {expected_recodedf_firstCol})"
+    assert np.array_equal(
+        alleles0[:, 0], expected_alleles0_firstCol
+    ), f"{alleles0[:,0]} (expected {expected_alleles0_firstCol})"
+    assert np.array_equal(
+        recoded0[:, 0], expected_recoded0_firstCol
+    ), f"{recoded0[:,0]} (expected {expected_recoded0_firstCol})"
+    assert np.array_equal(
+        allelesf[:, 0], expected_allelesf_firstCol
+    ), f"{allelesf[:,0]} (expected {expected_allelesf_firstCol})"
+    assert np.array_equal(
+        recodedf[:, 0], expected_recodedf_firstCol
+    ), f"{recodedf[:,0]} (expected {expected_recodedf_firstCol})"
+
+
+def test_recode_additional_neutral():
+    expected_first_column = np.array([6, 10, 1, 3, 7, 5, 9, 4, 3, 1, 0, 2, 11, 2])
+
+    maxMOI = 5
+    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
+    # TODO: additional_neutral currently just stubbed (not using actual values)
+    additional_neutral = np.zeros((14, 25))
+
+    recoded_additional_neutral = np.zeros((14, maxMOI * locinames.size))
+    # TODO: This is almost the exact same code as in create_initial_state (should refactor both into a common function)
+
+    for i, locus in enumerate(locinames):
+        locicolumns = genotypedata_RR.columns.str.contains(f"{locus}_")
+
+        oldalleles = additional_neutral[:, locicolumns]  # TODO: stub
+        """
+        # TODO: What is this code doing?
+        if (len(oldalleles.shape[1]) == 0) {
+            oldalleles = matrix(oldalleles,length(oldalleles),1)
+        }
+        """
+        newalleles = np.copy(oldalleles)
+        ncolumns = oldalleles.shape[1]
+        """
+        for j in range(ncolumns):
+            # TODO: Can't test until I have a recodeallele implementation
+            newalleles[:,j] = np.array(list(map(
+                range(0, oldalleles.shape[0]),
+                lambda x: recodeallele(alleles_definitions_RR[i], oldalleles[x,j]))))
+        """
+        newalleles[np.isnan(newalleles)] = 0
+        oldalleles[np.isnan(oldalleles)] = 0
+
+        oldalleles[newalleles == 0] = 0
+
+        startColumn = maxMOI * (
+            i - 1
+        )  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
+        endColumnOldAllele = maxMOI * (i - 1) + oldalleles.shape[1]
+        recoded_additional_neutral[:, startColumn:endColumnOldAllele] = newalleles
+
+    assert np.array_equal(
+        recoded_additional_neutral[:, 0], expected_first_column
+    ), f"{recoded_additional_neutral[:,0]} (expected {expected_first_column})"
+
 
 test_max_MOI()
 test_getting_ids()
 test_getting_locinames()
 test_calculate_MOI()
-test_create_initial_state() # TODO: Code not fully implemented yet
+# test_create_initial_state() # TODO: Code not fully implemented yet
+# test_recode_additional_neutral() # TODO: Code not fully implemented yet
