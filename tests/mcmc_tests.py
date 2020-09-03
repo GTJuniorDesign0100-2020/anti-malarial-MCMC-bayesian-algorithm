@@ -675,6 +675,30 @@ def test_initialize_hidden_alleles():
     # TODO: Figure out how to actually test this w/ random sampling?
         assert False, "test_initialize_hidden_alleles() using stubbed data for now"
 
+def test_create_dvect():
+    # TODO: This is a stub, not the actual data
+    nloci = 7
+    alleles_definitions_RR = np.array([
+        [217, 263],
+        [85, 171],
+        [71.5, 203.5],
+        [102.5, 180.5],
+        [136.5, 202.5],
+        [71.5, 89.5],
+        [146.5, 197.5]
+    ])
+
+    # TODO: What does dvect stand for?
+    dvect = np.zeros(1 + int(np.rint(
+        # Get the range (max-min) of the first "nloci" rows, then the max of all those
+        np.ptp(alleles_definitions_RR[0:nloci], axis=1).max()
+    )))
+    dvect[1] = 0.75
+    dvect[2] = 0.2
+    dvect[3] = 0.05
+
+    assert dvect.size == 133, f"Dvect size {dvect.size} (expected {133})"
+
 #===============================================================================
 
 np.random.seed(0)
@@ -686,3 +710,4 @@ test_calculate_MOI()
 # test_create_initial_state()       # TODO: Code not fully implemented yet
 # test_recode_additional_neutral()  # TODO: Code not fully implemented yet
 # test_initialize_hidden_alleles()  # TODO: Code not fully implemented yet
+test_create_dvect()

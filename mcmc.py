@@ -183,19 +183,23 @@ for i in range(nids):
             allelesf[i,whichmissingf] = np.mean(alleles_definitions_RR[j], axis=1)[newhiddenallelesf] # hidden alleles get mean allele length
             hiddenf[i,whichmissingf] = 1
 
+## initial estimate of q (probability of an allele being missed)
+qq = np.nanmean(np.concatenate[hidden0, hiddenf])
+
+## initial estimate of dvect (likelihood of error in analysis)
+# TODO: What does dvect stand for?
+dvect = np.zeros(1 + int(np.rint(
+    # Get the range (max-min) of the first "nloci" rows, then the max of all those
+    np.ptp(alleles_definitions_RR[0:nloci], axis=1).max()
+)))
+dvect[1] = 0.75
+dvect[2] = 0.2
+dvect[3] = 0.05
 #===============================================================================
 #   THE LINE OF SANITY
 #   (code below this point has NOT been converted from R to Python)
 #===============================================================================
 
-## initial estimate of q (probability of an allele being missed)
-qq = mean(c(hidden0,hiddenf),na.rm=TRUE)
-
-## initial estimate of dvect (likelihood of error in analysis)
-dvect = rep(0,1+round(max(sapply(1:nloci,function (x) diff(range(c(alleles_definitions_RR[[x]])))))))
-dvect[1] = 0.75
-dvect[2] = 0.2
-dvect[3] = 0.05
 ## randomly assign recrudescences/reinfections
 for (i in 1:nids) {
     z = runif(1)
