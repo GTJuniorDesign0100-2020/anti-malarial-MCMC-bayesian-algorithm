@@ -728,7 +728,6 @@ def test_create_dvect():
 
 
 def test_initialize_recrudesences():
-
     maxMOI = 5
     nids = 6
     nloci = 7
@@ -789,6 +788,51 @@ def test_initialize_recrudesences():
                 recodedf[i, maxMOI * j : maxMOI * (j + 1)]
                 == recodedf[i, int(recrf[i, j])]
             )  # TODO: int() only needed for stub
+    # TODO: Actually test this
+
+
+def test_correction_factor():
+    expected_fist_row_col = np.array([0, 2, 24, 42, 4, 6, 12, 18, 20, 30, 2, 10, 26])
+
+    nloci = 7
+    # TODO: Confirm what the right alleles_definitions_RR shape is?
+    alleles_definitions_RR = np.zeros((7, 13, 2))
+    alleles_definitions_RR[0, :, :] = np.array(
+        [
+            [219, 221],
+            [221, 223],
+            [243, 245],
+            [261, 263],
+            [223, 225],
+            [225, 227],
+            [231, 233],
+            [237, 239],
+            [239, 241],
+            [249, 251],
+            [217, 219],
+            [229, 231],
+            [245, 247],
+        ]
+    )
+
+    correction_distance_matrix = np.zeros(
+        (nloci, alleles_definitions_RR.shape[1], alleles_definitions_RR.shape[1])
+    )  # for each locus, matrix of distances between each allele
+    for i in range(nloci):
+        # Wrap mean call in "array" so we get a 2D array we can transpose (getting us a grid of distances, not just a 1D vector)
+        distances = np.array([np.mean(alleles_definitions_RR[i], axis=1)])
+        distance_combinations = np.abs(distances.T - distances)
+        correction_distance_matrix[i] = distance_combinations
+
+    assert np.array_equal(correction_distance_matrix.shape, np.array(
+        [7, 13, 13]
+    )), f"{correction_distance_matrix.shape} (expected {np.array([7, 13, 13])})"
+    assert np.array_equal(
+        correction_distance_matrix[0, :, 0], expected_fist_row_col
+    ), f"Row {correction_distance_matrix[0, :, 0]} (expected {expected_fist_row_col})"
+    assert np.array_equal(
+        correction_distance_matrix[0, 0, :], expected_fist_row_col
+    ), f"Column {correction_distance_matrix[0, 0, :]} (expected {expected_fist_row_col})"
 
 
 # =============================================================================
@@ -804,3 +848,4 @@ test_calculate_MOI()
 # test_initialize_hidden_alleles()  # TODO: Code not fully implemented yet
 test_create_dvect()
 test_initialize_recrudesences()
+test_correction_factor()

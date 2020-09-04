@@ -229,17 +229,20 @@ for i in range(nids):
 
         recr_repeats0[i,j] = np.sum(recoded0[i, maxMOI*j:maxMOI*(j+1)] == recoded0[i, int(recr0[i,j])]) # TODO: int() only needed for stub
         recr_repeatsf[i,j] = np.sum(recodedf[i, maxMOI*j:maxMOI*(j+1)] == recodedf[i, int(recrf[i,j])]) # TODO: int() only needed for stub
+
+#### correction factor (reinfection)
+correction_distance_matrix = np.zeros((nloci, alleles_definitions_RR.shape[1], alleles_definitions_RR.shape[1])) # for each locus, matrix of distances between each allele
+# TODO: Vectorize this (it seems fairly doable)
+for i in range(nloci):
+    # Wrap mean call in "array" so we get a 2D array we can transpose (getting us a grid of distances, not just a 1D vector)
+    distances = np.array([np.mean(alleles_definitions_RR[i], axis=1)])
+    distance_combinations = np.abs(distances.T - distances)
+    correction_distance_matrix[i] = distance_combinations
+
 #===============================================================================
 #   THE LINE OF SANITY
 #   (code below this point has NOT been converted from R to Python)
 #===============================================================================
-
-#### correction factor (reinfection)
-correction_distance_matrix = list() # for each locus, matrix of distances between each allele
-for (i in 1:nloci) {
-    correction_distance_matrix[[i]] = as.matrix(dist(rowMeans(alleles_definitions_RR[[i]])))
-}
-
 
 state_classification = matrix(NA,nids,(nruns-burnin)/record_interval)
 state_alleles0 = array(NA,c(nids,maxMOI*nloci,(nruns-burnin)/record_interval))
