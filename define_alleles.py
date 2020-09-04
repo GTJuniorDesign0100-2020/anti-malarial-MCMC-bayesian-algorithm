@@ -161,31 +161,3 @@ def define_alleles(genotypedata = None, locirepeats = None, maxk = None):
 		alleles2.append(alleles2_test)
 
 	return alleles2
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-xl = pd.ExcelFile("/Users/jihwankim/Desktop/project/myworkbook.xlsx")
-sheet = xl.sheet_names
-# xl is the actual excel file and the sheet is the names of each sheet
-# we parse only the "geno" sheet to have data
-# df is the actual dataframe to use
-genotypedata = xl.parse("geno")
-locirepeats = [2, 2, 3, 3, 3, 3, 3]
-maxk = [30, 30, 30, 30, 30, 30, 30]
-
-alleles_definitions = define_alleles(genotypedata, locirepeats, maxk)
-print(alleles_definitions)

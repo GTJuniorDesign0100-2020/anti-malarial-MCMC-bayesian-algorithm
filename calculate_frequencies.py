@@ -3,7 +3,7 @@ import re
 import numpy as np
 import math
 import statistics
-from define_alleles import *
+
 def calculate_frequencies3(genotypedata, alleles_definitions):
 	ids = genotypedata.iloc[:,0].tolist()
 
@@ -92,27 +92,3 @@ def calculate_frequencies3(genotypedata, alleles_definitions):
 	ret.append(variability)
 	print(ret)
 	return ret
-
-def getRawAlleles(genotypedata, locinames, j, n):
-	loci_name_prefix, last_index = locinames.get(j)
-	locicolumns = []
-	while (n <= last_index):
-		locicolumns += genotypedata.iloc[:, n+1].tolist()
-		n += 1
-
-	locicolumns = [loci for loci in locicolumns if str(loci) != 'nan']
-	new_vector = np.array(locicolumns)
-	return locicolumns, n
-
-
-xl = pd.ExcelFile("/Users/jihwankim/Desktop/project/myworkbook.xlsx")
-sheet = xl.sheet_names
-# xl is the actual excel file and the sheet is the names of each sheet
-# we parse only the "geno" sheet to have data
-# df is the actual dataframe to use
-genotypedata = xl.parse("geno")
-locirepeats = [2, 2, 3, 3, 3, 3, 3]
-maxk = [30, 30, 30, 30, 30, 30, 30]
-
-alleles_definitions = define_alleles(genotypedata, locirepeats, maxk)
-calculate_frequencies3(genotypedata, alleles_definitions)
