@@ -1,21 +1,39 @@
 import pandas as pd
-import re
 import numpy as np
 import math
 
-def define_alleles(genotypedata = None, locirepeats = None, maxk = None):
+""" generate definitions of alleles (i.e. binning)
+	inputs (parameters):
+		- genotypedata: 
+			type: pandas dataframe
+			description: genetic data, where first column (name 'Sample ID') has the id of the sample, 
+						 and rest of columns have the format nameoflocus_X, where X is the xth allele detected
+		- locirepeats: 
+			type: numpy.array 
+			description: a vector of length number of loci with type of locus (dinucleotide, trinucleotide, etc. repeats)
+		- maxk: 
+			type: numpy.array
+			description: a vector of length of loci with the maximum number of alleles for each locus
+
+	output:
+			type: list that contains dataframe
+			description: list of length number of loci
+						 each entry is a number of alleles by 2 matrix (1st column = lower bound, 2nd column = upper bound)
+"""
+def define_alleles(genotypedata, locirepeats, maxk):
 
 	# retrieve IDs from the Genotypedata
 	ids = genotypedata.iloc[:,0].tolist()
 
 	# retrieve the names of locus without duplicates
+	# the list will contain the names with the order that was in the genotypedata (left to right)
 	col_names = list(genotypedata.columns.values)[1:]
 	prev_pos = None
 	locinames = {}
 	lociname_index = 0
 	lociname_end_index = 0
 	for name in col_names:
-		res = re.split('_', name)
+		res = name.split("_")
 		if prev_pos == None:
 			prev_pos = res[0]
 		elif prev_pos != res[0]:
@@ -32,11 +50,12 @@ def define_alleles(genotypedata = None, locirepeats = None, maxk = None):
 	nids = len(ids)
 	nloci = len(locinames)
 
-
+	# first section
 	alleles = []
 	n = 0
 	for j in range(nloci):
-		# retrieve raw alleles
+		# retrieve raw alleles (each index contains every raw alleles data with the same locinames)
+		# ex. all data with X313 prefix lociname in index 0
 		loci_name_prefix, last_index = locinames.get(j)
 		raw_alleles = []
 		while (n <= last_index):
@@ -45,14 +64,12 @@ def define_alleles(genotypedata = None, locirepeats = None, maxk = None):
 		raw_alleles = [loci for loci in raw_alleles if str(loci) != 'nan']
 
 
-
 		if (max(raw_alleles) - min(raw_alleles)) < locirepeats[j]:
 			print("")
 		else:
 			# making breaks (not sure if we need this)
 			min_num = math.floor(min(raw_alleles)) - 0.5
 			max_num = max(raw_alleles) + 1
-
 			breaks = np.array([])
 			while min_num < max_num:
 				breaks = np.append(breaks, min_num)
@@ -65,6 +82,7 @@ def define_alleles(genotypedata = None, locirepeats = None, maxk = None):
 			# allele values
 			allele_values = np.array(np.round((np.array(breaks[1:]) + np.array(breaks[0:-1])) / 2))
 
+			# historgram contains the frequency of occurrences for each breaks
 			histogram = {(k+0.5): 0 for k in range(breaks_min, breaks_max)}
 			for allele in raw_alleles:
 				bound = math.floor(allele) + 0.5
@@ -73,9 +91,12 @@ def define_alleles(genotypedata = None, locirepeats = None, maxk = None):
 				else:
 					histogram[bound-1] += 1
 
+			# hist_alleles_count
+			# list that contains the count for each break
 			hist_alleles_count = list(histogram.values())
 
-
+			# list that contains sum of 'count' from the hist_alleles_count
+			# increment 'x' index of the hist_alleles_count by locirepeats[j] to select 'count'
 			counts_by_offset = []
 			for i in range(locirepeats[j]):
 				seq = list(range(i, len(hist_alleles_count), locirepeats[j]))
@@ -87,7 +108,7 @@ def define_alleles(genotypedata = None, locirepeats = None, maxk = None):
 					sum += num
 				counts_by_offset.append(sum)
 
-
+			# select certain allele values based on the raw alleles, counts_by_offset
 			seq = list(range(counts_by_offset.index(max(counts_by_offset)), len(allele_values), locirepeats[j]))
 			possible_alleles = []
 			for num in seq:
@@ -99,7 +120,7 @@ def define_alleles(genotypedata = None, locirepeats = None, maxk = None):
 			if max(raw_alleles) > (max(possible_alleles) + locirepeats[j]/2):
 				possible_alleles = possible_alleles + [max(possible_alleles) + locirepeats[j]]
 
-
+			# assign clusters
 			clusters = []
 			for allele in raw_alleles:
 				arr = np.array(possible_alleles) - allele
@@ -107,12 +128,10 @@ def define_alleles(genotypedata = None, locirepeats = None, maxk = None):
 				min_index = arr.index(min(arr))
 				clusters.append(min_index)
 
-
-
-
 			unique_clusters = list(dict.fromkeys(clusters))
 			k = len(unique_clusters)
 
+			# find break values(lower and upper)
 			lower_break_value = []
 			upper_break_value = []
 			for cluster in unique_clusters:
@@ -129,18 +148,24 @@ def define_alleles(genotypedata = None, locirepeats = None, maxk = None):
 						sum += 1
 				counts.append(sum)
 
-			col1 = pd.DataFrame(lower_break_value)
-			col2 = pd.DataFrame(upper_break_value)
-			col3 = pd.DataFrame(counts)
 
-			test = pd.concat([col1, col2, col3], axis=1)
-			# test.columns = [a, b, c]
-			test.columns = ['lower_break_value', 'upper_break_value', 'counts']
-			alleles.append(test)
+			# prepare columns of lower_bound, upper_bound, and count
+			allele_low = pd.DataFrame(lower_break_value)
+			allele_high = pd.DataFrame(upper_break_value)
+			allele_count = pd.DataFrame(counts)
 
+			# put allele columns together to make dataframe
+			allele_df = pd.concat([allele_low, allele_high, allele_count], axis=1)
+			allele_df.columns = ['lower_break_value', 'upper_break_value', 'counts']
+			alleles.append(allele_df)
+
+
+	# second section
+	# compress
+	# take maxk most frequent alleles
 	alleles2 = []
 	for i in range(nloci):
-		# sorted(range(len(s)), key=lambda k: s[k])
+		
 		sortedindex = []
 		current_count = alleles[i]['counts'].tolist()
 
@@ -149,15 +174,20 @@ def define_alleles(genotypedata = None, locirepeats = None, maxk = None):
 		else:
 			sortedindex = sorted(range(len(current_count)), key=lambda k: current_count[k], reverse=True)[:maxk[i]]
 
+		# find new lower break and new upper break values
 		new_lower_break_value = []
 		new_upper_break_value = []
 		for index in sortedindex:
 			new_lower_break_value.append(alleles[i]['lower_break_value'][index])
 			new_upper_break_value.append(alleles[i]['upper_break_value'][index])
-		alleles2_col1 = pd.DataFrame(new_lower_break_value)
-		alleles2_col2 = pd.DataFrame(new_upper_break_value)
-		alleles2_test = pd.concat([alleles2_col1, alleles2_col2], axis=1)
-		alleles2_test.columns = [0, 1]
-		alleles2.append(alleles2_test)
+
+		# prepare columns of lower_bound, upper_bound
+		alleles2_low = pd.DataFrame(new_lower_break_value)
+		alleles2_high = pd.DataFrame(new_upper_break_value)
+
+		# put allele2 columns together to make dataframe
+		alleles2_df= pd.concat([alleles2_low, alleles2_high], axis=1)
+		alleles2_df.columns = [0, 1]
+		alleles2.append(alleles2_df)
 
 	return alleles2
