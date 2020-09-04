@@ -63,9 +63,33 @@ def define_alleles(genotypedata, locirepeats, maxk):
 			n += 1
 		raw_alleles = [loci for loci in raw_alleles if str(loci) != 'nan']
 
-
 		if (max(raw_alleles) - min(raw_alleles)) < locirepeats[j]:
-			print("")
+			# find break values(lower and upper)
+			lower_break_value = []
+			upper_break_value = []
+			counts_column = []
+
+			lower_list = []
+			upper_list = []
+
+			for allele in raw_alleles:
+				lower_list.append(allele - locirepeats[j]/2)
+				upper_list.append(allele + locirepeats[j]/2)
+
+			# search for the min from the lower_list and upper_list and add to break lists.
+			lower_break_value.append(min(lower_list))
+			upper_break_value.append(max(upper_list))
+			counts_column.append(len(lower_list))
+
+			# prepare columns of lower_bound, upper_bound, and count
+			allele_low = pd.DataFrame(lower_break_value)
+			allele_high = pd.DataFrame(upper_break_value)
+			allele_count = pd.DataFrame(counts)
+
+			# put allele columns together to make dataframe
+			allele_df = pd.concat([allele_low, allele_high, allele_count], axis=1)
+			allele_df.columns = ['lower_break_value', 'upper_break_value', 'counts']
+			alleles.append(allele_df)
 		else:
 			# making breaks (not sure if we need this)
 			min_num = math.floor(min(raw_alleles)) - 0.5
@@ -158,7 +182,6 @@ def define_alleles(genotypedata, locirepeats, maxk):
 			allele_df = pd.concat([allele_low, allele_high, allele_count], axis=1)
 			allele_df.columns = ['lower_break_value', 'upper_break_value', 'counts']
 			alleles.append(allele_df)
-
 
 	# second section
 	# compress
