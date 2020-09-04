@@ -796,7 +796,7 @@ def test_correction_factor():
 
     nloci = 7
     # TODO: Confirm what the right alleles_definitions_RR shape is?
-    alleles_definitions_RR = np.zeros((7, 13, 2))
+    alleles_definitions_RR = np.zeros((nloci, 13, 2))
     alleles_definitions_RR[0, :, :] = np.array(
         [
             [219, 221],
@@ -824,15 +824,90 @@ def test_correction_factor():
         distance_combinations = np.abs(distances.T - distances)
         correction_distance_matrix[i] = distance_combinations
 
-    assert np.array_equal(correction_distance_matrix.shape, np.array(
-        [7, 13, 13]
-    )), f"{correction_distance_matrix.shape} (expected {np.array([7, 13, 13])})"
+    assert np.array_equal(
+        correction_distance_matrix.shape, np.array([7, 13, 13])
+    ), f"{correction_distance_matrix.shape} (expected {np.array([7, 13, 13])})"
     assert np.array_equal(
         correction_distance_matrix[0, :, 0], expected_fist_row_col
     ), f"Row {correction_distance_matrix[0, :, 0]} (expected {expected_fist_row_col})"
     assert np.array_equal(
         correction_distance_matrix[0, 0, :], expected_fist_row_col
     ), f"Column {correction_distance_matrix[0, 0, :]} (expected {expected_fist_row_col})"
+
+
+def test_run_mcmc_new_proposal():
+    # TODO: Find what the actual expected ratio is for the stubbed inputs?
+    expected_likelihood_ratio = np.zeros(6)
+
+    maxMOI = 5
+    nids = 6
+    nloci = 7
+
+    # TODO: Stubbed data
+    frequencies_RR = np.random.random_sample((3, 7, 19))
+    frequencies_RR[0, :, 0] = np.array([13, 16, 11, 13, 19, 5, 13])
+
+    alldistance = np.full_like(np.empty((nids, nloci, maxMOI ** 2)), 1)
+    allrecrf = np.full_like(np.empty((nids, nloci, maxMOI ** 2)), 3).astype(int)
+    hidden0 = np.full_like(np.empty((nids, maxMOI * nloci)), np.nan)
+    hiddenf = np.full_like(np.empty((nids, maxMOI * nloci)), np.nan)
+    classification = np.repeat(0, nids)
+
+    dvect = np.ones(133)  # TODO: What to do when dvect has a 0 value?
+    # TODO: What size is the correction matrix??? Appears to be different for each locus??? (set to max value in frequencies_rr)
+    correction_distance_matrix = np.zeros((nloci, 19, 19)).astype(int)
+
+    # propose new classification
+    likelihoodratio = np.zeros(nids)
+    # TODO: Finish vectorizing this
+    for x in range(nids):
+        # id mean for what?
+        id_means = np.zeros(nloci)
+        for y in range(nloci):
+            id_means[y] = np.nanmean(
+                dvect[np.round(alldistance[x, y, :]).astype(int)]
+                # Should get an array of maxMOI**2 sums
+                / np.sum(
+                    frequencies_RR[1, y, : frequencies_RR.astype(int)[0, y, 0]]
+                    * dvect[
+                        correction_distance_matrix[  # TODO: Make sure multiplications are down the right axis (I believe they default to down columns, which is what I want)
+                            y,
+                            : frequencies_RR.astype(int)[
+                                0, y, 0
+                            ],  # TODO: Figure out how to do this more cleanly? (R impementation just used ":", assumed array had correct dimensions)
+                            allrecrf[x, y, : maxMOI ** 2].astype(int),
+                        ]
+                    ],
+                    axis=1,
+                ),  # TODO: Verify it's the right axis?
+            )
+        likelihoodratio[x] = np.exp(np.sum(np.log(id_means)))
+
+    z = np.random.uniform(size=nids)
+    newclassification = classification
+    newclassification[np.logical_and(classification == 0, z < likelihoodratio)] = 1
+    newclassification[np.logical_and(classification == 1, z < 1 / likelihoodratio)] = 0
+    classification = newclassification
+
+    # propose new hidden states
+    """
+    # TODO: What does switch_hidden do? Is it entirely side effects? (Also,: can't run this yet, still waiting on implementation)
+    for i in range(nids):
+        switch_hidden(i)
+    """
+
+    # propose q (beta distribution is conjugate distribution for binomial process)
+    q_prior_alpha = 0
+    q_prior_beta = 0
+    q_posterior_alpha = (
+        q_prior_alpha + np.nansum(hidden0 == 1) + np.nansum(hiddenf == 1)
+    )
+    q_posterior_beta = q_prior_beta + np.nansum(hidden0 == 0) + np.nansum(hiddenf == 0)
+    if q_posterior_alpha == 0:
+        q_posterior_alpha = 1
+    if q_posterior_beta == 0:  # TODO: Added this due to numpy warning, possibly remove?
+        q_posterior_beta = 1
+    qq = np.random.beta(q_posterior_alpha, q_posterior_beta)
 
 
 # =============================================================================
@@ -849,3 +924,4 @@ test_calculate_MOI()
 test_create_dvect()
 test_initialize_recrudesences()
 test_correction_factor()
+test_run_mcmc_new_proposal()

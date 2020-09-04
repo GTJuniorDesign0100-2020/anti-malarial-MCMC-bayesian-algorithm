@@ -239,47 +239,76 @@ for i in range(nloci):
     distance_combinations = np.abs(distances.T - distances)
     correction_distance_matrix[i] = distance_combinations
 
+num_saved_records = (nruns-burnin) / record_interval
+
+state_classification = np.full_like(
+    np.empty((nids, num_saved_records)), np.nan)
+state_alleles0 = np.full_like(
+    np.empty((nids, maxMOI*nloci, num_saved_records)), np.nan)
+state_allelesf = np.full_like(
+    np.empty((nids, maxMOI*nloci, num_saved_records)), np.nan)
+state_parameters = np.full_like(
+    np.empty((2 + 2*nloci, num_saved_records)), np.nan)
+
+count = 1
+dposterior = 0.75
+def runmcmc():
+        # propose new classification
+    likelihoodratio = np.zeros(nids)
+    # TODO: Finish vectorizing this
+    for x in range(nids):
+        # id mean for what?
+        id_means = np.zeros(nloci)
+        for y in range(nloci):
+            id_means[y] = np.nanmean(
+                dvect[np.round(alldistance[x, y, :]).astype(int)]
+                # Should get an array of maxMOI**2 sums
+                / np.sum(
+                    frequencies_RR[1, y, : frequencies_RR.astype(int)[0, y, 0]]
+                    * dvect[
+                        correction_distance_matrix[  # TODO: Make sure multiplications are down the right axis (I believe they default to down columns, which is what I want)
+                            y,
+                            : frequencies_RR.astype(int)[
+                                0, y, 0
+                            ],  # TODO: Figure out how to do this more cleanly? (R impementation just used ":", assumed array had correct dimensions)
+                            allrecrf[x, y, : maxMOI ** 2].astype(int),
+                        ]
+                    ],
+                    axis=1,
+                ),  # TODO: Verify it's the right axis?
+            )
+        likelihoodratio[x] = np.exp(np.sum(np.log(id_means)))
+
+    z = np.random.uniform(size=nids)
+    newclassification = classification
+    newclassification[np.logical_and(classification == 0, z < likelihoodratio)] = 1
+    newclassification[np.logical_and(classification == 1, z < 1 / likelihoodratio)] = 0
+    classification = newclassification
+
+    # propose new hidden states
+    """
+    # TODO: What does switch_hidden do? Is it entirely side effects? (Also,: can't run this yet, still waiting on implementation)
+    for i in range(nids):
+        switch_hidden(i)
+    """
+
+    # propose q (beta distribution is conjugate distribution for binomial process)
+    q_prior_alpha = 0
+    q_prior_beta = 0
+    q_posterior_alpha = (
+        q_prior_alpha + np.nansum(hidden0 == 1) + np.nansum(hiddenf == 1)
+    )
+    q_posterior_beta = q_prior_beta + np.nansum(hidden0 == 0) + np.nansum(hiddenf == 0)
+    if q_posterior_alpha == 0:
+        q_posterior_alpha = 1
+    if q_posterior_beta == 0:  # TODO: Added this due to numpy warning, possibly remove?
+        q_posterior_beta = 1
+    qq = np.random.beta(q_posterior_alpha, q_posterior_beta)
+
 #===============================================================================
 #   THE LINE OF SANITY
 #   (code below this point has NOT been converted from R to Python)
 #===============================================================================
-
-state_classification = matrix(NA,nids,(nruns-burnin)/record_interval)
-state_alleles0 = array(NA,c(nids,maxMOI*nloci,(nruns-burnin)/record_interval))
-state_allelesf = array(NA,c(nids,maxMOI*nloci,(nruns-burnin)/record_interval))
-state_parameters = matrix(NA,2+2*nloci,(nruns-burnin)/record_interval)
-
-count = 1
-dposterior = 0.75
-runmcmc = function() {
-    # propose new classification
-    # rellikelihood_reinfection = sapply(1:nids, function (x) (sum(log(frequencies_RR[[2]][cbind(1:nloci,recoded0[x,recrf[x,]])]))))
-    #rellikelihood_recr = sapply(1:nids, function (x) (sum(log(dvect[round(mindistance[x,]+1)]))))
-    # likelihoodratio = exp(rellikelihood_recr - rellikelihood_reinfection)
-    # adjust for multiple corrections (ratio of multinomial coefficients)
-    #likelihoodratio = sapply(1:nids, function (x) likelihoodratio[x]/exp(nloci*log(MOI0[x])+nloci*log(MOIf[x])-sum(log(recr_repeats0[x,]))-sum(log(recr_repeatsf[x,]))))
-    #likelihoodratio = sapply(1:nids, function (x) exp(sum(log(sapply(1:nloci, function (y) mean(dvect[round(alldistance[x,y,])+1]/frequencies_RR[[2]][y,allrecrf[x,y,]],na.rm=TRUE))))))
-    #likelihoodratio = sapply(1:nids, function (x) exp(sum(log(sapply(1:nloci, function (y) mean(dvect[round(alldistance[x,y,])+1]/colSums(frequencies_RR[[2]][y,1:frequencies_RR[[1]][y]]*matrix(dvect[correction_distance_matrix[[y]][,allrecrf[x,y,]]+1],frequencies_RR[[1]][y],frequencies_RR[[1]][y])),na.rm=TRUE))))))
-    likelihoodratio = sapply(1:nids, function (x) exp(sum(log(sapply(1:nloci, function (y) mean(dvect[round(alldistance[x,y,])+1]/sapply(1:(maxMOI*maxMOI), function (z) sum(frequencies_RR[[2]][y,1:frequencies_RR[[1]][y]]*dvect[correction_distance_matrix[[y]][,allrecrf[x,y,z]]+1])),na.rm=TRUE))))))
-
-    z = runif(nids)
-    newclassification = classification
-    newclassification[classification == 0 & z < likelihoodratio] = 1
-    newclassification[classification == 1 & z < 1/likelihoodratio] = 0
-    classification <<- newclassification
-
-    # propose new hidden states
-    sapply(1:nids, function (x) switch_hidden(x))
-
-    # propose q (beta distribution is conjugate distribution for binomial process)
-    q_prior_alpha = 0;
-    q_prior_beta = 0;
-    q_posterior_alpha = q_prior_alpha + sum(c(hidden0,hiddenf) == 1,na.rm=TRUE)
-    q_posterior_beta = q_prior_beta + sum(c(hidden0,hiddenf)==0,na.rm=TRUE)
-    if (q_posterior_alpha == 0) {
-        q_posterior_alpha =1
-    }
-    qq <<- rbeta(1, q_posterior_alpha , q_posterior_beta)
 
     #  update dvect (approximate using geometric distribution)
     # only if there is at least 1 recrudescent infection
@@ -321,7 +350,6 @@ runmcmc = function() {
 
     }
     count <<- count + 1
-}
 
 replicate(nruns,runmcmc())
 
