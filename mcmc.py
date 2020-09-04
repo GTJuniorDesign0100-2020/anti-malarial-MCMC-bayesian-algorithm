@@ -17,6 +17,7 @@ maxMOI = np.nanmax( # Return array max, ignoring NaNs
 
 # Get the unique Sample IDs in the dataset
 ids = np.unique(genotypedata_RR[genotypedata_RR["Sample.ID"].str.contains("Day 0")]["Sample.ID"].str.replace(" Day 0", ""))
+# Ditto, the unique loci for the set
 locinames = np.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
 
 nids = ids.size
@@ -29,6 +30,7 @@ k = np.repeat(maxalleles, nloci)
 alleles_definitions_RR  = define_alleles(pd.concat([genotypedata_RR,additional_neutral]), locirepeats, k)
 
 ##### calculate MOI
+# TODO: What do MOI0 and MOIf stand for? Multiplicity of infection on first day/day of failure? What are they used for/mean?
 MOI0 = np.repeat(0,nids)
 MOIf = np.repeat(0,nids)
 for i, ID in enumerate(ids):
@@ -48,6 +50,7 @@ for i, ID in enumerate(ids):
         MOIf[i] = np.max([MOIf[i],nallelesf])
 
 ##### define statevector (i.e. initial MCMC state)
+# TODO: What are each of these arrays used for? Should they not be initialized until closer to where they're actually used?
 alleles0        = np.zeros((nids, maxMOI*nloci))
 recoded0        = np.zeros((nids, maxMOI*nloci))
 hidden0         = np.full_like(np.empty((nids, maxMOI*nloci)), np.nan)
@@ -57,20 +60,20 @@ recr_repeatsf   = np.full_like(np.empty((nids, nloci)), np.nan) # number of time
 allelesf        = np.zeros((nids, maxMOI*nloci))
 recodedf        = np.zeros((nids, maxMOI*nloci))
 hiddenf         = np.full_like(np.empty((nids, maxMOI*nloci)), np.nan)
-recrf           = np.zeros((nids, maxMOI*nloci))
+recrf           = np.full_like(np.empty((nids, nloci)), np.nan)
 mindistance     = np.zeros((nids, nloci))
 alldistance     = np.full_like(np.empty((nids, nloci, maxMOI**2)), np.nan)
 allrecrf        = np.full_like(np.empty((nids, nloci, maxMOI**2)), np.nan)
 classification = np.repeat(0, nids)
 
-##### create state 0
+##### create state 0 (essentially, set NAN values to 0 and fill alleles with the appropriate initial/failure data)
 for i, locus in enumerate(locinames):
     # locicolumns code is duplicated from MOI calculations
     locicolumns = genotypedata_RR.columns.str.contains(f"{locus}_")
 
     oldalleles = genotypedata_RR.loc[:,locicolumns].to_numpy()
     '''
-    # TODO: What is this code doing?
+    # TODO: What is this code doing? Doesn't seem necessary?
     if (len(oldalleles.shape[1]) == 0) {
         oldalleles = matrix(oldalleles,length(oldalleles),1)
     }
@@ -98,6 +101,8 @@ for i, locus in enumerate(locinames):
     recodedf[:, startColumn:endColumnNewAllele] = newalleles[genotypedata_RR["Sample.ID"].str.contains("Day Failure"),:]
 
 ##### recode additional_neutral, if needed
+# TODO: What does recoding do? Why is it needed?
+# TODO: Seems to copy-paste much of the previous code section
 recoded_additional_neutral = None
 if additional_neutral.size > 0 and additional_neutral.shape[0] > 0:
     recoded_additional_neutral = np.zeros((additional_neutral.shape[0], maxMOI*nloci))
@@ -137,7 +142,7 @@ frequencies_RR = calculate_frequencies3(pd.concat(genotypedata_RR,additional_neu
 for i in range(nids):
     for j in range(nloci):
         # TODO: Code almost duplicated between top/bottom portions; refactor into single function? (needs 9 inputs: maxMOI, nids, nloci, MOIarray, alleles/recoded/hidden array, alleles_definitions_RR, frequencies_RR)
-        # TODO: Start/end of what?
+        # TODO: Start/end of what? The portion of the row w/ this locus information?
         start = maxMOI*j
         end = maxMOI*(j+1)
 
@@ -148,6 +153,7 @@ for i in range(nids):
         whichnotmissing0 = np.arange(start, end)[np.where(alleles0[i, start:start+MOI0[i]] != 0)]
         whichmissing0 = np.arange(start, end)[np.where(alleles0[i, start:start+MOI0[i]] == 0)]
 
+        # Sample to randomly initialize the alleles/hidden variables
         if nalleles0 > 0:
             hidden0[i,whichnotmissing0] = 0
         if nmissing0 > 0:
@@ -184,6 +190,7 @@ for i in range(nids):
             hiddenf[i,whichmissingf] = 1
 
 ## initial estimate of q (probability of an allele being missed)
+# TODO: What is qq? Is there a better name for this?
 qq = np.nanmean(np.concatenate[hidden0, hiddenf])
 
 ## initial estimate of dvect (likelihood of error in analysis)
@@ -195,30 +202,37 @@ dvect = np.zeros(1 + int(np.rint(
 dvect[1] = 0.75
 dvect[2] = 0.2
 dvect[3] = 0.05
+
+## randomly assign recrudescences/reinfections
+for i in range(nids):
+    z = np.random.uniform(size=1)
+    if z < 0.5:
+        classification[i] = 1
+    for j in range(nloci): # determine which alleles are recrudescing (for beginning, choose closest pair)
+        allpossiblerecrud = np.stack(np.meshgrid(
+            np.arange(MOI0[i]),
+            np.arange(MOIf[i]))).T.reshape(-1, 2)
+
+        allele0_col_indices = maxMOI*j + allpossiblerecrud[:,0]
+        allelef_col_indices = maxMOI*j + allpossiblerecrud[:,1]
+
+        recrud_distances = np.abs(alleles0[i, allele0_col_indices] - allelesf[i, allelef_col_indices])
+        # rename to "closest_recrud_index"?
+        closestrecrud = np.argmin(recrud_distances)
+
+        mindistance[i,j] = recrud_distances[closestrecrud]
+        alldistance[i,j,:recrud_distances.size] = recrud_distances
+
+        allrecrf[i,j,:allpossiblerecrud.shape[0]] = recodedf[i, maxMOI*j + allpossiblerecrud[:,1]]
+        recr0[i,j] = maxMOI*j + allpossiblerecrud[closestrecrud,0]
+        recrf[i,j] = maxMOI*j + allpossiblerecrud[closestrecrud,1]
+
+        recr_repeats0[i,j] = np.sum(recoded0[i, maxMOI*j:maxMOI*(j+1)] == recoded0[i, int(recr0[i,j])]) # TODO: int() only needed for stub
+        recr_repeatsf[i,j] = np.sum(recodedf[i, maxMOI*j:maxMOI*(j+1)] == recodedf[i, int(recrf[i,j])]) # TODO: int() only needed for stub
 #===============================================================================
 #   THE LINE OF SANITY
 #   (code below this point has NOT been converted from R to Python)
 #===============================================================================
-
-## randomly assign recrudescences/reinfections
-for (i in 1:nids) {
-    z = runif(1)
-    if (z < 0.5) {
-        classification[i] = 1
-    }
-    for (j in 1:nloci) { # determine which alleles are recrudescing (for beginning, choose closest pair)
-        allpossiblerecrud = expand.grid(1:MOI0[i],1:MOIf[i])
-        closestrecrud = which.min(sapply(1:dim(allpossiblerecrud)[1], function (x) abs(alleles0[i,maxMOI*(j-1)+allpossiblerecrud[x,1]] - allelesf[i,maxMOI*(j-1)+allpossiblerecrud[x,2]])))
-        mindistance[i,j] = abs(alleles0[i,maxMOI*(j-1)+allpossiblerecrud[closestrecrud,1]] - allelesf[i,maxMOI*(j-1)+allpossiblerecrud[closestrecrud,2]])
-        alldistance[i,j,1:dim(allpossiblerecrud)[1]] = sapply(1:dim(allpossiblerecrud)[1], function (x) abs(alleles0[i,maxMOI*(j-1)+allpossiblerecrud[x,1]] - allelesf[i,maxMOI*(j-1)+allpossiblerecrud[x,2]]))
-        allrecrf[i,j,1:dim(allpossiblerecrud)[1]] = recodedf[i,maxMOI*(j-1)+allpossiblerecrud[,2]]
-        recr0[i,j] = maxMOI*(j-1)+allpossiblerecrud[closestrecrud,1]
-        recrf[i,j] = maxMOI*(j-1)+allpossiblerecrud[closestrecrud,2]
-        recr_repeats0[i,j] = sum(recoded0[i,(maxMOI*(j-1)+1) : (maxMOI*(j))] == recoded0[i,recr0[i,j]])
-        recr_repeatsf[i,j] = sum(recodedf[i,(maxMOI*(j-1)+1) : (maxMOI*(j))] == recodedf[i,recrf[i,j]])
-    }
-}
-
 
 #### correction factor (reinfection)
 correction_distance_matrix = list() # for each locus, matrix of distances between each allele
