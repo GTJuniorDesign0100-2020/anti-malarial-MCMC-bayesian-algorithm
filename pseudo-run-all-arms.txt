@@ -73,7 +73,14 @@ write.csv(probability_of_recrudescence ,"probability_of_recrudescence.csv",row.n
 ###########################################################################################
 # Function 2: rowMeans2
 # Notes:
-#   Appears to be a simple wrapper for existing statistical functions in R.
+#   Appears to be a simple wrapper for existing statistical functions in R. (Not True)
+#   Further investigation seems to suggest this is overriding existing function of the same name in base R.
+#
+#   Function takes the mean for each row of the table X.
+#   Seems like this doesn't work for single row scenario,
+#   which is what necessitates this definition.
+#
+#   Shouldn't be necessary in numpy.
 ###########################################################################################
 
 rowMeans2 = function(x){
@@ -88,7 +95,13 @@ rowMeans2 = function(x){
 ###########################################################################################
 # Function 3: cbind2
 # Notes:
-#   Appears to be a simple wrapper for existing statistical functions in R.
+#   Appears to be a simple wrapper for existing statistical functions in R. (Not True)
+#   Further investigation seems to suggest this is overriding existing function of the same name in base R.
+#
+#   Similarly, this function is overriding behaivor of R which dictates how
+#   two data frames are combined by column. It seems like a vector has a dimensionality
+#   of 'NULL' in R. We should be able to avoid this function by ensuring
+#   we use numpy arrays of 2 dimensions.
 ###########################################################################################
 
 cbind2 = function(y,x){
