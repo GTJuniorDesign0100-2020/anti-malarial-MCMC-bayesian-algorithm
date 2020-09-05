@@ -78,7 +78,6 @@ def switch_hidden(x):
                 newallele_length = np.mean(alleles_definitions_RR[chosenlocus][new]) + np.random.normal(0, frequencies_RR[3][chosenlocus], 1)
                 allelesf[x][chosen] = newallelelength
 
-            #TODO: Finish above block then copy + paste
             inputVectors = list(itertools.product(np.arange(MOI0[x], np.arange(MOIf[x]))))
             allpossiblerecrud = pd.DateFrame(inputVectors)
             closetrecrud = #TODO: This line, I am very confused
@@ -95,7 +94,61 @@ def switch_hidden(x):
         if chosen <= nloci * maxMOI: #day 0 hidden allele
             chosenlocus = math.ceil(chosen / maxMOI)
             old = recoded0[x][chosen]
-            new = np.random.choice()
+            new = np.random.choice(np.arange(0,frequencies_RR[0][chosenLocus]), 1, False)
+            newallele_length = np.mean(alleles_definitions_RR[chosenlocus][new]) + np.random.normal(0, frequencies_RR[3][chosenlocus], 1)
+            oldalleles = recoded0[x, np.arange((chosenlocus - 1) * maxMOI + 1, chosenlocus * maxMOI).intersect(np.where(x == 1, hidden0[x]))]
+            repeatedold = qq
+            repeatednew = qq
+            if sum(oldalleles == old) >= 1: #if old allele is a repeat, don't penalize with missing probability
+                repeatedold = 1
+            if sum(oldalleles == new) >= 1: #if new allele is a repeat, don't penalize with missing probability
+                repeatednew = 1
+            inputVectors = list(itertools.product(np.arange(MOI0[x], np.arange(MOIf[x]))))
+            allpossiblerecrud = pd.DateFrame(inputVectors)
+            tempalleles = alleles0[x][maxMOI * (chosenlocus - 1) + 1 : maxMOI]
+            tempalleles[chosen - (chosenlocus - 1) * maxMOI] = newallelelength
+            temprecoded = recoded0[x][maxMOI * (chosenlocus - 1) + 1 : maxMOI]
+            temprecoded[chosen - (chosenlocus - 1) * maxMOI] = new
+
+            newclosestrecrud = #TODO: another confusing notation with function definition, will return
+            newmindistance = abs(tempalleles[allpossiblerecrud[newclosestrecrud][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][1]])
+            newalldistance = #TODO: as above
+            newallrecrf = recodedf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[:,1]]
+
+            #calculate new multiple-comparisons coefficient
+            newrecr0 = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][0]
+            newrecrf = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][1]
+            newrecr_repeats0 = sum(temprecoded == temprecoded[allpossiblerecrud[newclosestrecrud][0]]) #TODO: figure out na.rm
+            newrecr_repeatsf = sum(recodedf[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * (chosenlocus))] == recodedf[x][newrecrf])
+
+            likelihoodnew = mean() #TODO: figure out same function notation as above
+            likelihoodold = mean() #TODO: Same as above
+
+            #TODO: Port debugging code if wanted
+
+            if likelihoodnew == likelihoodold:
+                # if both num and denominator are equal (for case when both are 0..., otherwise 0/0 gives NaN)
+                alpha = 1
+            else:
+                alpha = likelihoodnew / likelihoodold
+
+            if z < alpha:
+                #TODO: Refactor below into function
+                recoded0[x][choosen] = new
+                alleles0[x][choosen] = newallelelength
+                mindistance[x][chosenlocus] = newmindistance
+                alldistance[x][chosenlocus][:pd.shape(allpossiblerecrud)[0]] = newalldistance
+                allrecrf[x][chosenlocus][:pd.shape(allpossiblerecrud)[0]] = newallrecrf
+                recr0[x][chosenlocus] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][0]
+                recrf[x][chosenlocus] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][1]
+                recr_repeats0[x][chosenlocus] = sum(recoded0[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * chosenlocus)] == recoded0[x][recr0[x][chosenlocus]])
+                recr_repeatsf[x][chosenlocus] = sum(recodedf[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * chosenlocus)] == recodedf[x][recr0[x][chosenlocus]])
+
+        else: #day f hidden allele
+            chosen = chosen - nloci * maxMOI
+            chosenlocus = math.ceil(chosen / maxMOI)
+            old = recodedf[x][chosen]
+            new = np.random.choice(np.arange(0,frequencies_RR[0][chosenLocus]), 1, False)
             newallele_length = np.mean(alleles_definitions_RR[chosenlocus][new]) + np.random.normal(0, frequencies_RR[3][chosenlocus], 1)
             oldalleles = recodedf[x, np.arange((chosenlocus - 1) * maxMOI + 1, chosenlocus * maxMOI).intersect(np.where(x == 1, hidden0[x]))]
             repeatedold = qq
@@ -104,19 +157,42 @@ def switch_hidden(x):
                 repeatedold = 1
             if sum(oldalleles == new) >= 1: #if new allele is a repeat, don't penalize with missing probability
                 repeatednew = 1
-            allpossiblerecrud = #TODO finish line
-            tempalleles = alleles0[x][maxMOI * (chosenlocus - 1) + 1 : maxMOI]
+            inputVectors = list(itertools.product(np.arange(MOI0[x], np.arange(MOIf[x]))))
+            allpossiblerecrud = pd.DateFrame(inputVectors)
+            tempalleles = allelesf[x][maxMOI * (chosenlocus - 1) + 1 : maxMOI]
             tempalleles[chosen - (chosenlocus - 1) * maxMOI] = newallelelength
-            temprecoded = recoded0[x][maxMOI * (chosenlocus - 1) + 1 : maxMOI]
+            temprecoded = recodedf[x][maxMOI * (chosenlocus - 1) + 1 : maxMOI]
             temprecoded[chosen - (chosenlocus - 1) * maxMOI] = new
 
-            newclosestrecrud =
-            newmindistance =
-            newalldistance =
-            newallrecrf =
+            newclosestrecrud = #TODO: another confusing notation with function definition, will return
+            newmindistance = abs(tempalleles[allpossiblerecrud[newclosestrecrud][1]] - alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][0]])
+            newalldistance = #TODO: as above
+            newallrecrf = temprecoded[allpossiblerecrud][:,1]
 
             #calculate new multiple-comparisons coefficient
             newrecr0 = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][0]
             newrecrf = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][1]
+            newrecr_repeats0 = sum(recoded0[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * (chosenlocus))] == recoded0[x][newrecrf])
+            newrecr_repeatsf = sum(temprecoded == temprecoded[allpossiblerecrud[newclosestrecrud][0]]) #TODO: check na.rm
 
+            likelihoodnew = #TODO: same inline function thing
+            likelihoodold = #TODO: same inline function thing
 
+            #TODO: Add debugging if deemed necessary
+
+            if likelihoodnew == likelihoodold:
+                # if both num and denominator are equal (for case when both are 0..., otherwise 0/0 gives NaN)
+                alpha = 1
+            else:
+                alpha = likelihoodnew / likelihoodold
+
+            if z > alpha: #switch made
+                recodedf[x][choosen] = new
+                allelesf[x][choosen] = newallelelength
+                mindistance[x][chosenlocus] = newmindistance
+                alldistance[x][chosenlocus][:pd.shape(allpossiblerecrud)[0]] = newalldistance
+                allrecrf[x][chosenlocus][:pd.shape(allpossiblerecrud)[0]] = newallrecrf
+                recr0[x][chosenlocus] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][0]
+                recrf[x][chosenlocus] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][1]
+                recr_repeats0[x][chosenlocus] = sum(recoded0[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * chosenlocus)] == recoded0[x][recr0[x][chosenlocus]])
+                recr_repeatsf[x][chosenlocus] = sum(recodedf[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * chosenlocus)] == recodedf[x][recr0[x][chosenlocus]])
