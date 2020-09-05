@@ -3,15 +3,6 @@ import numpy as np
 import pandas as pd
 import itertools
 
-from calculate_frequencies import *
-from define_alleles import *
-from findposteriorfrequencies import *
-from Import_Microsattelite_Data import *
-from main import *
-from mcmc import *
-from recode_alleles import *
-from run_all_arms import *
-
 def switch_hidden(x):
     z = random.uniform((1,))
 

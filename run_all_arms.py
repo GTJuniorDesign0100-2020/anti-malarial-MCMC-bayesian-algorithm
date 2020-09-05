@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from Import_Microsatellite_Data import *
 
 # Use this when encapsulating the code for this script.
 def onLoad(genotypedata_latefailures,additional_genotypedata):
@@ -65,7 +66,7 @@ def onLoad(genotypedata_latefailures,additional_genotypedata):
 
 # place holder for a global variable. Use it to wrap the logic to access a vector of site names for now.
 def siteNames():
-    all_sites = np.array()
+    all_sites = pd.unique(genotypedata_latefailures["Site"])
     return all_sites
 
 # runs the MCMC script.
