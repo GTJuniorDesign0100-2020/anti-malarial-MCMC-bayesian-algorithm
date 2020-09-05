@@ -3,19 +3,19 @@ import numpy as np
 import pandas as pd
 import itertools
 
-#from calculate_frequencies import *
-#from define_alleles import *
-#from findposteriorfrequencies import *
-#from Import_Microsattelite_Data import *
-#from main import *
-#from mcmc import *
-#from recode_alleles import *
-#from run_all_arms import *
+from calculate_frequencies import *
+from define_alleles import *
+from findposteriorfrequencies import *
+from Import_Microsattelite_Data import *
+from main import *
+from mcmc import *
+from recode_alleles import *
+from run_all_arms import *
 
 def switch_hidden(x):
     z = random.uniform((1,))
 
-    if sum(hidden0[x], hiddenf[x]) > 0: #if hidden alleles exist TODO: replicate na.rm
+    if numpy.nansum(hidden0[x], hiddenf[x]) > 0: #if hidden alleles exist TODO: replicate na.rm
         if len(np.where(x == 1, np.concatonate(hidden0[x], hiddenf[x]))) > 1:
             chosen = np.random.choice(np.where(x == 1, np.concatonate(hidden0[x], hiddenf[x])), 1, False)
         else:
@@ -118,12 +118,12 @@ def switch_hidden(x):
             #calculate new multiple-comparisons coefficient
             newrecr0 = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][0]
             newrecrf = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][1]
-            newrecr_repeats0 = sum(temprecoded == temprecoded[allpossiblerecrud[newclosestrecrud][0]]) #TODO: figure out na.rm
+            newrecr_repeats0 = np.nansum(temprecoded == temprecoded[allpossiblerecrud[newclosestrecrud][0]])
             newrecr_repeatsf = sum(recodedf[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * (chosenlocus))] == recodedf[x][newrecrf])
 
             #TODO: Find python equivalent of na.rm
-            likelihoodnew = mean(dvect[round(newalldistance) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,newallrecrf[z]] + 1]) , np.arange(0, len(newallrecrf)))) * repeatednew
-            likelihoodold = mean(dvect[round(alldistance[x][chosenlocus]) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,allrecrf[x][chosenlocus][z]] + 1], np.arange(0, maxMOI * maxMOI)))) * repeatedold
+            likelihoodnew = np.nanmean(dvect[round(newalldistance) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,newallrecrf[z]] + 1]) , np.arange(0, len(newallrecrf)))) * repeatednew
+            likelihoodold = np.nanmean(dvect[round(alldistance[x][chosenlocus]) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,allrecrf[x][chosenlocus][z]] + 1], np.arange(0, maxMOI * maxMOI)))) * repeatedold
 
             #TODO: Port debugging code if wanted
 
@@ -174,11 +174,11 @@ def switch_hidden(x):
             newrecr0 = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][0]
             newrecrf = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][1]
             newrecr_repeats0 = sum(recoded0[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * (chosenlocus))] == recoded0[x][newrecrf])
-            newrecr_repeatsf = sum(temprecoded == temprecoded[allpossiblerecrud[newclosestrecrud][0]]) #TODO: check na.rm
+            newrecr_repeatsf = np.nansum(temprecoded == temprecoded[allpossiblerecrud[newclosestrecrud][0]]) #TODO: check na.rm
 
             #TODO: Find python equivalent of na.rm
-            likelihoodnew = mean(dvect[round(newalldistance) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,newallrecrf[z]] + 1]) , np.arange(0, len(newallrecrf)))) * repeatednew
-            likelihoodold = mean(dvect[round(alldistance[x][chosenlocus]) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,allrecrf[x][chosenlocus][z]] + 1], np.arange(0, maxMOI * maxMOI)))) * repeatedold
+            likelihoodnew = np.nanmean(dvect[round(newalldistance) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,newallrecrf[z]] + 1]) , np.arange(0, len(newallrecrf)))) * repeatednew
+            likelihoodold = np.nanmean(dvect[round(alldistance[x][chosenlocus]) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,allrecrf[x][chosenlocus][z]] + 1], np.arange(0, maxMOI * maxMOI)))) * repeatedold
 
             #TODO: Add debugging if deemed necessary
 
