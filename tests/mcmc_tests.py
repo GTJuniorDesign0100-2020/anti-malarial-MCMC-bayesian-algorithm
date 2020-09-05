@@ -931,7 +931,7 @@ def test_update_dvect():
             d_posterior_beta = 1
 
         dposterior = np.random.beta(d_posterior_alpha, d_posterior_beta)
-        dvect = dposterior * (np.array(1-dposterior)**np.arange(1, dvect.size))
+        dvect = dposterior * (np.array(1-dposterior)**np.arange(0, dvect.size))
         dvect = dvect / np.sum(dvect)
 
     # TODO: Assert that dvect is updated correctly w/ beta function?

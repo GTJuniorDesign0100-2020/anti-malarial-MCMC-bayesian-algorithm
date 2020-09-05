@@ -318,39 +318,41 @@ def runmcmc():
             d_posterior_beta = 1
 
         dposterior = np.random.beta(d_posterior_alpha, d_posterior_beta)
-        dvect = dposterior * (np.array(1-dposterior)**np.arange(1, dvect.size))
+        dvect = dposterior * (np.array(1-dposterior)**np.arange(0, dvect.size))
         dvect = dvect / np.sum(dvect)
+
+    # update frequencies
+    # remove recrudescing alleles from calculations
+    tempdata = np.copy(recoded0)
+    recrudescent_alleles = np.where(classification==1)
+    tempdata[recrudescent_alleles, recr0[recrudescent_alleles,:]] = 0
+    tempdata = pd.concat([tempdata, recodedf])
+    for i in range(nloci):
+        findposteriorfrequencies(x, pd.concat([tempdata,recoded_additional_neutral]))
+
+    # record state
+    if (count > burnin and count % record_interval == 0):
+        print(count)
+        record_index = (count-burnin) / record_interval
+        state_classification[:,record_index] = classification
+        state_alleles0[:,:,record_index] = alleles0
+        state_allelesf[:,:,record_index] = allelesf
+        state_parameters[0,record_index] = qq
+        state_parameters[1,record_index] = dposterior
+        state_parameters[2:(2+nloci),record_index] = frequencies_RR[1].max(axis=0)
+        state_parameters[2+nloci : (2 + 2*nloci), record_index] = np.sum(frequencies_RR[1,:nloci,:]**2)
+    count += 1
+
+for i in range(nruns):
+    runmcmc()
 
 #===============================================================================
 #   THE LINE OF SANITY
 #   (code below this point has NOT been converted from R to Python)
 #===============================================================================
 
-    # update frequencies
-    # remove recrudescing alleles from calculations
-    tempdata = recoded0
-    sapply(which(classification == 1), function (x) tempdata[x,recr0[x,]] <<- 0)
-    tempdata = rbind(tempdata, recodedf)
-    sapply(1:nloci, function (x) findposteriorfrequencies(x,rbind(tempdata,recoded_additional_neutral)))
-
-    # record state
-    if (count > burnin & count %% record_interval == 0) {
-        print(count)
-        state_classification[,(count-burnin)/record_interval] <<- classification
-        state_alleles0[,,(count-burnin)/record_interval] <<- alleles0
-        state_allelesf[,,(count-burnin)/record_interval] <<- allelesf
-        state_parameters[1,(count-burnin)/record_interval] <<- qq
-        state_parameters[2,(count-burnin)/record_interval] <<- dposterior
-        state_parameters[3:(3+nloci-1),(count-burnin)/record_interval] <<- apply(frequencies_RR[[2]],1,max)
-        state_parameters[(3+nloci):(3+2*nloci-1),(count-burnin)/record_interval] <<- sapply(1:nloci,function (x) sum(frequencies_RR[[2]][x,]^2))
-
-    }
-    count <<- count + 1
-
-replicate(nruns,runmcmc())
-
 ## make sure no NAs in result matrices
-state_parameters = state_parameters[,~is.na(colSums(state_parameters))]
+state_parameters = state_parameters[:,~is.na(colSums(state_parameters))]
 state_classification = state_classification[,~is.na(colSums(state_classification))]
 
 ## find mode of hidden alleles
