@@ -3,14 +3,14 @@ import numpy as np
 import pandas as pd
 import itertools
 
-from calculate_frequencies import *
-from define_alleles import *
-from findposteriorfrequencies import *
-from Import_Microsattelite_Data import *
-from main import *
-from mcmc import *
-from recode_alleles import *
-from run_all_arms import *
+#from calculate_frequencies import *
+#from define_alleles import *
+#from findposteriorfrequencies import *
+#from Import_Microsattelite_Data import *
+#from main import *
+#from mcmc import *
+#from recode_alleles import *
+#from run_all_arms import *
 
 def switch_hidden(x):
     z = random.uniform((1,))
@@ -45,9 +45,9 @@ def switch_hidden(x):
                 #TODO: Below code had if block commented out. Double check scoping is correct. Also check closest recrud and alldistance[][][]
                 inputVectors = list(itertools.product(np.arange(MOI0[x], np.arange(MOIf[x]))))
                 allpossiblerecrud = pd.DateFrame(inputVectors)
-                closestrecrud = np.min(np.where(map(lambda y: abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]), np.arange(:pd.shape(allpossiblerecrud)[0]))))
+                closestrecrud = np.min(np.where(map(lambda y: abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]), np.arange(0, pd.shape(allpossiblerecrud)[0]))))
                 mindistance[x][chosenlocus] = abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[closetrecrud][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[closetrecrud][1]])
-                alldistance[x][chosenlocus][: pd.shape(allpossiblerecrud)[0]] =  map(lambda y: abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]) , np.arange(:pd.shape(allpossiblerecrud)[0]))
+                alldistance[x][chosenlocus][: pd.shape(allpossiblerecrud)[0]] =  map(lambda y: abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]) , np.arange(0, pd.shape(allpossiblerecrud)[0]))
                 allrecrf[x][chosenlocus][: pd.shape(allpossiblerecrud)[0]] = recodedf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[:,1]]
                 recr0[x][chosenlocus] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[closestrecrud][0]
                 recrf[x][chosenlocus] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[closestrecrud][1]
@@ -80,9 +80,9 @@ def switch_hidden(x):
 
                 inputVectors = list(itertools.product(np.arange(MOI0[x], np.arange(MOIf[x]))))
                 allpossiblerecrud = pd.DateFrame(inputVectors)
-                closetrecrud = np.min(np.where(map(lambda y: abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]), np.arange(:pd.shape(allpossiblerecrud)[0]))))
+                closetrecrud = np.min(np.where(map(lambda y: abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]), np.arange(0, pd.shape(allpossiblerecrud)[0]))))
                 mindistance[x][chosenlocus] = abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[closetrecrud][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[closetrecrud][1]])
-                alldistance[x][chosenlocus][: pd.shape(allpossiblerecrud)[0]] =  map(lambda y: abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]) , np.arange(:pd.shape(allpossiblerecrud)[0]))
+                alldistance[x][chosenlocus][: pd.shape(allpossiblerecrud)[0]] =  map(lambda y: abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]) , np.arange(0, pd.shape(allpossiblerecrud)[0]))
                 allrecrf[x][chosenlocus][: pd.shape(allpossiblerecrud)[0]] = recodedf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[:,1]]
                 recr0[x][chosenlocus] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[closestrecrud][0]
                 recrf[x][chosenlocus] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[closestrecrud][1]
@@ -110,9 +110,9 @@ def switch_hidden(x):
             temprecoded = recoded0[x][maxMOI * (chosenlocus - 1) + 1 : maxMOI]
             temprecoded[chosen - (chosenlocus - 1) * maxMOI] = new
 
-            newclosestrecrud = np.min(np.where(map(lambda y: abs(tempalleles[allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]), np.arange(:pd.shape(allpossiblerecrud)[0]))))
+            newclosestrecrud = np.min(np.where(map(lambda y: abs(tempalleles[allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]), np.arange(0, pd.shape(allpossiblerecrud)[0]))))
             newmindistance = abs(tempalleles[allpossiblerecrud[newclosestrecrud][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][1]])
-            newalldistance = map(lambda y: abs(tempalleles[allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenLocus - 1) + allpossiblerecrud[y][1]]) , np.arange(:pd.shape(allpossiblerecrud)[0]))
+            newalldistance = map(lambda y: abs(tempalleles[allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenLocus - 1) + allpossiblerecrud[y][1]]) , np.arange(0, pd.shape(allpossiblerecrud)[0]))
             newallrecrf = recodedf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[:,1]]
 
             #calculate new multiple-comparisons coefficient
@@ -122,8 +122,8 @@ def switch_hidden(x):
             newrecr_repeatsf = sum(recodedf[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * (chosenlocus))] == recodedf[x][newrecrf])
 
             #TODO: Find python equivalent of na.rm
-            likelihoodnew = mean(dvect[round(newalldistance) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][,:newallrecrf[z]] + 1]) , np.arange(: len(newallrecrf)))) * repeatednew
-            likelihoodold = mean(dvect[round(alldistance[x][chosenlocus]) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][,:allrecrf[x][chosenlocus][z]] + 1], np.arange(:maxMOI * maxMOI))) * repeatedold
+            likelihoodnew = mean(dvect[round(newalldistance) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,newallrecrf[z]] + 1]) , np.arange(0, len(newallrecrf)))) * repeatednew
+            likelihoodold = mean(dvect[round(alldistance[x][chosenlocus]) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,allrecrf[x][chosenlocus][z]] + 1], np.arange(0, maxMOI * maxMOI)))) * repeatedold
 
             #TODO: Port debugging code if wanted
 
@@ -165,9 +165,9 @@ def switch_hidden(x):
             temprecoded = recodedf[x][maxMOI * (chosenlocus - 1) + 1 : maxMOI]
             temprecoded[chosen - (chosenlocus - 1) * maxMOI] = new
 
-            newclosestrecrud = np.min(np.where(map(lambda y: abs(tempalleles[allpossiblerecrud[y][1]] - alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][0]]), np.arange(:pd.shape(allpossiblerecrud)[0]))))
+            newclosestrecrud = np.min(np.where(map(lambda y: abs(tempalleles[allpossiblerecrud[y][1]] - alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][0]]), np.arange(0, pd.shape(allpossiblerecrud)[0]))))
             newmindistance = abs(tempalleles[allpossiblerecrud[newclosestrecrud][1]] - alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][0]])
-            newalldistance = map(lambda y: abs(tempalleles[allpossiblerecrud[y][1]] - alleles0[x][maxMOI * (chosenLocus - 1) + allpossiblerecrud[y][0]]) , np.arange(:pd.shape(allpossiblerecrud)[0]))
+            newalldistance = map(lambda y: abs(tempalleles[allpossiblerecrud[y][1]] - alleles0[x][maxMOI * (chosenLocus - 1) + allpossiblerecrud[y][0]]) , np.arange(0, pd.shape(allpossiblerecrud)[0]))
             newallrecrf = temprecoded[allpossiblerecrud][:,1]
 
             #calculate new multiple-comparisons coefficient
@@ -177,8 +177,8 @@ def switch_hidden(x):
             newrecr_repeatsf = sum(temprecoded == temprecoded[allpossiblerecrud[newclosestrecrud][0]]) #TODO: check na.rm
 
             #TODO: Find python equivalent of na.rm
-            likelihoodnew = mean(dvect[round(newalldistance) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][,:newallrecrf[z]] + 1]) , np.arange(: len(newallrecrf)))) * repeatednew
-            likelihoodold = mean(dvect[round(alldistance[x][chosenlocus]) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][,:allrecrf[x][chosenlocus][z]] + 1], np.arange(:maxMOI * maxMOI))) * repeatedold
+            likelihoodnew = mean(dvect[round(newalldistance) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,newallrecrf[z]] + 1]) , np.arange(0, len(newallrecrf)))) * repeatednew
+            likelihoodold = mean(dvect[round(alldistance[x][chosenlocus]) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,allrecrf[x][chosenlocus][z]] + 1], np.arange(0, maxMOI * maxMOI)))) * repeatedold
 
             #TODO: Add debugging if deemed necessary
 
