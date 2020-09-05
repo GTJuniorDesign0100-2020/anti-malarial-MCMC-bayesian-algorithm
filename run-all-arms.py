@@ -28,10 +28,16 @@ def onLoad(genotypedata_latefailures,additional_genotypedata):
         condition = (additional_genotypedata[:, site_column] == site)
         additional_neutral = additional_genotypedata[condition]
 
-        # iffy about this translation.
+        # Remember that R indexes from 1, not zero.
         if additional_neutral.shape[0] > 0:
-            # Not sure what's happening here....?
-            break
+            range = np.arange(1, additional_neutral.shape[0])
+            str_range = np.array2string(range, separator='')
+            str_range = str_range[1:len(str_range) - 1]
+            str_append = 'Additional_' + str_range
+            # This is where I am beginning to see an issue.
+            # At this point in the R script, we set the Sample element's ID to 'str_append'.
+            # That doesn't work here. Why not? Because we're working with a numpy array, not a DataFrame.
+            # In short, numpy array wont HAVE elements, its an array, not an obj.
 
         # I THINK that mcmc.r is generating all this when it is run via source('mcmc.r') in the r script.
         (state_classification, state_parameters, ids) = runMCMC()
