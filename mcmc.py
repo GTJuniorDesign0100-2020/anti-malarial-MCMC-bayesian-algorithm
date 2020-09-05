@@ -305,30 +305,26 @@ def runmcmc():
         q_posterior_beta = 1
     qq = np.random.beta(q_posterior_alpha, q_posterior_beta)
 
+    #  update dvect (approximate using geometric distribution)
+    # only if there is at least 1 recrudescent infection
+    if np.sum(classification==1) >= 1:
+        d_prior_alpha = 0
+        d_prior_beta = 0
+        d_posterior_alpha = d_prior_alpha + mindistance[classification==1,:].size
+        d_posterior_beta = d_prior_beta + np.sum(np.round(mindistance[classification==1,:]))
+        if (d_posterior_beta == 0):
+            d_posterior_beta = np.sum(mindistance[classification==1,:])
+        if (d_posterior_beta == 0): ## algorithm will get stuck if dposterior is allowed to go to 1 (TODO: Wait, so why is it setting d_posterior_beta to 1??)
+            d_posterior_beta = 1
+
+        dposterior = np.random.beta(d_posterior_alpha, d_posterior_beta)
+        dvect = dposterior * (np.array(1-dposterior)**np.arange(1, dvect.size))
+        dvect = dvect / np.sum(dvect)
+
 #===============================================================================
 #   THE LINE OF SANITY
 #   (code below this point has NOT been converted from R to Python)
 #===============================================================================
-
-    #  update dvect (approximate using geometric distribution)
-    # only if there is at least 1 recrudescent infection
-    if (sum(classification==1) >= 1) {
-    d_prior_alpha = 0;
-    d_prior_beta = 0;
-    d_posterior_alpha = d_prior_alpha + length(c(mindistance[classification==1,]))
-    d_posterior_beta = d_prior_beta + sum(c(round(mindistance[classification==1,])))
-    if (d_posterior_beta == 0) {
-        d_posterior_beta = sum(c((mindistance[classification==1,])))
-    }
-    if (d_posterior_beta == 0) { ## algorithm will get stuck if dposterior is allowed to go to 1
-        d_posterior_beta = 1
-    }
-
-
-    dposterior <<- rbeta(1, d_posterior_alpha , d_posterior_beta)
-    dvect = (1-dposterior) ^ (1:length(dvect)-1) * dposterior
-    dvect <<- dvect / (sum(dvect))
-    }
 
     # update frequencies
     # remove recrudescing alleles from calculations
@@ -354,8 +350,8 @@ def runmcmc():
 replicate(nruns,runmcmc())
 
 ## make sure no NAs in result matrices
-state_parameters = state_parameters[,!is.na(colSums(state_parameters))]
-state_classification = state_classification[,!is.na(colSums(state_classification))]
+state_parameters = state_parameters[,~is.na(colSums(state_parameters))]
+state_classification = state_classification[,~is.na(colSums(state_classification))]
 
 ## find mode of hidden alleles
 modealleles = matrix("",2*nids,maxMOI*nloci)

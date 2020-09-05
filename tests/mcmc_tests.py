@@ -909,6 +909,32 @@ def test_run_mcmc_new_proposal():
         q_posterior_beta = 1
     qq = np.random.beta(q_posterior_alpha, q_posterior_beta)
 
+def test_update_dvect():
+    nids = 6
+    nloci = 7
+
+    classification = np.repeat(0, nids)
+    classification[0] = 1
+    mindistance = np.zeros((nids, nloci))
+
+    dvect = np.ones(133)
+
+    # Inputs needed: classification, mindistance, dvect
+    if np.sum(classification==1) >= 1:
+        d_prior_alpha = 0
+        d_prior_beta = 0
+        d_posterior_alpha = d_prior_alpha + mindistance[classification==1,:].size
+        d_posterior_beta = d_prior_beta + np.sum(np.round(mindistance[classification==1,:]))
+        if (d_posterior_beta == 0):
+            d_posterior_beta = np.sum(mindistance[classification==1,:])
+        if (d_posterior_beta == 0): ## algorithm will get stuck if dposterior is allowed to go to 1 (TODO: Wait, so why is it setting d_posterior_beta to 1??)
+            d_posterior_beta = 1
+
+        dposterior = np.random.beta(d_posterior_alpha, d_posterior_beta)
+        dvect = dposterior * (np.array(1-dposterior)**np.arange(1, dvect.size))
+        dvect = dvect / np.sum(dvect)
+
+    # TODO: Assert that dvect is updated correctly w/ beta function?
 
 # =============================================================================
 
@@ -925,3 +951,4 @@ test_create_dvect()
 test_initialize_recrudesences()
 test_correction_factor()
 test_run_mcmc_new_proposal()
+test_update_dvect()
