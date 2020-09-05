@@ -1,9 +1,11 @@
 import numpy as np
+import run_all_arms;
+import mcmc;
 
 
 def findposteriorfrequencies(x, tempdata):
-    data = tempdata[:,1:maxMOI+(x-1)*maxMOI];
-    nalleles = frequencies_RR[[1]][x];
+    data = tempdata[:,1:mcmc.onload.maxMOI+(x-1)*mcmc.onload.maxMOI];
+    nalleles = run_all_arms.onload.frequencies_RR[[1]][x];
     freq_prior_alpha = [1]*nalleles;
 
     # hard coded table() function from R 
