@@ -5,10 +5,12 @@ import pandas as pd
 
 ##### read in data
 
-inputfile = "Angola2017_example.xlsx";
+def onload():
 
-excel_file = pd.ExcelFile(inputfile);
-genotypedata_latefailures = excel_file.parse("Late Treatment Failures", skiprows=3);
+  inputfile = "Angola2017_example.xlsx";
+
+  excel_file = pd.ExcelFile(inputfile);
+  genotypedata_latefailures = excel_file.parse("Late Treatment Failures", skiprows=3);
 
 
 #genotypedata_latefailures[genotypedata_latefailures == 0] = 'NA'; # missing data has to be coded as NA
@@ -20,32 +22,32 @@ genotypedata_latefailures = excel_file.parse("Late Treatment Failures", skiprows
 
 
 ### recode sample names so that each pair has a " Day 0" and a " Day Failure"
-SampleID = genotypedata_latefailures["Sample ID"];
-for index, text in SampleID.iteritems():
-  end = text[-3:];
-  if end[0] == '_':
-    SampleID[index] = text.replace(end, "_ Day 0");
-  if end[0] == 'D': 
-    SampleID[index] = text.replace(end, " Day Failure");
+  SampleID = genotypedata_latefailures["Sample ID"];
+  for index, text in SampleID.iteritems():
+    end = text[-3:];
+    if end[0] == '_':
+      SampleID[index] = text.replace(end, "_ Day 0");
+    if end[0] == 'D': 
+      SampleID[index] = text.replace(end, " Day Failure");
 
-  genotypedata_latefailures["Sample ID"] = genotypedata_latefailures["Sample ID"].replace([index], SampleID[index]);
+    genotypedata_latefailures["Sample ID"] = genotypedata_latefailures["Sample ID"].replace([index], SampleID[index]);
 
 
 # each sample in genotypedata_RR has to have day 0 and day of Failure
-patients = [];
-for index, text in SampleID.iteritems():
-  patient = text[0:7];
-  patients.append(patient);
+  patients = [];
+  for index, text in SampleID.iteritems():
+    patient = text[0:7];
+    patients.append(patient);
 
-for patient in patients:
-  count = patients.count(patient);
-  if count % 2 != 0:
-    print("Error - each sample must have day 0 and day of failure data");
+  for patient in patients:
+    count = patients.count(patient);
+    if count % 2 != 0:
+      print("Error - each sample must have day 0 and day of failure data");
 
 ### background samples (from "Additional" tab)
   
 
-additional_genotypedata = excel_file.parse("Additional", skiprows=3);
+  additional_genotypedata = excel_file.parse("Additional", skiprows=3);
 
 
 #  if (dim(additional_genotypedata)[1] > 0) { 
