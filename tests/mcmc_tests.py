@@ -2,6 +2,7 @@
 A series of tests to make sure mcmc.py's functionality is equivalent to mcmc.r's
 
 TODO: Use an actual testing framework?
+TODO: Double-check axes of EVERYTHING (I'm worried I might've mixed up running function on column/row axes with numpy functions)
 """
 
 import numpy as np
@@ -910,6 +911,7 @@ def test_run_mcmc_new_proposal():
         q_posterior_beta = 1
     qq = np.random.beta(q_posterior_alpha, q_posterior_beta)
 
+
 def test_update_dvect():
     nids = 6
     nloci = 7
@@ -921,21 +923,26 @@ def test_update_dvect():
     dvect = np.ones(133)
 
     # Inputs needed: classification, mindistance, dvect
-    if np.sum(classification==1) >= 1:
+    if np.sum(classification == 1) >= 1:
         d_prior_alpha = 0
         d_prior_beta = 0
-        d_posterior_alpha = d_prior_alpha + mindistance[classification==1,:].size
-        d_posterior_beta = d_prior_beta + np.sum(np.round(mindistance[classification==1,:]))
-        if (d_posterior_beta == 0):
-            d_posterior_beta = np.sum(mindistance[classification==1,:])
-        if (d_posterior_beta == 0): ## algorithm will get stuck if dposterior is allowed to go to 1 (TODO: Wait, so why is it setting d_posterior_beta to 1??)
+        d_posterior_alpha = d_prior_alpha + mindistance[classification == 1, :].size
+        d_posterior_beta = d_prior_beta + np.sum(
+            np.round(mindistance[classification == 1, :])
+        )
+        if d_posterior_beta == 0:
+            d_posterior_beta = np.sum(mindistance[classification == 1, :])
+        if (
+            d_posterior_beta == 0
+        ):  ## algorithm will get stuck if dposterior is allowed to go to 1 (TODO: Wait, so why is it setting d_posterior_beta to 1??)
             d_posterior_beta = 1
 
         dposterior = np.random.beta(d_posterior_alpha, d_posterior_beta)
-        dvect = dposterior * (np.array(1-dposterior)**np.arange(0, dvect.size))
+        dvect = dposterior * (np.array(1 - dposterior) ** np.arange(0, dvect.size))
         dvect = dvect / np.sum(dvect)
 
     # TODO: Assert that dvect is updated correctly w/ beta function?
+
 
 def test_find_allele_modes():
     maxMOI = 5
@@ -946,10 +953,8 @@ def test_find_allele_modes():
     alleles0 = 100 * np.random.random_sample((nids, maxMOI * nloci))
     allelesf = 100 * np.random.random_sample((nids, maxMOI * nloci))
 
-    state_alleles0 = np.full_like(
-        np.empty((nids, maxMOI*nloci, 12)), np.nan)
-    state_allelesf = np.full_like(
-        np.empty((nids, maxMOI*nloci, 12)), np.nan)
+    state_alleles0 = np.full_like(np.empty((nids, maxMOI * nloci, 12)), np.nan)
+    state_allelesf = np.full_like(np.empty((nids, maxMOI * nloci, 12)), np.nan)
 
     for i in range(12):
         state_alleles0[:, :, i] = alleles0
@@ -957,18 +962,59 @@ def test_find_allele_modes():
 
     ## find mode of hidden alleles
     # TODO: Why was this an array of strings?
-    modealleles = np.zeros((2*nids,maxMOI*nloci))
+    modealleles = np.zeros((2 * nids, maxMOI * nloci))
     for i in range(nids):
         for j in range(nloci):
-            modealleles[2*i, j*maxMOI:(j+1)*maxMOI] = sp_stats.mode(
-                state_alleles0[i,j*maxMOI:(j+1)*maxMOI,:],
-                axis=1
+            modealleles[2 * i, j * maxMOI : (j + 1) * maxMOI] = sp_stats.mode(
+                state_alleles0[i, j * maxMOI : (j + 1) * maxMOI, :], axis=1
             )[0].ravel()
 
-            modealleles[2*i+1, j*maxMOI:(j+1)*maxMOI] = sp_stats.mode(
-                state_allelesf[i,j*maxMOI:(j+1)*maxMOI,:],
-                axis=1
+            modealleles[2 * i + 1, j * maxMOI : (j + 1) * maxMOI] = sp_stats.mode(
+                state_allelesf[i, j * maxMOI : (j + 1) * maxMOI, :], axis=1
             )[0].ravel()
+
+
+def test_summary_stats_output():
+    maxMOI = 5
+    nids = 6
+    nloci = 7
+
+    ## TODO: Stubbed data
+    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
+    state_parameters = np.random.random_sample((2 + 2 * nloci, 25))
+    jobname = "TEST"
+
+    # summary statistics of parameters
+    pd.DataFrame(state_parameters).to_csv(f"{jobname}_state_parameters.csv")
+
+    summary_statisticsmatrix = np.concatenate(
+        (
+            np.mean(state_parameters, axis=1).reshape(-1, 1),
+            np.quantile(state_parameters, (0.25, 0.75), axis=1).T,
+        ),
+        axis=1,
+    )
+    summary_statisticsmatrix = np.concatenate(
+        (
+            summary_statisticsmatrix,
+            np.append(
+                np.quantile(state_parameters[2 + nloci :, :], (0.25, 0.75)),
+                np.mean(state_parameters[2 + nloci :, :]),
+            ).reshape(1, -1),
+        )
+    )
+    summary_statisticsmatrix = np.array(
+        [
+            f"{summary_statisticsmatrix[i,0]:.2f} ({summary_statisticsmatrix[i,1]:.2f}, {summary_statisticsmatrix[i,2]:.2f})"
+            for i in range(summary_statisticsmatrix.shape[0])
+        ]
+    )
+    summary_statisticsmatrix_df = pd.DataFrame(
+        summary_statisticsmatrix,
+        index=["q", "d", *locinames.tolist(), *locinames.tolist(), "Mean diversity"],
+    )
+    summary_statisticsmatrix_df.to_csv(f"{jobname}_summarystatistics.csv")
+
 
 # =============================================================================
 
@@ -987,3 +1033,4 @@ test_correction_factor()
 test_run_mcmc_new_proposal()
 test_update_dvect()
 test_find_allele_modes()
+test_summary_stats_output()
