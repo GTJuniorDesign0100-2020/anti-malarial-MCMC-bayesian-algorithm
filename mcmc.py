@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import scipy.stats as sp_stats
 
 from define_alleles import *
 from calculate_frequencies import *
@@ -346,23 +347,27 @@ def runmcmc():
 for i in range(nruns):
     runmcmc()
 
+## make sure no NAs in result matrices
+state_parameters = state_parameters[:,~np.isnan(np.sum(state_parameters, axis=1))]
+state_classification = state_classification[:,~np.isnan(np.sum(state_classification, axis=1))]
+
+modealleles = np.zeros((2*nids,maxMOI*nloci))
+for i in range(nids):
+    for j in range(nloci):
+        modealleles[2*i, j*maxMOI:(j+1)*maxMOI] = sp_stats.mode(
+            state_alleles0[i,j*maxMOI:(j+1)*maxMOI,:],
+            axis=1
+        )[0].ravel()
+
+        modealleles[2*i+1, j*maxMOI:(j+1)*maxMOI] = sp_stats.mode(
+            state_allelesf[i,j*maxMOI:(j+1)*maxMOI,:],
+            axis=1
+        )[0].ravel()
+
 #===============================================================================
 #   THE LINE OF SANITY
 #   (code below this point has NOT been converted from R to Python)
 #===============================================================================
-
-## make sure no NAs in result matrices
-state_parameters = state_parameters[:,~is.na(colSums(state_parameters))]
-state_classification = state_classification[,~is.na(colSums(state_classification))]
-
-## find mode of hidden alleles
-modealleles = matrix("",2*nids,maxMOI*nloci)
-for (i in 1:nids) {
-    for (j in 1:nloci) {
-        modealleles[2*(i-1)+1,((j-1)*maxMOI+1):(j*maxMOI)] = sapply(1:maxMOI, function (x) names(table(state_alleles0[i,(j-1)*maxMOI+x,]))[table(state_alleles0[i,(j-1)*maxMOI+x,])== max(table(state_alleles0[i,(j-1)*maxMOI+x,]))][1])
-        modealleles[2*(i-1)+2,((j-1)*maxMOI+1):(j*maxMOI)] = sapply(1:maxMOI, function (x) names(table(state_allelesf[i,(j-1)*maxMOI+x,]))[table(state_allelesf[i,(j-1)*maxMOI+x,])== max(table(state_allelesf[i,(j-1)*maxMOI+x,]))][1])
-    }
-}
 
 rowMeans2 = function(x){
     if (length(dim(x)) == 0) {

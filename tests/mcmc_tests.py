@@ -6,6 +6,7 @@ TODO: Use an actual testing framework?
 
 import numpy as np
 import pandas as pd
+import scipy.stats as sp_stats
 
 """
 Full example genotype_RR dataframe in R:
@@ -936,6 +937,39 @@ def test_update_dvect():
 
     # TODO: Assert that dvect is updated correctly w/ beta function?
 
+def test_find_allele_modes():
+    maxMOI = 5
+    nids = 6
+    nloci = 7
+
+    # TODO: Stubbed data
+    alleles0 = 100 * np.random.random_sample((nids, maxMOI * nloci))
+    allelesf = 100 * np.random.random_sample((nids, maxMOI * nloci))
+
+    state_alleles0 = np.full_like(
+        np.empty((nids, maxMOI*nloci, 12)), np.nan)
+    state_allelesf = np.full_like(
+        np.empty((nids, maxMOI*nloci, 12)), np.nan)
+
+    for i in range(12):
+        state_alleles0[:, :, i] = alleles0
+        state_allelesf[:, :, i] = allelesf
+
+    ## find mode of hidden alleles
+    # TODO: Why was this an array of strings?
+    modealleles = np.zeros((2*nids,maxMOI*nloci))
+    for i in range(nids):
+        for j in range(nloci):
+            modealleles[2*i, j*maxMOI:(j+1)*maxMOI] = sp_stats.mode(
+                state_alleles0[i,j*maxMOI:(j+1)*maxMOI,:],
+                axis=1
+            )[0].ravel()
+
+            modealleles[2*i+1, j*maxMOI:(j+1)*maxMOI] = sp_stats.mode(
+                state_allelesf[i,j*maxMOI:(j+1)*maxMOI,:],
+                axis=1
+            )[0].ravel()
+
 # =============================================================================
 
 np.random.seed(0)
@@ -952,3 +986,4 @@ test_initialize_recrudesences()
 test_correction_factor()
 test_run_mcmc_new_proposal()
 test_update_dvect()
+test_find_allele_modes()
