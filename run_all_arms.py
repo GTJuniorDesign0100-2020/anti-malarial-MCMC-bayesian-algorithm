@@ -1,25 +1,24 @@
 import numpy as np
 import pandas as pd
 from Import_Microsatellite_Data import *
+import mcmc
 
 # Use this when encapsulating the code for this script.
-def onLoad(genotypedata_latefailures,additional_genotypedata):
-    site_names = siteNames()
+def onload(genotypedata_latefailures,additional_genotypedata, locirepeats, nruns, burnin, record_interval):
+    site_names = siteNames(genotypedata_latefailures)
     state_classification_all = pd.DataFrame()
     state_parameters_all = pd.DataFrame()
-    ids_all = np.array()  # 1-D vector
+    ids_all = np.array([])  # 1-D vector
 
     for site in site_names:
-        # jobname = site | unecessary declaration.
 
         # all rows from the table which have the current site.
-        site_column = 1
-        condition = (genotypedata_latefailures[:, site_column] == site)
+        condition = (genotypedata_latefailures['Site'] == site)
         genoTypeData_RR = genotypedata_latefailures[condition]
 
         # new table, might have new row.
         site_column = 1
-        condition = (additional_genotypedata[:, site_column] == site)
+        condition = (additional_genotypedata['Site'] == site)
         additional_neutral = additional_genotypedata[condition]
 
         # Remember that R indexes from 1, not zero.
@@ -34,7 +33,8 @@ def onLoad(genotypedata_latefailures,additional_genotypedata):
             # In short, numpy array wont HAVE elements, its an array, not an obj.
 
         # I THINK that mcmc.r is generating all this when it is run via source('mcmc.r') in the r script.
-        (state_classification, state_parameters, ids) = runMCMC()
+        #(state_classification, state_parameters, ids) = runMCMC()
+        (state_classification, state_parameters, ids) = mcmc.onload(genoTypeData_RR, additional_neutral, locirepeats, nruns, burnin, record_interval, site, )
 
         # Not sure about concatenate vs append. Must be tested to confirm this concatenates rows of two similar tables.
         state_classification_all = state_classification_all.append(state_classification, ignore_index=True)
@@ -65,7 +65,7 @@ def onLoad(genotypedata_latefailures,additional_genotypedata):
     return
 
 # place holder for a global variable. Use it to wrap the logic to access a vector of site names for now.
-def siteNames():
+def siteNames(genotypedata_latefailures):
     all_sites = pd.unique(genotypedata_latefailures["Site"])
     return all_sites
 
@@ -74,7 +74,7 @@ def siteNames():
 def runMCMC():
     state_classification = pd.DataFrame()
     state_parameters = pd.DataFrame()
-    ids = np.array()
+    ids = np.array([])
     return state_classification, state_parameters, ids
 
 def runMCMCscript():

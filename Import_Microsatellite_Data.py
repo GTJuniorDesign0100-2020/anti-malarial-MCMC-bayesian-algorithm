@@ -27,7 +27,7 @@ def onload():
     end = text[-3:];
     if end[0] == '_':
       SampleID[index] = text.replace(end, "_ Day 0");
-    if end[0] == 'D': 
+    if end[0] == 'D':
       SampleID[index] = text.replace(end, " Day Failure");
 
     genotypedata_latefailures["Sample ID"] = genotypedata_latefailures["Sample ID"].replace([index], SampleID[index]);
@@ -45,12 +45,13 @@ def onload():
       print("Error - each sample must have day 0 and day of failure data");
 
 ### background samples (from "Additional" tab)
-  
+
 
   additional_genotypedata = excel_file.parse("Additional", skiprows=3);
+  return genotypedata_latefailures, additional_genotypedata
 
 
-#  if (dim(additional_genotypedata)[1] > 0) { 
+#  if (dim(additional_genotypedata)[1] > 0) {
 #    additional_genotypedata[additional_genotypedata == 0] = NA # missing data has to be coded as NA
 #    additional_genotypedata[additional_genotypedata == "0"] = NA
 #    additional_genotypedata[additional_genotypedata == "N/A"] = NA
@@ -59,7 +60,7 @@ def onload():
 #    additional_genotypedata$Sample.ID = sub("_D0"," Day 0",additional_genotypedata$Sample.ID)
 #    additional_genotypedata$Sample.ID = sub("_D[0-9]*"," Day Failure",additional_genotypedata$Sample.ID)
 #  }
-  
+
 
 # recode as numeric
 
@@ -67,4 +68,3 @@ def onload():
 #genotypedata_latefailures[columns[-2:]] = genotypedata_latefailures[columns[-2:]].map(function (x) int(character(genotypedata_latefailures[,x])));
 
 #additional_genotypedata[,colnames(additional_genotypedata)[-c(1,2)]] = sapply(colnames(additional_genotypedata)[-c(1,2)],function (x) as.numeric(as.character(additional_genotypedata[,x])))
-  

@@ -4,14 +4,14 @@ import math
 
 """ generate definitions of alleles (i.e. binning)
 	inputs (parameters):
-		- genotypedata: 
+		- genotypedata:
 			type: pandas dataframe
-			description: genetic data, where first column (name 'Sample ID') has the id of the sample, 
+			description: genetic data, where first column (name 'Sample ID') has the id of the sample,
 						 and rest of columns have the format nameoflocus_X, where X is the xth allele detected
-		- locirepeats: 
-			type: numpy.array 
+		- locirepeats:
+			type: numpy.array
 			description: a vector of length number of loci with type of locus (dinucleotide, trinucleotide, etc. repeats)
-		- maxk: 
+		- maxk:
 			type: numpy.array
 			description: a vector of length of loci with the maximum number of alleles for each locus
 
@@ -63,6 +63,7 @@ def define_alleles(genotypedata, locirepeats, maxk):
 			n += 1
 		raw_alleles = [loci for loci in raw_alleles if str(loci) != 'nan']
 
+		print(raw_alleles)
 		if (max(raw_alleles) - min(raw_alleles)) < locirepeats[j]:
 			# find break values(lower and upper)
 			lower_break_value = []
@@ -188,7 +189,7 @@ def define_alleles(genotypedata, locirepeats, maxk):
 	# take maxk most frequent alleles
 	alleles2 = []
 	for i in range(nloci):
-		
+
 		sortedindex = []
 		current_count = alleles[i]['counts'].tolist()
 

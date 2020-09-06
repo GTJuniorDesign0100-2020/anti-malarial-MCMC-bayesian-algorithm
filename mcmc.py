@@ -12,8 +12,7 @@ from findposteriorfrequencies import *
 def onload(
     # global variables
     genotypedata_RR, additional_neutral, locirepeats, nruns, burnin, record_interval, jobname,
-    # function imports
-    define_alleles, calculate_frequencies3, recodeallele, findposteriorfrequencies):
+    ):
     # MOI = multiplicity of infection
     maxMOI = np.nanmax(  # Return array max, ignoring NaNs
         # NOTE: Assuming genotypedata_RR is a pandas dataframe
@@ -24,8 +23,8 @@ def onload(
 
     # Get the unique Sample IDs in the dataset
     ids = np.unique(
-        genotypedata_RR[genotypedata_RR["Sample.ID"].str.contains("Day 0")][
-            "Sample.ID"
+        genotypedata_RR[genotypedata_RR["Sample ID"].str.contains("Day 0")][
+            "Sample ID"
         ].str.replace(" Day 0", "")
     )
     # Ditto, the unique loci for the set
@@ -52,12 +51,12 @@ def onload(
 
             nalleles0 = np.count_nonzero(
                 ~genotypedata_RR.loc[
-                    genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day 0"), locicolumns
+                    genotypedata_RR["Sample ID"].str.contains(f"{ID} Day 0"), locicolumns
                 ].isna()
             )
             nallelesf = np.count_nonzero(
                 ~genotypedata_RR.loc[
-                    genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day Failure"),
+                    genotypedata_RR["Sample ID"].str.contains(f"{ID} Day Failure"),
                     locicolumns,
                 ].isna()
             )
@@ -115,16 +114,16 @@ def onload(
         endColumnOldAllele = maxMOI * (i - 1) + oldalleles.shape[1]
         endColumnNewAllele = maxMOI * (i - 1) + newalleles.shape[1]
         alleles0[:, startColumn:endColumnOldAllele] = oldalleles[
-            genotypedata_RR["Sample.ID"].str.contains("Day 0"), :
+            genotypedata_RR["Sample ID"].str.contains("Day 0"), :
         ]
         allelesf[:, startColumn:endColumnOldAllele] = oldalleles[
-            genotypedata_RR["Sample.ID"].str.contains("Day Failure"), :
+            genotypedata_RR["Sample ID"].str.contains("Day Failure"), :
         ]
         recoded0[:, startColumn:endColumnNewAllele] = newalleles[
-            genotypedata_RR["Sample.ID"].str.contains("Day 0"), :
+            genotypedata_RR["Sample ID"].str.contains("Day 0"), :
         ]
         recodedf[:, startColumn:endColumnNewAllele] = newalleles[
-            genotypedata_RR["Sample.ID"].str.contains("Day Failure"), :
+            genotypedata_RR["Sample ID"].str.contains("Day Failure"), :
         ]
 
     ##### recode additional_neutral, if needed
