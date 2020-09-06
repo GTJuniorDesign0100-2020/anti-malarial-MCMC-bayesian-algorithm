@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 import scipy.stats as sp_stats
 
+from recode_alleles import *
+
 """
 Full example genotype_RR dataframe in R:
 
@@ -512,13 +514,11 @@ def test_create_initial_state():
         """
         newalleles = np.copy(oldalleles)
         ncolumns = oldalleles.shape[1]
-        """
         for j in range(ncolumns):
-            # TODO: Can't test until I have a recodeallele implementation
             newalleles[:,j] = np.array(list(map(
-                range(0, oldalleles.shape[0]),
-                lambda x: recodeallele(alleles_definitions_RR[i], oldalleles[x,j]))))
-        """
+                lambda x: recodeallele(alleles_definitions_RR[i], oldalleles[x,j]),
+                range(0, oldalleles.shape[0])
+                )))
         newalleles[np.isnan(newalleles)] = 0
         oldalleles[np.isnan(oldalleles)] = 0
 
@@ -578,13 +578,11 @@ def test_recode_additional_neutral():
         """
         newalleles = np.copy(oldalleles)
         ncolumns = oldalleles.shape[1]
-        """
         for j in range(ncolumns):
-            # TODO: Can't test until I have a recodeallele implementation
             newalleles[:,j] = np.array(list(map(
-                range(0, oldalleles.shape[0]),
-                lambda x: recodeallele(alleles_definitions_RR[i], oldalleles[x,j]))))
-        """
+                lambda x: recodeallele(alleles_definitions_RR[i], oldalleles[x,j]),
+                range(0, oldalleles.shape[0])
+                )))
         newalleles[np.isnan(newalleles)] = 0
         oldalleles[np.isnan(oldalleles)] = 0
 

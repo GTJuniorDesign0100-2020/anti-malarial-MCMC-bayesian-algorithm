@@ -14,12 +14,12 @@ def onload(
     genotypedata_RR, additional_neutral, locirepeats, nruns, burnin, record_interval, jobname,
     ):
     # MOI = multiplicity of infection
-    maxMOI = np.nanmax(  # Return array max, ignoring NaNs
+    maxMOI = int(np.nanmax(  # Return array max, ignoring NaNs
         # NOTE: Assuming genotypedata_RR is a pandas dataframe
         # Split string like so: https://cmdlinetips.com/2018/06/how-to-split-a-column-or-column-names-in-pandas-and-get-part-of-it/
         # Gets the
         pd.to_numeric(genotypedata_RR.columns.str.split("_").str[1])
-    )
+    ))
 
     # Get the unique Sample IDs in the dataset
     ids = np.unique(
@@ -101,8 +101,9 @@ def onload(
         ncolumns = oldalleles.shape[1]
         for j in range(ncolumns):
             newalleles[:,j] = np.array(list(map(
-                range(0, oldalleles.shape[0]),
-                lambda x: recodeallele(alleles_definitions_RR[i], oldalleles[x,j]))))
+                lambda x: recodeallele(alleles_definitions_RR[i].to_numpy(), oldalleles[x,j]),
+                range(0, oldalleles.shape[0])
+                )))
         newalleles[np.isnan(newalleles)] = 0
         oldalleles[np.isnan(oldalleles)] = 0
 
