@@ -11,7 +11,7 @@ import run_all_arms
 
 # user inputs
 inputfile = "Angola2017_example.xlsx";
-locirepeats = np.array([[2,2,3,3,3,3,3]]);
+locirepeats = np.array([2,2,3,3,3,3,3]);
 nruns = 1000;
 
 # call script to import data
