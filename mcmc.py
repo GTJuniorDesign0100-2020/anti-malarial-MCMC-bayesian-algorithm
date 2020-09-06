@@ -163,7 +163,7 @@ def onload(
 
     ## estimate frequencies
     frequencies_RR = calculate_frequencies3(
-        pd.concat(genotypedata_RR, additional_neutral), alleles_definitions_RR
+        pd.concat([genotypedata_RR, additional_neutral]), alleles_definitions_RR
     )
 
     ## assign random hidden alleles
@@ -192,12 +192,11 @@ def onload(
             if nmissing0 > 0:
                 newhiddenalleles0 = np.random.choice(
                     np.arange(
-                        0, int(frequencies_RR[0, j, 0])
+                        0, int(frequencies_RR[0][j])
                     ),  # Select from first row (count of how many probabilities they are)
                     size=nmissing0,
                     replace=True,
-                    p=frequencies_RR[1, j, 0 : int(frequencies_RR[0, j, 0])]
-                    / frequencies_RR[1, j, 0 : int(frequencies_RR[0, j, 0])].sum(),
+                    p=frequencies_RR[1][j, 0: int(frequencies_RR[0][j])]
                 )  # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
                 recoded0[i, whichmissing0] = newhiddenalleles0
                 # calculate row means
@@ -222,12 +221,11 @@ def onload(
             if nmissingf > 0:
                 newhiddenallelesf = np.random.choice(
                     np.arange(
-                        0, int(frequencies_RR[0, j, 0])
+                        0, int(frequencies_RR[0][j])
                     ),  # Select from first row (count of how many probabilities they are)
                     size=nmissingf,
                     replace=True,
-                    p=frequencies_RR[1, j, 0 : int(frequencies_RR[0, j, 0])]
-                    / frequencies_RR[1, j, 0 : int(frequencies_RR[0, j, 0])].sum(),
+                    p=frequencies_RR[1][j, 0 : int(frequencies_RR[0][j])]
                 )  # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
                 recodedf[i, whichmissingf] = newhiddenallelesf
                 # calculate row means
@@ -238,19 +236,16 @@ def onload(
 
     ## initial estimate of q (probability of an allele being missed)
     # TODO: What is qq? Is there a better name for this?
-    qq = np.nanmean(np.concatenate[hidden0, hiddenf])
+    qq = np.nanmean(np.concatenate([hidden0, hiddenf]))
 
     ## initial estimate of dvect (likelihood of error in analysis)
     # TODO: What does dvect stand for?
-    dvect = np.zeros(
-        1
-        + int(
-            np.rint(
-                # Get the range (max-min) of the first "nloci" rows, then the max of all those
-                np.ptp(alleles_definitions_RR[0:nloci], axis=1).max()
-            )
-        )
-    )
+    ranges = []
+    for dataframe in alleles_definitions_RR:
+        # Get the range (max-min) of the first "nloci" dataframes, then the max of all those
+        ranges.append(dataframe.max().max() - dataframe.min().min())
+
+    dvect = np.zeros(1 + int(round(max(ranges))))
     dvect[1] = 0.75
     dvect[2] = 0.2
     dvect[3] = 0.05
@@ -293,17 +288,15 @@ def onload(
             )  # TODO: int() only needed for stub
 
     #### correction factor (reinfection)
-    correction_distance_matrix = np.zeros(
-        (nloci, alleles_definitions_RR.shape[1], alleles_definitions_RR.shape[1])
-    )  # for each locus, matrix of distances between each allele
+    correction_distance_matrix = [] # for each locus, matrix of distances between each allele
     # TODO: Vectorize this (it seems fairly doable)
     for i in range(nloci):
         # Wrap mean call in "array" so we get a 2D array we can transpose (getting us a grid of distances, not just a 1D vector)
         distances = np.array([np.mean(alleles_definitions_RR[i], axis=1)])
         distance_combinations = np.abs(distances.T - distances)
-        correction_distance_matrix[i] = distance_combinations
+        correction_distance_matrix.append(distance_combinations)
 
-    num_saved_records = (nruns - burnin) / record_interval
+    num_saved_records = int((nruns - burnin) / record_interval)
 
     state_classification = np.full_like(np.empty((nids, num_saved_records)), np.nan)
     state_alleles0 = np.full_like(
@@ -318,7 +311,7 @@ def onload(
     dposterior = 0.75
 
 
-    def runmcmc():
+    def runmcmc(dvect):
         # propose new classification
         likelihoodratio = np.zeros(nids)
         # TODO: Finish vectorizing this
@@ -326,17 +319,16 @@ def onload(
             # id mean for what?
             id_means = np.zeros(nloci)
             for y in range(nloci):
+                print(alldistance[x, y, :])
                 id_means[y] = np.nanmean(
-                    dvect[np.round(alldistance[x, y, :]).astype(int)]
+                    dvect[np.round(alldistance[x, y, :][~np.isnan(alldistance[x, y, : ])]).astype(int)]
                     # Should get an array of maxMOI**2 sums
                     / np.sum(
-                        frequencies_RR[1, y, : frequencies_RR.astype(int)[0, y, 0]]
+                        frequencies_RR[1][y, : int(frequencies_RR[0][y])]
                         * dvect[
                             correction_distance_matrix[  # TODO: Make sure multiplications are down the right axis (I believe they default to down columns, which is what I want)
                                 y,
-                                : frequencies_RR.astype(int)[
-                                    0, y, 0
-                                ],  # TODO: Figure out how to do this more cleanly? (R impementation just used ":", assumed array had correct dimensions)
+                                : int(frequencies_RR[0][y]),  # TODO: Figure out how to do this more cleanly? (R impementation just used ":", assumed array had correct dimensions)
                                 allrecrf[x, y, : maxMOI ** 2].astype(int),
                             ]
                         ],
@@ -417,7 +409,7 @@ def onload(
 
 
     for i in range(nruns):
-        runmcmc()
+        runmcmc(dvect)
 
     ## make sure no NAs in result matrices
     state_parameters = state_parameters[:, ~np.isnan(np.sum(state_parameters, axis=1))]

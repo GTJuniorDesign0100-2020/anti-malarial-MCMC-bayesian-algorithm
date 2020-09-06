@@ -5,9 +5,9 @@ import statistics
 
 """ calculate frequencies of alleles
 	inputs (parameters):
-		- genotypedata: 
+		- genotypedata:
 			type: pandas dataframe
-			description: genetic data, where first column (name 'Sample ID') has the id of the sample, 
+			description: genetic data, where first column (name 'Sample ID') has the id of the sample,
 						 and rest of columns have the format nameoflocus_X, where X is the xth allele detected
 		- alleles_definitions:
 			type: list that contains dataframe
@@ -75,8 +75,8 @@ def calculate_frequencies3(genotypedata, alleles_definitions):
 
 		# lower = list of lower bound values
 		# high = list of upper bound values
-		low = alleles_definitions[j][0]
-		high = alleles_definitions[j][1]
+		low = alleles_definitions[j]["0"]
+		high = alleles_definitions[j]["1"]
 
 		# length of the lower bound and upper bound list
 		nrows = len(alleles_definitions[j])
@@ -92,7 +92,7 @@ def calculate_frequencies3(genotypedata, alleles_definitions):
 				if eval:
 					sum += 1
 			sum_list.append(sum)
-			
+
 			true_items = []
 			for eval_i in range(len(tf_table)):
 				if tf_table[eval_i]:
@@ -102,7 +102,7 @@ def calculate_frequencies3(genotypedata, alleles_definitions):
 				sd_list.append(statistics.stdev(true_items))
 		sum_list = np.array(sum_list)
 		frequencies.append(sum_list)
-		
+
 		# mean of standard deviation
 		meanSD = 0
 		if (len(sd_list) > 0):
@@ -119,7 +119,7 @@ def calculate_frequencies3(genotypedata, alleles_definitions):
 
 	# initialize frequency matrix with zeros
 	freqmatrix = np.zeros([nloci, ncol])
-	
+
 	# fill out each box in the frequency matrix with frequency values from frequencies list
 	for j in range(nloci):
 		for i in range(len(frequencies[j])):
