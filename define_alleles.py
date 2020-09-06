@@ -27,7 +27,7 @@ def define_alleles(genotypedata, locirepeats, maxk):
 
 	# retrieve the names of locus without duplicates
 	# the list will contain the names with the order that was in the genotypedata (left to right)
-	col_names = list(genotypedata.columns.values)[2:]
+	col_names = list(genotypedata.columns.values)[1:]
 	prev_pos = None
 	locinames = {}
 	lociname_index = 0
@@ -60,7 +60,7 @@ def define_alleles(genotypedata, locirepeats, maxk):
 		raw_alleles = []
 
 		while (n <= last_index):
-			raw_alleles += genotypedata.iloc[:, n+2].tolist()
+			raw_alleles += genotypedata.iloc[:, n+1].tolist()
 			n += 1
 		raw_alleles = [loci for loci in raw_alleles if str(loci) != 'nan']
 

@@ -14,7 +14,7 @@ def onload(genotypedata_latefailures,additional_genotypedata, locirepeats, nruns
 
         # all rows from the table which have the current site.
         condition = (genotypedata_latefailures['Site'] == site)
-        genoTypeData_RR = genotypedata_latefailures[condition]
+        genoTypeData_RR = genotypedata_latefailures[condition].drop(columns="Site")
 
         # new table, might have new row.
         site_column = 1
