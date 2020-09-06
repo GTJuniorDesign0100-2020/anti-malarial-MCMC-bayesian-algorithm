@@ -205,13 +205,11 @@ def define_alleles(genotypedata, locirepeats, maxk):
 			new_lower_break_value.append(alleles[i]['lower_break_value'][index])
 			new_upper_break_value.append(alleles[i]['upper_break_value'][index])
 
-		# prepare columns of lower_bound, upper_bound
-		alleles2_low = pd.DataFrame(new_lower_break_value)
-		alleles2_high = pd.DataFrame(new_upper_break_value)
-
+		alleles2
 		# put allele2 columns together to make dataframe
-		alleles2_df= pd.concat([alleles2_low, alleles2_high], axis=1)
-		alleles2_df.columns = [0, 1]
+		alleles2_df = pd.DataFrame(columns=[0,1])
+		alleles2_df['0'] = new_lower_break_value
+		alleles2_df['1'] = new_upper_break_value
 		alleles2.append(alleles2_df)
 
 	return alleles2
