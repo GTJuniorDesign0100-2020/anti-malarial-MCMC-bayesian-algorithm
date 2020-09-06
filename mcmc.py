@@ -136,7 +136,7 @@ def onload(
         for i, locus in enumerate(locinames):
             locicolumns = genotypedata_RR.columns.str.contains(f"{locus}_")
 
-            oldalleles = additional_neutral[:, locicolumns]  # TODO: stub
+            oldalleles = additional_neutral.loc[:, locicolumns].to_numpy()  # TODO: stub
             """
             # TODO: What is this code doing?
             if (len(oldalleles.shape[1]) == 0) {
@@ -145,10 +145,11 @@ def onload(
             """
             newalleles = np.copy(oldalleles)
             ncolumns = oldalleles.shape[1]
+
             for j in range(ncolumns):
                 newalleles[:,j] = np.array(list(map(
-                    range(0, oldalleles.shape[0]),
-                    lambda x: recodeallele(alleles_definitions_RR[i], oldalleles[x,j]))))
+                    lambda x: recodeallele(alleles_definitions_RR[i].to_numpy(), oldalleles[x,j]),
+                    range(0, oldalleles.shape[0]))))
             newalleles[np.isnan(newalleles)] = 0
             oldalleles[np.isnan(oldalleles)] = 0
 

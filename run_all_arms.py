@@ -19,7 +19,7 @@ def onload(genotypedata_latefailures,additional_genotypedata, locirepeats, nruns
         # new table, might have new row.
         site_column = 1
         condition = (additional_genotypedata['Site'] == site)
-        additional_neutral = additional_genotypedata[condition]
+        additional_neutral = additional_genotypedata[condition].drop(columns="Site")
 
         # Remember that R indexes from 1, not zero.
         if additional_neutral.shape[0] > 0:
