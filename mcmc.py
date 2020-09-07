@@ -22,13 +22,14 @@ def onload(
     ))
 
     # Get the unique Sample IDs in the dataset
-    ids = np.unique(
+    # NOTE: pd.unique used instead of np.unique to preserve ordering
+    ids = pd.unique(
         genotypedata_RR[genotypedata_RR["Sample ID"].str.contains("Day 0")][
             "Sample ID"
         ].str.replace(" Day 0", "")
     )
     # Ditto, the unique loci for the set
-    locinames = np.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
+    locinames = pd.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
 
     nids = ids.size
     nloci = locinames.size
@@ -91,12 +92,6 @@ def onload(
         locicolumns = genotypedata_RR.columns.str.contains(f"{locus}_")
 
         oldalleles = genotypedata_RR.loc[:, locicolumns].to_numpy()
-        """
-        # TODO: What is this code doing? Doesn't seem necessary?
-        if (len(oldalleles.shape[1]) == 0) {
-            oldalleles = matrix(oldalleles,length(oldalleles),1)
-        }
-        """
         newalleles = np.copy(oldalleles)
         ncolumns = oldalleles.shape[1]
         for j in range(ncolumns):
@@ -104,16 +99,15 @@ def onload(
                 lambda x: recodeallele(alleles_definitions_RR[i].to_numpy(), oldalleles[x,j]),
                 range(0, oldalleles.shape[0])
                 )))
-        newalleles[np.isnan(newalleles)] = 0
+
+        # Set all nans in either array to 0
         oldalleles[np.isnan(oldalleles)] = 0
+        oldalleles[np.isnan(newalleles)] = 0
+        newalleles[np.isnan(newalleles)] = 0
 
-        oldalleles[newalleles == 0] = 0
-
-        startColumn = maxMOI * (
-            i - 1
-        )  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
-        endColumnOldAllele = maxMOI * (i - 1) + oldalleles.shape[1]
-        endColumnNewAllele = maxMOI * (i - 1) + newalleles.shape[1]
+        startColumn = maxMOI * i  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
+        endColumnOldAllele = maxMOI * i + oldalleles.shape[1]
+        endColumnNewAllele = maxMOI * i + newalleles.shape[1]
         alleles0[:, startColumn:endColumnOldAllele] = oldalleles[
             genotypedata_RR["Sample ID"].str.contains("Day 0"), :
         ]
@@ -136,13 +130,7 @@ def onload(
         for i, locus in enumerate(locinames):
             locicolumns = genotypedata_RR.columns.str.contains(f"{locus}_")
 
-            oldalleles = additional_neutral.loc[:, locicolumns].to_numpy()  # TODO: stub
-            """
-            # TODO: What is this code doing?
-            if (len(oldalleles.shape[1]) == 0) {
-                oldalleles = matrix(oldalleles,length(oldalleles),1)
-            }
-            """
+            oldalleles = additional_neutral.loc[:, locicolumns].to_numpy()
             newalleles = np.copy(oldalleles)
             ncolumns = oldalleles.shape[1]
 
@@ -319,21 +307,21 @@ def onload(
             # id mean for what?
             id_means = np.zeros(nloci)
             for y in range(nloci):
-                print(alldistance[x, y, :])
                 id_means[y] = np.nanmean(
                     dvect[np.round(alldistance[x, y, :][~np.isnan(alldistance[x, y, : ])]).astype(int)]
                     # Should get an array of maxMOI**2 sums
                     / np.sum(
-                        frequencies_RR[1][y, : int(frequencies_RR[0][y])]
+                        # TODO: Make sure multiplications are down the right axis (I believe each element in the frequencies_RR 1D vector should multiply across 1 dvect row)
+                        # Double-transpose to multiply across rows, not columns
+                        (frequencies_RR[1][y, :int(frequencies_RR[0][y])]
                         * dvect[
-                            correction_distance_matrix[  # TODO: Make sure multiplications are down the right axis (I believe they default to down columns, which is what I want)
-                                y,
-                                : int(frequencies_RR[0][y]),  # TODO: Figure out how to do this more cleanly? (R impementation just used ":", assumed array had correct dimensions)
-                                allrecrf[x, y, : maxMOI ** 2].astype(int),
-                            ]
-                        ],
-                        axis=1,
-                    ),  # TODO: Verify it's the right axis?
+                            correction_distance_matrix[y][
+                                :,
+                                allrecrf[x, y, :maxMOI**2][~np.isnan(allrecrf[x, y, :maxMOI**2])].astype(int),
+                            ].astype(int)
+                        ].T).T,
+                        axis=0, # TODO: Verify it's the right axis?
+                    ),
                 )
             likelihoodratio[x] = np.exp(np.sum(np.log(id_means)))
 
