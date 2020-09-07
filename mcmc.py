@@ -295,11 +295,10 @@ def onload(
     )
     state_parameters = np.full_like(np.empty((2 + 2 * nloci, num_saved_records)), np.nan)
 
-    count = 1
     dposterior = 0.75
 
 
-    def runmcmc(dvect):
+    def runmcmc(iteration, dvect, classification):
         # propose new classification
         likelihoodratio = np.zeros(nids)
         # TODO: Finish vectorizing this
@@ -332,11 +331,9 @@ def onload(
         classification = newclassification
 
         # propose new hidden states
-        """
         # TODO: What does switch_hidden do? Is it entirely side effects? (Also,: can't run this yet, still waiting on implementation)
         for i in range(nids):
             switch_hidden(i)
-        """
 
         # propose q (beta distribution is conjugate distribution for binomial process)
         q_prior_alpha = 0
@@ -381,9 +378,9 @@ def onload(
             findposteriorfrequencies(x, pd.concat([tempdata, recoded_additional_neutral]))
 
         # record state
-        if count > burnin and count % record_interval == 0:
-            print(count)
-            record_index = (count - burnin) / record_interval
+        if iteration > burnin and iteration % record_interval == 0:
+            print(iteration)
+            record_index = (iteration - burnin) / record_interval
             state_classification[:, record_index] = classification
             state_alleles0[:, :, record_index] = alleles0
             state_allelesf[:, :, record_index] = allelesf
@@ -393,11 +390,10 @@ def onload(
             state_parameters[2 + nloci : (2 + 2 * nloci), record_index] = np.sum(
                 frequencies_RR[1, :nloci, :] ** 2
             )
-        count += 1
 
 
     for i in range(nruns):
-        runmcmc(dvect)
+        runmcmc(i, dvect, classification)
 
     ## make sure no NAs in result matrices
     state_parameters = state_parameters[:, ~np.isnan(np.sum(state_parameters, axis=1))]
