@@ -2,11 +2,12 @@ from random import uniform
 import numpy as np
 import pandas as pd
 import itertools
+import random
 
-def switch_hidden(x):
-    z = random.uniform((1,))
+def switch_hidden(x, hidden0, hiddenf):
+    z = random.uniform(0,1)
 
-    if numpy.nansum(hidden0[x], hiddenf[x]) > 0: #if hidden alleles exist TODO: replicate na.rm
+    if np.nansum(hidden0[x], hiddenf[x]) > 0: #if hidden alleles exist TODO: replicate na.rm
         if len(np.where(x == 1, np.concatonate(hidden0[x], hiddenf[x]))) > 1:
             chosen = np.random.choice(np.where(x == 1, np.concatonate(hidden0[x], hiddenf[x])), 1, False)
         else:

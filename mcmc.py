@@ -333,7 +333,7 @@ def onload(
         # propose new hidden states
         # TODO: What does switch_hidden do? Is it entirely side effects? (Also,: can't run this yet, still waiting on implementation)
         for i in range(nids):
-            switch_hidden(i)
+            switch_hidden(i, hidden0, hiddenf)
 
         # propose q (beta distribution is conjugate distribution for binomial process)
         q_prior_alpha = 0
