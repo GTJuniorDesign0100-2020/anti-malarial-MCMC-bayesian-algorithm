@@ -3,21 +3,28 @@ import numpy as np
 import pandas as pd
 import itertools
 import random
+import math
 
-def switch_hidden(x, hidden0, hiddenf):
+def switch_hidden(x, hidden0, hiddenf, classification, nloci, maxMOI, recoded0, recodedf, frequencies_RR):
     z = random.uniform(0,1)
 
-    if np.nansum(hidden0[x], hiddenf[x]) > 0: #if hidden alleles exist TODO: replicate na.rm
-        if len(np.where(x == 1, np.concatonate(hidden0[x], hiddenf[x]))) > 1:
-            chosen = np.random.choice(np.where(x == 1, np.concatonate(hidden0[x], hiddenf[x])), 1, False)
+    if np.nansum(np.concatenate((hidden0[x], hiddenf[x]))) > 0: #if hidden alleles exist TODO: replicate na.rm
+        # concat = np.concatenate((hidden0[x], hiddenf[x]))
+        # print("concat")
+        # print(concat)
+        # print("np.where")
+        # print(np.where(concat == 1))
+        # print("end")
+        if len(np.where(np.concatenate((hidden0[x], hiddenf[x])) == 1)[0]) > 1:
+            chosen = np.random.choice(np.where(np.concatenate((hidden0[x], hiddenf[x])) == 1)[0])
         else:
-            chosen = np.where(x == 1, np.concatonate(hidden0[x], hiddenf[x]))
+            chosen = np.where(np.concatenate((hidden0[x], hiddenf[x])) == 1)
 
     if classification[x] == 0: #reinfection
         if chosen <= nloci * maxMOI: #day0 hidden allele
             chosenlocus = math.ceil(chosen / maxMOI)
             old = recoded0[x][chosen]
-            new = np.random.choice(np.arange(0,frequencies_RR[0][chosenLocus]), 1, False)
+            new = np.random.choice(np.arange(0,frequencies_RR[0][chosenlocus]), 1, False)
 
             oldalleles = recoded0[x, np.arange((chosenlocus - 1) * maxMOI + 1, chosenlocus * maxMOI).intersect(np.where(x == 1, hidden0[x]))] #TODO: Double check this line, this was a rough one
             repeatedold = qq
@@ -53,7 +60,7 @@ def switch_hidden(x, hidden0, hiddenf):
             chosen = chosen - nloci * maxMOI
             chosenlocus = math.ceil(chosen / maxMOI)
             old = recodedf[x][chosen]
-            new = np.random.choice(np.arange(0,frequencies_RR[0][chosenLocus]), 1, False)
+            new = np.random.choice(np.arange(0,frequencies_RR[0][chosenlocus]), 1, False)
             oldalleles = recodedf[x, np.arange((chosenlocus - 1) * maxMOI + 1, chosenlocus * maxMOI).intersect(np.where(x == 1, hiddenf[x]))]
             repeatedold = qq
             repeatednew = qq
