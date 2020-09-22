@@ -125,6 +125,7 @@ def onload(
     # TODO: What does recoding do? Why is it needed?
     # TODO: Seems to copy-paste much of the previous code section
     recoded_additional_neutral = None
+    print(additional_neutral)
     if additional_neutral.size > 0 and additional_neutral.shape[0] > 0:
         recoded_additional_neutral = np.zeros((additional_neutral.shape[0], maxMOI * nloci))
         for i, locus in enumerate(locinames):

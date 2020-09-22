@@ -14,7 +14,7 @@ from recode_alleles import *
 """
 Full example genotype_RR dataframe in R:
 
-               Sample.ID X313_1 X313_2 X313_3 X383_1 X383_2 X383_3 TA1_1 TA1_2
+               Sample ID X313_1 X313_2 X313_3 X383_1 X383_2 X383_3 TA1_1 TA1_2
 1        BQ17-269_ Day 0  223.4     NA     NA  103.7  140.3     NA 169.0    NA
 2  BQ17-269_ Day Failure  225.5     NA     NA  124.1  162.3     NA 178.0    NA
 3        BD17-040_ Day 0  229.3     NA     NA  139.1     NA     NA 175.0    NA
@@ -58,7 +58,7 @@ Full example genotype_RR dataframe in R:
 # Hardcode this in for now
 genotypedata_RR = pd.DataFrame(
     {
-        "Sample.ID": [
+        "Sample ID": [
             "BQ17-269_ Day 0",
             "BQ17-269_ Day Failure",
             "BD17-040_ Day 0",
@@ -411,6 +411,36 @@ genotypedata_RR = pd.DataFrame(
     }
 )
 
+alleles_definitions_RR = [
+    pd.DataFrame(np.array([
+        [219.0, 221.0, 243.0, 261.0, 223.0, 225.0, 231.0, 237.0, 239.0, 249.0, 217.0, 229.0, 245.0],
+        [221.0, 223.0, 245.0, 263.0, 225.0, 227.0, 233.0, 239.0, 241.0, 251.0, 219.0, 231.0, 247.0]
+    ]).transpose()),
+    pd.DataFrame(np.array([
+        [123.0, 139.0, 103.0, 85.0, 121.0, 143.0, 145.0, 87.0, 135.0, 137.0, 147.0, 149.0, 151.0, 161.0, 163.0, 169.0],
+        [125.0, 141.0, 105.0, 87.0, 123.0, 145.0, 147.0, 89.0, 137.0, 139.0, 149.0, 151.0, 153.0, 163.0, 165.0, 171.0]
+    ]).transpose()),
+    pd.DataFrame(np.array([
+        [176.5, 161.5, 164.5, 167.5, 173.5, 170.5, 71.5, 179.5, 158.5, 182.5, 200.5],
+        [179.5, 164.5, 167.5, 170.5, 176.5, 173.5, 74.5, 182.5, 161.5, 185.5, 203.5]
+    ]).transpose()),
+    pd.DataFrame(np.array([
+        [153.5, 150.5, 162.5, 165.5, 156.5, 141.5, 168.5, 171.5, 102.5, 111.5, 159.5, 174.5, 177.5],
+        [156.5, 153.5, 165.5, 168.5, 159.5, 144.5, 171.5, 174.5, 105.5, 114.5, 162.5, 177.5, 180.5]
+    ]).transpose()),
+    pd.DataFrame(np.array([
+        [160.5, 166.5, 169.5, 175.5, 172.5, 163.5, 178.5, 148.5, 154.5, 157.5, 184.5, 193.5, 136.5, 139.5, 181.5, 187.5, 190.5, 196.5, 199.5],
+        [163.5, 169.5, 172.5, 178.5, 175.5, 166.5, 181.5, 151.5, 157.5, 160.5, 187.5, 196.5, 139.5, 142.5, 184.5, 190.5, 193.5, 199.5, 202.5]
+    ]).transpose()),
+    pd.DataFrame(np.array([
+        [80.5, 77.5, 71.5, 83.5, 86.5],
+        [83.5, 80.5, 74.5, 86.5, 89.5]
+    ]).transpose()),
+    pd.DataFrame(np.array([
+        [161.5, 158.5, 146.5, 173.5, 170.5, 149.5, 167.5, 164.5, 176.5, 179.5, 182.5, 185.5, 194.5],
+        [164.5, 161.5, 149.5, 176.5, 173.5, 152.5, 170.5, 167.5, 179.5, 182.5, 185.5, 188.5, 197.5]
+    ]).transpose()),
+]
 
 def test_max_MOI():
     maxMOI = np.nanmax(  # Return array max, ignoring NaNs
@@ -424,13 +454,13 @@ def test_max_MOI():
 
 
 def test_getting_ids():
-    expected = np.unique(
+    expected = np.array(
         ["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"]
     )
 
-    ids = np.unique(
-        genotypedata_RR[genotypedata_RR["Sample.ID"].str.contains("Day 0")][
-            "Sample.ID"
+    ids = pd.unique(
+        genotypedata_RR[genotypedata_RR["Sample ID"].str.contains("Day 0")][
+            "Sample ID"
         ].str.replace(" Day 0", "")
     )
 
@@ -438,22 +468,22 @@ def test_getting_ids():
 
 
 def test_getting_locinames():
-    expected = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
+    expected = np.array(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
 
-    locinames = np.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
+    locinames = pd.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
 
     assert np.array_equal(locinames, expected), f"{locinames} (expected {expected})"
 
 
 def test_calculate_MOI():
     # NOTE: These are different orderings than the original (possibly np.unique changes ordering?); I THINK this is okay, but should ask Mat
-    expected_MOI0 = np.array([2, 3, 2, 3, 2, 3])
-    expected_MOIf = np.array([2, 2, 2, 3, 2, 2])
+    expected_MOI0 = np.array([3, 2, 3, 2, 3, 2])
+    expected_MOIf = np.array([2, 2, 2, 2, 3, 2])
 
-    ids = np.unique(
+    ids = np.array(
         ["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"]
     )
-    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
+    locinames = np.array(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
 
     nids = ids.size
     nloci = locinames.size
@@ -466,13 +496,13 @@ def test_calculate_MOI():
 
             nalleles0 = np.count_nonzero(
                 ~genotypedata_RR.loc[
-                    genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day 0"),
+                    genotypedata_RR["Sample ID"].str.contains(f"{ID} Day 0"),
                     locicolumns,
                 ].isna()
             )
             nallelesf = np.count_nonzero(
                 ~genotypedata_RR.loc[
-                    genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day Failure"),
+                    genotypedata_RR["Sample ID"].str.contains(f"{ID} Day Failure"),
                     locicolumns,
                 ].isna()
             )
@@ -488,14 +518,17 @@ def test_create_initial_state():
     # TODO: Finish implementing so test will pass
     expected_alleles0_firstCol = np.array([223.4, 229.3, 221.3, 261.7, 261.7, 238.4])
     expected_allelesf_firstCol = np.array([225.5, 243.6, 231.5, 239.6, 245.3, 219.4])
-    expected_recoded0_firstCol = np.array([5, 12, 2, 4, 4, 8])
-    expected_recodedf_firstCol = np.array([6, 3, 7, 9, 13, 1])
+
+    # Indices should be 1 lower than R code output, since Python indexes from 0 vs R's index-from-1
+    expected_recoded0_firstCol = np.array([4, 11, 1, 3, 3, 7])
+    expected_recodedf_firstCol = np.array([5, 2, 6, 8, 12, 0])
 
     maxMOI = 5
-    ids = np.unique(
+    ids = np.array(
         ["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"]
     )
-    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
+    locinames = np.array(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
+
     alleles0 = np.zeros((ids.size, maxMOI * locinames.size))
     recoded0 = np.zeros((ids.size, maxMOI * locinames.size))
     allelesf = np.zeros((ids.size, maxMOI * locinames.size))
@@ -506,39 +539,33 @@ def test_create_initial_state():
         locicolumns = genotypedata_RR.columns.str.contains(f"{locus}_")
 
         oldalleles = genotypedata_RR.loc[:, locicolumns].to_numpy()
-        """
-        # TODO: What is this code doing?
-        if (len(oldalleles.shape[1]) == 0) {
-            oldalleles = matrix(oldalleles,length(oldalleles),1)
-        }
-        """
         newalleles = np.copy(oldalleles)
         ncolumns = oldalleles.shape[1]
         for j in range(ncolumns):
             newalleles[:,j] = np.array(list(map(
-                lambda x: recodeallele(alleles_definitions_RR[i], oldalleles[x,j]),
+                lambda x: recodeallele(alleles_definitions_RR[i].to_numpy(), oldalleles[x,j]),
                 range(0, oldalleles.shape[0])
                 )))
-        newalleles[np.isnan(newalleles)] = 0
+
+        # Set all nans in either array to 0
         oldalleles[np.isnan(oldalleles)] = 0
+        oldalleles[np.isnan(newalleles)] = 0
+        newalleles[np.isnan(newalleles)] = 0
 
-        oldalleles[newalleles == 0] = 0
-
-        startColumn = maxMOI * i
-        # TODO: Changed start/end for indexing reasons in Python vs R; double-check that's valid
+        startColumn = maxMOI * i  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
         endColumnOldAllele = maxMOI * i + oldalleles.shape[1]
         endColumnNewAllele = maxMOI * i + newalleles.shape[1]
         alleles0[:, startColumn:endColumnOldAllele] = oldalleles[
-            genotypedata_RR["Sample.ID"].str.contains("Day 0"), :
+            genotypedata_RR["Sample ID"].str.contains("Day 0"), :
         ]
         allelesf[:, startColumn:endColumnOldAllele] = oldalleles[
-            genotypedata_RR["Sample.ID"].str.contains("Day Failure"), :
+            genotypedata_RR["Sample ID"].str.contains("Day Failure"), :
         ]
         recoded0[:, startColumn:endColumnNewAllele] = newalleles[
-            genotypedata_RR["Sample.ID"].str.contains("Day 0"), :
+            genotypedata_RR["Sample ID"].str.contains("Day 0"), :
         ]
         recodedf[:, startColumn:endColumnNewAllele] = newalleles[
-            genotypedata_RR["Sample.ID"].str.contains("Day Failure"), :
+            genotypedata_RR["Sample ID"].str.contains("Day Failure"), :
         ]
 
     assert np.array_equal(
@@ -559,39 +586,37 @@ def test_recode_additional_neutral():
     expected_first_column = np.array([6, 10, 1, 3, 7, 5, 9, 4, 3, 1, 0, 2, 11, 2])
 
     maxMOI = 5
-    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
+    nloci = 7
+    locinames = np.array(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
     # TODO: additional_neutral currently just stubbed (not using actual values)
-    additional_neutral = np.zeros((14, 25))
+    additional_neutral = pd.DataFrame(np.zeros((14, 25)))
 
-    recoded_additional_neutral = np.zeros((14, maxMOI * locinames.size))
-    # TODO: This is almost the exact same code as in create_initial_state (should refactor both into a common function)
+    # TODO: What does recoding do? Why is it needed?
+    # TODO: Seems to copy-paste much of the previous code section
+    recoded_additional_neutral = None
+    if additional_neutral.size > 0 and additional_neutral.shape[0] > 0:
+        recoded_additional_neutral = np.zeros((additional_neutral.shape[0], maxMOI * nloci))
+        for i, locus in enumerate(locinames):
+            locicolumns = genotypedata_RR.columns.str.contains(f"{locus}_")
 
-    for i, locus in enumerate(locinames):
-        locicolumns = genotypedata_RR.columns.str.contains(f"{locus}_")
+            oldalleles = additional_neutral.loc[:, locicolumns].to_numpy()
+            newalleles = np.copy(oldalleles)
+            ncolumns = oldalleles.shape[1]
 
-        oldalleles = additional_neutral[:, locicolumns]  # TODO: stub
-        """
-        # TODO: What is this code doing?
-        if (len(oldalleles.shape[1]) == 0) {
-            oldalleles = matrix(oldalleles,length(oldalleles),1)
-        }
-        """
-        newalleles = np.copy(oldalleles)
-        ncolumns = oldalleles.shape[1]
-        for j in range(ncolumns):
-            newalleles[:,j] = np.array(list(map(
-                lambda x: recodeallele(alleles_definitions_RR[i], oldalleles[x,j]),
-                range(0, oldalleles.shape[0])
-                )))
-        newalleles[np.isnan(newalleles)] = 0
-        oldalleles[np.isnan(oldalleles)] = 0
+            for j in range(ncolumns):
+                newalleles[:,j] = np.array(list(map(
+                    lambda x: recodeallele(alleles_definitions_RR[i].to_numpy(), oldalleles[x,j]),
+                    range(0, oldalleles.shape[0]))))
+            newalleles[np.isnan(newalleles)] = 0
+            oldalleles[np.isnan(oldalleles)] = 0
 
-        oldalleles[newalleles == 0] = 0
+            oldalleles[newalleles == 0] = 0
 
-        startColumn = maxMOI * i
-        # TODO: Changed start/end for indexing reasons in Python vs R; double-check that's valid
-        endColumnOldAllele = maxMOI * i + oldalleles.shape[1]
-        recoded_additional_neutral[:, startColumn:endColumnOldAllele] = newalleles
+            startColumn = maxMOI * (
+                i - 1
+            )  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
+            endColumnOldAllele = maxMOI * (i - 1) + oldalleles.shape[1]
+            recoded_additional_neutral[:, startColumn:endColumnOldAllele] = newalleles
 
     assert np.array_equal(
         recoded_additional_neutral[:, 0], expected_first_column
@@ -606,8 +631,8 @@ def test_initialize_hidden_alleles():
     nids = 6
     nloci = 7
 
-    MOI0 = np.array([2, 3, 2, 3, 2, 3])
-    MOIf = np.array([2, 2, 2, 3, 2, 2])
+    MOI0 = np.array([3, 2, 3, 2, 3, 2])
+    MOIf = np.array([2, 2, 2, 2, 3, 2])
 
     alleles0 = np.zeros((nids, maxMOI * nloci))
     recoded0 = np.zeros((nids, maxMOI * nloci))
@@ -620,7 +645,6 @@ def test_initialize_hidden_alleles():
     # TODO: These are stubbed (waiting on correct implementation)
     frequencies_RR = np.random.random_sample((3, 7, 19))
     frequencies_RR[0, :, 0] *= frequencies_RR.shape[1]
-    alleles_definitions_RR = np.zeros((13, 7, 2))
     # ===============================
 
     # TODO: Figure out what this code is overall trying to do (replace non-0 elements with random values? Why is it important that the values are assigned from frequencies_RR?)
@@ -698,17 +722,6 @@ def test_initialize_hidden_alleles():
 def test_create_dvect():
     # TODO: This is a stub, not the actual data
     nloci = 7
-    alleles_definitions_RR = np.array(
-        [
-            [217, 263],
-            [85, 171],
-            [71.5, 203.5],
-            [102.5, 180.5],
-            [136.5, 202.5],
-            [71.5, 89.5],
-            [146.5, 197.5],
-        ]
-    )
 
     # TODO: What does dvect stand for?
     dvect = np.zeros(
@@ -732,8 +745,8 @@ def test_initialize_recrudesences():
     nids = 6
     nloci = 7
 
-    MOI0 = np.array([2, 3, 2, 3, 2, 3])
-    MOIf = np.array([2, 2, 2, 3, 2, 2])
+    MOI0 = np.array([3, 2, 3, 2, 3, 2])
+    MOIf = np.array([2, 2, 2, 2, 3, 2])
 
     recr0 = np.full_like(np.empty((nids, nloci)), np.nan)
     recrf = np.full_like(np.empty((nids, nloci)), np.nan)
@@ -795,25 +808,6 @@ def test_correction_factor():
     expected_fist_row_col = np.array([0, 2, 24, 42, 4, 6, 12, 18, 20, 30, 2, 10, 26])
 
     nloci = 7
-    # TODO: Confirm what the right alleles_definitions_RR shape is?
-    alleles_definitions_RR = np.zeros((nloci, 13, 2))
-    alleles_definitions_RR[0, :, :] = np.array(
-        [
-            [219, 221],
-            [221, 223],
-            [243, 245],
-            [261, 263],
-            [223, 225],
-            [225, 227],
-            [231, 233],
-            [237, 239],
-            [239, 241],
-            [249, 251],
-            [217, 219],
-            [229, 231],
-            [245, 247],
-        ]
-    )
 
     correction_distance_matrix = np.zeros(
         (nloci, alleles_definitions_RR.shape[1], alleles_definitions_RR.shape[1])
@@ -978,7 +972,7 @@ def test_summary_stats_output():
     nloci = 7
 
     ## TODO: Stubbed data
-    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
+    locinames = np.array(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
     state_parameters = np.random.random_sample((2 + 2 * nloci, 25))
     jobname = "TEST"
 
@@ -1022,7 +1016,7 @@ test_max_MOI()
 test_getting_ids()
 test_getting_locinames()
 test_calculate_MOI()
-# test_create_initial_state()       # TODO: Code not fully implemented yet
+test_create_initial_state()
 # test_recode_additional_neutral()  # TODO: Code not fully implemented yet
 # test_initialize_hidden_alleles()  # TODO: Code not fully implemented yet
 test_create_dvect()
