@@ -95,8 +95,8 @@ def onload(
         newalleles = np.copy(oldalleles)
         ncolumns = oldalleles.shape[1]
         for j in range(ncolumns):
-            newalleles[:,j] = np.array(list(map(
-                lambda x: recodeallele(alleles_definitions_RR[i].to_numpy(), oldalleles[x,j]),
+            newalleles[:, j] = np.array(list(map(
+                lambda x: recodeallele(alleles_definitions_RR[i].to_numpy(), oldalleles[x, j]),
                 range(0, oldalleles.shape[0])
                 )))
 
@@ -136,8 +136,8 @@ def onload(
             ncolumns = oldalleles.shape[1]
 
             for j in range(ncolumns):
-                newalleles[:,j] = np.array(list(map(
-                    lambda x: recodeallele(alleles_definitions_RR[i].to_numpy(), oldalleles[x,j]),
+                newalleles[:, j] = np.array(list(map(
+                    lambda x: recodeallele(alleles_definitions_RR[i].to_numpy(), oldalleles[x, j]),
                     range(0, oldalleles.shape[0]))))
             newalleles[np.isnan(newalleles)] = 0
             oldalleles[np.isnan(oldalleles)] = 0
@@ -154,6 +154,8 @@ def onload(
     frequencies_RR = calculate_frequencies3(
         pd.concat([genotypedata_RR, additional_neutral]), alleles_definitions_RR
     )
+
+    print(frequencies_RR)
 
     ## assign random hidden alleles
     # TODO: Figure out what this code is overall trying to do (replace non-0 elements with random values? Why is it important that the values are assigned from frequencies_RR?)
@@ -186,7 +188,7 @@ def onload(
                     size=nmissing0,
                     replace=True,
                     p=frequencies_RR[1][j, 0: int(frequencies_RR[0][j])]
-                )  # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
+                )
                 recoded0[i, whichmissing0] = newhiddenalleles0
                 # calculate row means
                 alleles0[i, whichmissing0] = np.mean(alleles_definitions_RR[j], axis=1)[
@@ -215,7 +217,7 @@ def onload(
                     size=nmissingf,
                     replace=True,
                     p=frequencies_RR[1][j, 0 : int(frequencies_RR[0][j])]
-                )  # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
+                )
                 recodedf[i, whichmissingf] = newhiddenallelesf
                 # calculate row means
                 allelesf[i, whichmissingf] = np.mean(alleles_definitions_RR[j], axis=1)[
@@ -235,9 +237,9 @@ def onload(
         ranges.append(dataframe.max().max() - dataframe.min().min())
 
     dvect = np.zeros(1 + int(round(max(ranges))))
-    dvect[1] = 0.75
-    dvect[2] = 0.2
-    dvect[3] = 0.05
+    dvect[0] = 0.75
+    dvect[1] = 0.2
+    dvect[2] = 0.05
 
     ## randomly assign recrudescences/reinfections
     for i in range(nids):

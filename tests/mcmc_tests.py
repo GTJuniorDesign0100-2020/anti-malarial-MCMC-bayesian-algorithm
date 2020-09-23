@@ -1,15 +1,14 @@
 """
-A series of tests to make sure mcmc.py's functionality is equivalent to mcmc.r's
+A series of tests to make sure mcmc.py's functionality is equivalent to mcmc.r
 
 TODO: Use an actual testing framework?
-TODO: Double-check axes of EVERYTHING (I'm worried I might've mixed up running function on column/row axes with numpy functions)
 """
 
 import numpy as np
 import pandas as pd
 import scipy.stats as sp_stats
 
-from recode_alleles import *
+from recode_alleles import recodeallele
 
 """
 Full example genotype_RR dataframe in R:
@@ -55,7 +54,7 @@ Full example genotype_RR dataframe in R:
 12      NA    81.7      NA   163.2   175.3      NA      NA
 """
 
-# Hardcode this in for now
+# Hardcode large variables in for now
 genotypedata_RR = pd.DataFrame(
     {
         "Sample ID": [
@@ -442,6 +441,16 @@ alleles_definitions_RR = [
     ]).transpose()),
 ]
 
+frequencies_RR = [
+    np.array([13, 16, 11, 13, 19, 5, 13]),
+    np.zeros((7, 19)),
+    np.zeros(7)
+]
+for allele_count in frequencies_RR[0]:
+    frequencies_RR[1][:allele_count] = 1.0 / allele_count
+
+#=============================================================================
+
 def test_max_MOI():
     maxMOI = np.nanmax(  # Return array max, ignoring NaNs
         # NOTE: Assuming genotypedata_RR is a pandas dataframe
@@ -476,7 +485,6 @@ def test_getting_locinames():
 
 
 def test_calculate_MOI():
-    # NOTE: These are different orderings than the original (possibly np.unique changes ordering?); I THINK this is okay, but should ask Mat
     expected_MOI0 = np.array([3, 2, 3, 2, 3, 2])
     expected_MOIf = np.array([2, 2, 2, 2, 3, 2])
 
@@ -486,7 +494,6 @@ def test_calculate_MOI():
     locinames = np.array(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
 
     nids = ids.size
-    nloci = locinames.size
 
     MOI0 = np.repeat(0, nids)
     MOIf = np.repeat(0, nids)
@@ -542,8 +549,8 @@ def test_create_initial_state():
         newalleles = np.copy(oldalleles)
         ncolumns = oldalleles.shape[1]
         for j in range(ncolumns):
-            newalleles[:,j] = np.array(list(map(
-                lambda x: recodeallele(alleles_definitions_RR[i].to_numpy(), oldalleles[x,j]),
+            newalleles[:, j] = np.array(list(map(
+                lambda x: recodeallele(alleles_definitions_RR[i].to_numpy(), oldalleles[x, j]),
                 range(0, oldalleles.shape[0])
                 )))
 
@@ -588,8 +595,10 @@ def test_recode_additional_neutral():
     maxMOI = 5
     nloci = 7
     locinames = np.array(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
-    # TODO: additional_neutral currently just stubbed (not using actual values)
-    additional_neutral = pd.DataFrame(np.zeros((14, 25)))
+    # NOTE: additional_neutral currently just stubbed (not using actual values)
+    additional_neutral = pd.DataFrame(
+        np.arange(350).reshape((14, 25)),
+        columns=genotypedata_RR.columns)
 
     # TODO: What does recoding do? Why is it needed?
     # TODO: Seems to copy-paste much of the previous code section
@@ -604,8 +613,8 @@ def test_recode_additional_neutral():
             ncolumns = oldalleles.shape[1]
 
             for j in range(ncolumns):
-                newalleles[:,j] = np.array(list(map(
-                    lambda x: recodeallele(alleles_definitions_RR[i].to_numpy(), oldalleles[x,j]),
+                newalleles[:, j] = np.array(list(map(
+                    lambda x: recodeallele(alleles_definitions_RR[i].to_numpy(), oldalleles[x, j]),
                     range(0, oldalleles.shape[0]))))
             newalleles[np.isnan(newalleles)] = 0
             oldalleles[np.isnan(oldalleles)] = 0
@@ -618,6 +627,7 @@ def test_recode_additional_neutral():
             endColumnOldAllele = maxMOI * (i - 1) + oldalleles.shape[1]
             recoded_additional_neutral[:, startColumn:endColumnOldAllele] = newalleles
 
+    # TODO: Figure out how to test w/o actual additional_neutral values?
     assert np.array_equal(
         recoded_additional_neutral[:, 0], expected_first_column
     ), f"{recoded_additional_neutral[:,0]} (expected {expected_first_column})"
@@ -641,17 +651,14 @@ def test_initialize_hidden_alleles():
     recodedf = np.zeros((nids, maxMOI * nloci))
     hiddenf = np.full_like(np.empty((nids, maxMOI * nloci)), np.nan)
 
-    # TODO: Not sure what the proper shape of these are (frequencies_RR seems to have different-sized rows, with the 1st row all ints and the 2nd all floats???)
-    # TODO: These are stubbed (waiting on correct implementation)
-    frequencies_RR = np.random.random_sample((3, 7, 19))
-    frequencies_RR[0, :, 0] *= frequencies_RR.shape[1]
     # ===============================
 
+    ## assign random hidden alleles
     # TODO: Figure out what this code is overall trying to do (replace non-0 elements with random values? Why is it important that the values are assigned from frequencies_RR?)
     for i in range(nids):
         for j in range(nloci):
             # TODO: Code almost duplicated between top/bottom portions; refactor into single function? (needs 9 inputs: maxMOI, nids, nloci, MOIarray, alleles/recoded/hidden array, alleles_definitions_RR, frequencies_RR)
-            # TODO: Start/end of what?
+            # TODO: Start/end of what? The portion of the row w/ this locus information?
             start = maxMOI * j
             end = maxMOI * (j + 1)
 
@@ -666,18 +673,18 @@ def test_initialize_hidden_alleles():
                 np.where(alleles0[i, start : start + MOI0[i]] == 0)
             ]
 
+            # Sample to randomly initialize the alleles/hidden variables
             if nalleles0 > 0:
                 hidden0[i, whichnotmissing0] = 0
             if nmissing0 > 0:
                 newhiddenalleles0 = np.random.choice(
                     np.arange(
-                        0, int(frequencies_RR[0, j, 0])
+                        0, int(frequencies_RR[0][j])
                     ),  # Select from first row (count of how many probabilities they are)
                     size=nmissing0,
                     replace=True,
-                    p=frequencies_RR[1, j, 0 : int(frequencies_RR[0, j, 0])]
-                    / frequencies_RR[1, j, 0 : int(frequencies_RR[0, j, 0])].sum(),
-                )  # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
+                    p=frequencies_RR[1][j, 0: int(frequencies_RR[0][j])]
+                )
                 recoded0[i, whichmissing0] = newhiddenalleles0
                 # calculate row means
                 alleles0[i, whichmissing0] = np.mean(alleles_definitions_RR[j], axis=1)[
@@ -701,13 +708,12 @@ def test_initialize_hidden_alleles():
             if nmissingf > 0:
                 newhiddenallelesf = np.random.choice(
                     np.arange(
-                        0, int(frequencies_RR[0, j, 0])
+                        0, int(frequencies_RR[0][j])
                     ),  # Select from first row (count of how many probabilities they are)
                     size=nmissingf,
                     replace=True,
-                    p=frequencies_RR[1, j, 0 : int(frequencies_RR[0, j, 0])]
-                    / frequencies_RR[1, j, 0 : int(frequencies_RR[0, j, 0])].sum(),
-                )  # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
+                    p=frequencies_RR[1][j, 0 : int(frequencies_RR[0][j])]
+                )
                 recodedf[i, whichmissingf] = newhiddenallelesf
                 # calculate row means
                 allelesf[i, whichmissingf] = np.mean(alleles_definitions_RR[j], axis=1)[
@@ -720,22 +726,19 @@ def test_initialize_hidden_alleles():
 
 
 def test_create_dvect():
-    # TODO: This is a stub, not the actual data
+    # NOTE: This is a stub, not the actual data
     nloci = 7
 
-    # TODO: What does dvect stand for?
-    dvect = np.zeros(
-        1
-        + int(
-            np.rint(
-                # Get the range (max-min) of the first "nloci" rows, then the max of all those
-                np.ptp(alleles_definitions_RR[0:nloci], axis=1).max()
-            )
-        )
-    )
-    dvect[1] = 0.75
-    dvect[2] = 0.2
-    dvect[3] = 0.05
+    ## initial estimate of dvect (likelihood of error in analysis)
+    ranges = []
+    for dataframe in alleles_definitions_RR:
+        # Get the range (max-min) of the first "nloci" dataframes, then the max of all those
+        ranges.append(dataframe.max().max() - dataframe.min().min())
+
+    dvect = np.zeros(1 + int(round(max(ranges))))
+    dvect[0] = 0.75
+    dvect[1] = 0.2
+    dvect[2] = 0.05
 
     assert dvect.size == 133, f"Dvect size {dvect.size} (expected {133})"
 
@@ -758,12 +761,13 @@ def test_initialize_recrudesences():
     allrecrf = np.full_like(np.empty((nids, nloci, maxMOI ** 2)), np.nan)
     classification = np.repeat(0, nids)
 
-    # TODO: Stubbed data
+    # NOTE: Stubbed data
     alleles0 = 100 * np.random.random_sample((nids, maxMOI * nloci))
     allelesf = 100 * np.random.random_sample((nids, maxMOI * nloci))
     recoded0 = np.random.randint(10, size=(nids, maxMOI * nloci))
     recodedf = np.random.randint(10, size=(nids, maxMOI * nloci))
 
+    # randomly assign recrudescences/reinfections
     for i in range(nids):
         z = np.random.uniform(size=1)
         if z < 0.5:
@@ -794,14 +798,23 @@ def test_initialize_recrudesences():
             recrf[i, j] = maxMOI * j + allpossiblerecrud[closestrecrud, 1]
 
             recr_repeats0[i, j] = np.sum(
-                recoded0[i, maxMOI * j : maxMOI * (j + 1)]
-                == recoded0[i, int(recr0[i, j])]
-            )  # TODO: int() only needed for stub
+                recoded0[i, maxMOI * j: maxMOI * (j + 1)] == recoded0[i, int(recr0[i, j])]
+            )
             recr_repeatsf[i, j] = np.sum(
-                recodedf[i, maxMOI * j : maxMOI * (j + 1)]
-                == recodedf[i, int(recrf[i, j])]
-            )  # TODO: int() only needed for stub
+                recodedf[i, maxMOI * j: maxMOI * (j + 1)] == recodedf[i, int(recrf[i, j])]
+            )
     # TODO: Actually test this
+
+
+def get_correction_distance_matrix(nloci, alleles_definitions_RR):
+    correction_distance_matrix = [] # for each locus, matrix of distances between each allele
+    for i in range(nloci):
+        # Wrap mean call in "array" so we get a 2D array we can transpose (getting us a grid of distances, not just a 1D vector)
+        distances = np.array([np.mean(alleles_definitions_RR[i], axis=1)])
+        distance_combinations = np.abs(distances.T - distances)
+        correction_distance_matrix.append(distance_combinations)
+
+    return correction_distance_matrix
 
 
 def test_correction_factor():
@@ -809,27 +822,18 @@ def test_correction_factor():
 
     nloci = 7
 
-    correction_distance_matrix = np.zeros(
-        (nloci, alleles_definitions_RR.shape[1], alleles_definitions_RR.shape[1])
-    )  # for each locus, matrix of distances between each allele
-    for i in range(nloci):
-        # Wrap mean call in "array" so we get a 2D array we can transpose (getting us a grid of distances, not just a 1D vector)
-        distances = np.array([np.mean(alleles_definitions_RR[i], axis=1)])
-        distance_combinations = np.abs(distances.T - distances)
-        correction_distance_matrix[i] = distance_combinations
+    #### correction factor (reinfection)
+    correction_distance_matrix = get_correction_distance_matrix(nloci, alleles_definitions_RR)
 
-    assert np.array_equal(
-        correction_distance_matrix.shape, np.array([7, 13, 13])
-    ), f"{correction_distance_matrix.shape} (expected {np.array([7, 13, 13])})"
-    assert np.array_equal(
-        correction_distance_matrix[0, :, 0], expected_fist_row_col
-    ), f"Row {correction_distance_matrix[0, :, 0]} (expected {expected_fist_row_col})"
-    assert np.array_equal(
-        correction_distance_matrix[0, 0, :], expected_fist_row_col
-    ), f"Column {correction_distance_matrix[0, 0, :]} (expected {expected_fist_row_col})"
+    assert np.array_equal(len(correction_distance_matrix), 7), \
+        f"{len(correction_distance_matrix)} (expected {7})"
+    assert np.array_equal(correction_distance_matrix[0][:, 0], expected_fist_row_col), \
+        f"Row {correction_distance_matrix[0][:, 0]} (expected {expected_fist_row_col})"
+    assert np.array_equal(correction_distance_matrix[0][0, :], expected_fist_row_col), \
+        f"Column {correction_distance_matrix[0][0, :]} (expected {expected_fist_row_col})"
 
 
-def test_run_mcmc_new_proposal():
+def test_run_mcmc_calculate_likelihood():
     # TODO: Find what the actual expected ratio is for the stubbed inputs?
     expected_likelihood_ratio = np.zeros(6)
 
@@ -837,19 +841,13 @@ def test_run_mcmc_new_proposal():
     nids = 6
     nloci = 7
 
-    # TODO: Stubbed data
-    frequencies_RR = np.random.random_sample((3, 7, 19))
-    frequencies_RR[0, :, 0] = np.array([13, 16, 11, 13, 19, 5, 13])
-
     alldistance = np.full_like(np.empty((nids, nloci, maxMOI ** 2)), 1)
     allrecrf = np.full_like(np.empty((nids, nloci, maxMOI ** 2)), 3).astype(int)
-    hidden0 = np.full_like(np.empty((nids, maxMOI * nloci)), np.nan)
-    hiddenf = np.full_like(np.empty((nids, maxMOI * nloci)), np.nan)
     classification = np.repeat(0, nids)
 
     dvect = np.ones(133)  # TODO: What to do when dvect has a 0 value?
-    # TODO: What size is the correction matrix??? Appears to be different for each locus??? (set to max value in frequencies_rr)
-    correction_distance_matrix = np.zeros((nloci, 19, 19)).astype(int)
+    # TODO: Function call makes this dependent on previous unit test
+    correction_distance_matrix = get_correction_distance_matrix(nloci, alleles_definitions_RR)
 
     # propose new classification
     likelihoodratio = np.zeros(nids)
@@ -859,21 +857,21 @@ def test_run_mcmc_new_proposal():
         id_means = np.zeros(nloci)
         for y in range(nloci):
             id_means[y] = np.nanmean(
-                dvect[np.round(alldistance[x, y, :]).astype(int)]
+                dvect[np.round(alldistance[x, y, :][~np.isnan(alldistance[x, y, :])]).astype(int)]
                 # Should get an array of maxMOI**2 sums
                 / np.sum(
-                    frequencies_RR[1, y, : frequencies_RR.astype(int)[0, y, 0]]
-                    * dvect[
-                        correction_distance_matrix[  # TODO: Make sure multiplications are down the right axis (I believe they default to down columns, which is what I want)
-                            y,
-                            : frequencies_RR.astype(int)[
-                                0, y, 0
-                            ],  # TODO: Figure out how to do this more cleanly? (R impementation just used ":", assumed array had correct dimensions)
-                            allrecrf[x, y, : maxMOI ** 2].astype(int),
-                        ]
-                    ],
-                    axis=1,
-                ),  # TODO: Verify it's the right axis?
+                    # TODO: Make sure multiplications are down the right axis (I believe each element in the frequencies_RR 1D vector should multiply across 1 dvect row)
+                    # Double-transpose to multiply across rows, not columns
+                    (frequencies_RR[1][y, :int(frequencies_RR[0][y])]
+                        * dvect[
+                            correction_distance_matrix[y][
+                                :,
+                                allrecrf[x, y, :maxMOI**2][~np.isnan(allrecrf[x, y, :maxMOI**2])].astype(int),
+                            ].astype(int)
+                        ].T
+                    ).T,
+                    axis=0, # TODO: Verify it's the right axis?
+                ),
             )
         likelihoodratio[x] = np.exp(np.sum(np.log(id_means)))
 
@@ -883,25 +881,7 @@ def test_run_mcmc_new_proposal():
     newclassification[np.logical_and(classification == 1, z < 1 / likelihoodratio)] = 0
     classification = newclassification
 
-    # propose new hidden states
-    """
-    # TODO: What does switch_hidden do? Is it entirely side effects? (Also,: can't run this yet, still waiting on implementation)
-    for i in range(nids):
-        switch_hidden(i)
-    """
-
-    # propose q (beta distribution is conjugate distribution for binomial process)
-    q_prior_alpha = 0
-    q_prior_beta = 0
-    q_posterior_alpha = (
-        q_prior_alpha + np.nansum(hidden0 == 1) + np.nansum(hiddenf == 1)
-    )
-    q_posterior_beta = q_prior_beta + np.nansum(hidden0 == 0) + np.nansum(hiddenf == 0)
-    if q_posterior_alpha == 0:
-        q_posterior_alpha = 1
-    if q_posterior_beta == 0:  # TODO: Added this due to numpy warning, possibly remove?
-        q_posterior_beta = 1
-    qq = np.random.beta(q_posterior_alpha, q_posterior_beta)
+    # TODO: Actually test values
 
 
 def test_update_dvect():
@@ -1022,7 +1002,7 @@ test_create_initial_state()
 test_create_dvect()
 test_initialize_recrudesences()
 test_correction_factor()
-test_run_mcmc_new_proposal()
+test_run_mcmc_calculate_likelihood()
 test_update_dvect()
 test_find_allele_modes()
 test_summary_stats_output()
