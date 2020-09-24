@@ -298,7 +298,7 @@ def onload(
     dposterior = 0.75
 
 
-    def runmcmc(iteration, dvect, classification):
+    def runmcmc(iteration, dvect, classification, qq, correction_distance_matrix):
         # propose new classification
         likelihoodratio = np.zeros(nids)
         # TODO: Finish vectorizing this
@@ -333,8 +333,7 @@ def onload(
         # propose new hidden states
         # TODO: What does switch_hidden do? Is it entirely side effects? (Also,: can't run this yet, still waiting on implementation)
         for i in range(nids):
-            switch_hidden(i, hidden0, hiddenf, classification, nloci, maxMOI, recoded0, recodedf, frequencies_RR)
-
+            switch_hidden(i, hidden0, hiddenf, classification, nloci, maxMOI, recoded0, recodedf, frequencies_RR, qq, dvect, correction_distance_matrix, alleles_definitions_RR, alleles0, allelesf, MOI0, MOIf, mindistance, alldistance, allrecrf, recr0, recrf, recr_repeats0, recr_repeatsf)
         # propose q (beta distribution is conjugate distribution for binomial process)
         q_prior_alpha = 0
         q_prior_beta = 0
@@ -393,7 +392,7 @@ def onload(
 
 
     for i in range(nruns):
-        runmcmc(i, dvect, classification)
+        runmcmc(i, dvect, classification, qq, correction_distance_matrix)
 
     ## make sure no NAs in result matrices
     state_parameters = state_parameters[:, ~np.isnan(np.sum(state_parameters, axis=1))]
