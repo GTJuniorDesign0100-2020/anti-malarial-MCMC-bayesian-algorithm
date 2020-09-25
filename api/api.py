@@ -8,11 +8,11 @@ from flask_restful import Resource, Api
 # Initialize Flask
 # =============================================================================
 
-app = Flask(__name__, template_folder='.')
+app = Flask(__name__)
 
 MAX_FILE_SIZE_MB = 50
-app.config['MAX_CONTENT_LENGTH'] = 1024**2
-app.config['UPLOAD_EXTENSIONS'] = ['.csv', '.xlsx']     # Valid filetypes
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE_MB*1024**2
+app.config['UPLOAD_EXTENSIONS'] = ['.csv']      # Valid filetypes
 
 api = Api(app)
 
@@ -38,8 +38,8 @@ class RecrudescenceTest(Resource):
     def __init__(self):
         # TODO: Remove!
         self.PLACEHOLDER_RESPONSE = {
-            'runDate': '2020-09-25T18:14:44+00:00',     # ISO formatted date
-            'totalRunTime': 1806,                       # Run time in seconds
+            'runDate': '2020-09-25T18:14:44+00:00',
+            'totalRunTime': 1806,
             'samples': {
                 'BQ17-269': {
                     'isRecrudescence': False,
@@ -62,10 +62,10 @@ class RecrudescenceTest(Resource):
 
         file_extension = os.path.splitext(uploaded_file.filename)[-1].lower()
         if file_extension not in app.config['UPLOAD_EXTENSIONS']:
-            return error_response('Provided file is not a .csv or .xlsx', 415)
+            return error_response('Provided file is not a .csv', 415)
 
         if iterations < 0:
-            return error_response('{iterations} is an invalid iteration count')
+            return error_response(f'{iterations} is an invalid iteration count')
 
         # TODO: Actually process the file
         return self.PLACEHOLDER_RESPONSE, 200

@@ -47,18 +47,20 @@ Given an input `.csv` file with [drug testing data in the proper format (TODO)](
 
 #### PUSH
 
-**Input Parameters:** *None*
+**Input Parameters (URL):**
+
+-   (optional) `iterations` (integer): The number of iterations to run the algorithm for on the data; higher values are more accurate but take longer to complete. Defaults to 10000.
+
+**Input Parameters (Data):**
 
 -   `file` (.csv file, FormData): The file containing the testing data to be processed.
--   (optional) `iterations` (integer): The number of iterations to run the algorithm for on the code; higher values are more accurate but take longer to complete. Defaults to 10000.
 
 **Example Usage:**
 
 In cURL:
 
 ```bash
-curl -F "file=@Angola2017_example.csb" http://localhost:5000/api/v1/recrudescences?iterations=10
-
+curl -F "file=@example.csv" http://localhost:5000/api/v1/recrudescences?iterations=10
 ```
 
 In Javascript (via `fetch`):
@@ -93,6 +95,6 @@ fetch(`/api/v1/recrudescences?iterations=${NUM_ITERATIONS}`, {
 ```
 
 **Potential Errors:**
--   `400` - Could mean that no input file was provided, or that an invalid number of iterations as given
+-   `400` - No input file was provided, or an invalid number of iterations was given
 -   `413` - The provided file was too large to be processed
 -   `415` - The provided file wasn't a `.csv` file
