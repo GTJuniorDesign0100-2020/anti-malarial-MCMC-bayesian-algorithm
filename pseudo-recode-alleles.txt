@@ -11,6 +11,9 @@ Intermediate Pseudo Code Translation of recode-alleles.r
 #   If no alleles pass thru the filter, the returned value is 'NA',
 #   (I assume this is important for use in mcmc.r - needs conformation.)
 #   else, return a vector of all passed items.
+#
+#   At 5PM on Sept 9th, Matt confirmed this code to be intended to convert numerical
+#   data to categorical.
 #######################################################################################
 
 recodeallele = function(alleles_definitions_subset,proposed) {
