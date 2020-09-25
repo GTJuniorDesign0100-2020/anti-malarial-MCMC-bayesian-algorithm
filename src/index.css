@@ -106,11 +106,11 @@ ol, ul {
   background: #ddd;
 }
 
-.game {
+.mainscreen {
   display: flex;
   flex-direction: row;
 }
 
-.game-info {
+.main-info {
   margin-left: 20px;
 }

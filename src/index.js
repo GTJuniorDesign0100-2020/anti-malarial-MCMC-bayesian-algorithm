@@ -154,14 +154,14 @@ class Board extends React.Component {
   }
 }
 
-class Game extends React.Component {
+class MainScreen extends React.Component {
   render() {
     return (
-      <div className="game">
-        <div className="game-board">
+      <div className="mainscreen">
+        <div className="main-board">
           <Board />
         </div>
-        <div className="game-info">
+        <div className="main-info">
           <div></div>
           <ol></ol>
         </div>
@@ -171,6 +171,6 @@ class Game extends React.Component {
 }
 
 ReactDOM.render(
-  <Game />,
+  <MainScreen />,
   document.getElementById('root')
 );
