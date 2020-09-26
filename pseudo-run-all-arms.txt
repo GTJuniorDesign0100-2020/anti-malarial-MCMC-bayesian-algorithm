@@ -1,0 +1,114 @@
+Intermediate Pseudo Code Translation of run-all-arms.r
+
+###########################################################################################
+# Function 1: onLoad()
+# Notes:
+#   These actions are normally completed when source(run-all-arms.r) is run.
+#   I have encapsulated these in the 'onLoad' function.
+#
+#   site_names:Vector <-- global: (genoTypeData.lateFailures.Site)
+#   state_classification_all: Table
+#   state_parameters_all: Table
+#   ids_all: Vector
+#
+#   for every site in site names,
+#       jobname: Number <-- site
+#       genotypedata_RR: Table
+#           take the rows from genotypedata_latefailures with the same sites, and remove the sites column.
+#       additional_neutral: Table
+#           take the rows from additional_genotypedata with the same sites, and remove the sites column.
+#       if the dimensionality of 'additional_neutral' is greater then 0...
+#           (?) Add a column of ids for each row of additional neutral.
+#
+#       * Run the mcmc.onLoad() script. *
+#       (This seems to generate some rows and a vector of ids.)
+#
+#       Append a row known as 'state_classification' to state_classification_all.
+#       Append a row known as 'state_parameters' to state_parameters_all
+#       Append a vector known as 'ids' to ids_all
+#
+#   posterior_distribution_or_recrudescence:Table (Not defined here?)
+#   (?) Set the name of the first (second?) column of posterior table to 'ID'
+#   probability of recrudescence: Vector <-- A vector of the means of the state_classification_all rows.
+#
+#   Make a histogram representing the distribution of probabilities of recrudescence.
+#       use probability of recrudescence data (all values are 0-1)
+#       10 buckets
+#       Title = "Distribution of posterior probability of recrudescence"
+#       X-Label = "Posterior probability of recrudescence"
+#
+#   Save the posterior_of_recrudescence Table to the file 'microsatellite_correction.csv'
+#   Save the probability_of_recrudescence to the file 'probability of recrudescence.csv'
+###########################################################################################
+
+### identify arms (based on site column)
+site_names = unique(genotypedata_latefailures$Site)
+
+state_classification_all = c()
+state_parameters_all = c()
+ids_all = c()
+
+for (site in site_names) {
+	jobname = site
+	genotypedata_RR = genotypedata_latefailures[genotypedata_latefailures$Site==site,-c(2)]
+	additional_neutral = additional_genotypedata[additional_genotypedata$Site==site,-c(2)]
+	if (dim(additional_neutral)[1] > 0) { additional_neutral$Sample.ID = paste("Additional_",1:dim(additional_neutral)[1],sep="")}
+	source("mcmc.r")
+
+	state_classification_all = rbind(state_classification_all,state_classification)
+	state_parameters_all = rbind(state_parameters_all,state_parameters)
+	ids_all = c(ids_all,ids)
+}
+
+posterior_distribution_of_recrudescence = rbind(cbind2(ids_all,(state_classification_all)))
+colnames(posterior_distribution_of_recrudescence)[1] = "ID"
+
+probability_of_recrudescence = rowMeans2(state_classification_all)
+
+hist(probability_of_recrudescence,breaks=10,main="Distribution of posterior probability of recrudescence",xlab="Posterior probability of recrudescence")
+
+write.csv(posterior_distribution_of_recrudescence,"microsatellite_correction.csv",row.names=FALSE)
+write.csv(probability_of_recrudescence ,"probability_of_recrudescence.csv",row.names=FALSE)
+
+###########################################################################################
+# Function 2: rowMeans2
+# Notes:
+#   Appears to be a simple wrapper for existing statistical functions in R. (Not True)
+#   Further investigation seems to suggest this is overriding existing function of the same name in base R.
+#
+#   Function takes the mean for each row of the table X.
+#   Seems like this doesn't work for single row scenario,
+#   which is what necessitates this definition.
+#
+#   Shouldn't be necessary in numpy.
+###########################################################################################
+
+rowMeans2 = function(x){
+  if (length(dim(x)) == 0) {
+    ret = mean(x)
+  } else {
+    ret = rowMeans(x)
+  }
+  ret
+}
+
+###########################################################################################
+# Function 3: cbind2
+# Notes:
+#   Appears to be a simple wrapper for existing statistical functions in R. (Not True)
+#   Further investigation seems to suggest this is overriding existing function of the same name in base R.
+#
+#   Similarly, this function is overriding behaivor of R which dictates how
+#   two data frames are combined by column. It seems like a vector has a dimensionality
+#   of 'NULL' in R. We should be able to avoid this function by ensuring
+#   we use numpy arrays of 2 dimensions.
+###########################################################################################
+
+cbind2 = function(y,x){
+  if (length(dim(x)) == 0) {
+    ret = c(y,x)
+  } else {
+    ret = cbind(y,x)
+  }
+  ret
+}
