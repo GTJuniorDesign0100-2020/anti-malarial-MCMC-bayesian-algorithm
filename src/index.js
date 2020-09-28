@@ -159,16 +159,18 @@ class Board extends React.Component {
 
   }
 
-  handleDLClick(i, fileInputElement) {
+  handleDLClick(fileInputElement) {
       const NUM_ITERATIONS = 100
       let formData = new FormData();
+      let a = document.createElement('a');
       formData.append('file', fileInputElement.files[0])
       fetch(`/api/v1/recrudescences?iterations=${NUM_ITERATIONS}`, {
           method: 'POST',
           body: formData
       })
       .then(response => {
-          // (...)
+          a.download = response.json();
+          a.click();
       });
   }
 
@@ -184,7 +186,7 @@ class Board extends React.Component {
   renderTestRun(i) {
       return (
           <RunButton
-            value={this.state.help[i]}
+            onClick={() => this.handleDLClick(i)}
           />
       );
   }
