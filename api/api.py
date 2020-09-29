@@ -57,7 +57,7 @@ class RecrudescenceTest(Resource):
         uploaded_file = request.files.get('file')
         iterations = request.args.get('iterations', default=10000, type=int)
         # TODO: Find cleaner way of doing validation?
-        if not (uploaded_file or uploaded_file.filename):
+        if not (uploaded_file and uploaded_file.filename):
             return error_response('No input file provided')
 
         file_extension = os.path.splitext(uploaded_file.filename)[-1].lower()

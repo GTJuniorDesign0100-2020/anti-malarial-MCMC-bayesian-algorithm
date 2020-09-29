@@ -59,27 +59,34 @@ class RunButton extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            csvFile: '', numIters: ''
+            csvFile: '', numIters: 10000
         };
+
+        // bind functions to this class
         this.handleChangeFile = this.handleChangeFile.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+        this.handleChangeIters = this.handleChangeIters.bind(this);
     }
 
     handleSubmit(event) {
         event.preventDefault();
-        return this.state.csvFile;
+        this.props.handleSubmit(this.state.csvFile, this.state.numIters);
     }
 
     handleChangeFile(event) {
-        alert('File Submitted for Processing');
-        this.setState({csvFile: event.target.value});
+        console.log(`Got CSV file ${event.target.files[0].name}`);
+        this.setState({csvFile: event.target.files[0]});
+    }
+
+    handleChangeIters(event) {
+        this.setState({numIters: event.target.value});
     }
 
   render() {
     return (
       <Popup trigger={<button className="testRun"> Run Test</button>} position="bottom left">
       <div className="testPop">
-        <form onsubmit={this.handleSubmit}>
+        <form onSubmit={this.handleSubmit}>
             <label>
                 CSV File: <br/>
                 <input type="file" name="CSVFile" onChange={this.handleChangeFile}/><br/><br/>
@@ -88,7 +95,7 @@ class RunButton extends React.Component {
                 Number of Chr Fragments: <br/>
                 <input type="number" name="numFrags"/><br/><br/>
                 Number of Iterations: <br/>
-                <input type="number" name="numIts"/><br/><br/>
+                <input type="number" value={this.state.numIters} name="numIts" onChange={this.handleChangeIters}/><br/><br/>
             </label>
             <input type="submit" value="Run Test"/>
         </form>
@@ -159,18 +166,22 @@ class Board extends React.Component {
 
   }
 
-  handleDLClick(fileInputElement) {
-      const NUM_ITERATIONS = 100
+  handleDLClick(csvFile) {
+      const NUM_ITERATIONS = 100;
       let formData = new FormData();
       let a = document.createElement('a');
-      formData.append('file', fileInputElement.files[0])
+      formData.append('file', csvFile);
       fetch(`/api/v1/recrudescences?iterations=${NUM_ITERATIONS}`, {
           method: 'POST',
           body: formData
       })
       .then(response => {
-          a.download = response.json();
-          a.click();
+          response.json().then(jsonData => {
+            console.log(jsonData);
+            // TODO: Does this link-clicking actually do anything?
+            a.download = jsonData;
+            a.click();
+          });
       });
   }
 
@@ -186,7 +197,9 @@ class Board extends React.Component {
   renderTestRun(i) {
       return (
           <RunButton
-            onClick={() => this.handleDLClick(i)}
+            handleSubmit={(csvFile, numIters) => {
+              this.handleDLClick(csvFile);
+            }}
           />
       );
   }
