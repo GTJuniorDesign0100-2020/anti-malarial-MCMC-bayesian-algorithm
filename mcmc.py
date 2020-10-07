@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import scipy.stats as sp_stats
+import copy
 
 from define_alleles import *
 from calculate_frequencies import *
@@ -372,16 +373,19 @@ def onload(
 
         # update frequencies
         # remove recrudescing alleles from calculations
-        tempdata = np.copy(recoded0)
+        # TODO: Deep or Shallow?
+        tempdata = copy.deepcopy(recoded0)
+        # TODO: Ask about this line *** sapply(which(classification == 1), function (x) tempdata[x,recr0[x,]] <<- 0) *** in the OG code.
         recrudescent_alleles = np.where(classification == 1)
-        print("recrudescent_alleles")
-        print(recrudescent_alleles)
-        print("recr0[recrudescent_alleles, :]")
-        print(recr0[recrudescent_alleles, :])
-        tempdata[recrudescent_alleles, recr0[recrudescent_alleles, :]] = 0
-        tempdata = pd.concat([tempdata, recodedf])
+        if (np.shape(recrudescent_alleles)[1] > 0):
+            end = recr0[recrudescent_alleles, :]
+            index = recrudescent_alleles, end.astype(int)
+            tempdata[index] = 0
+
+        tempdata = np.concatenate((tempdata, recodedf),axis = 0)
         for i in range(nloci):
-            findposteriorfrequencies(x, pd.concat([tempdata, recoded_additional_neutral]))
+            # TODO: RESOLVE ISSUE IN THIS LOOP! (Use x here, or i?)
+            findposteriorfrequencies(x, np.concatenate((tempdata, recoded_additional_neutral),axis=0))
 
         # record state
         if iteration > burnin and iteration % record_interval == 0:
