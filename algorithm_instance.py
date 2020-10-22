@@ -3,8 +3,8 @@ import typing
 import numpy as np
 import pandas as pd
 
+from algorithm_site_instance import AlgorithmSiteInstance
 from data_file_parser import DataFileParser
-import mcmc
 from recrudescence_file_parser import RecrudescenceFileParser
 
 
@@ -118,50 +118,3 @@ class AlgorithmInstance:
 
         # NOTE: Not saving to .csv yet as in original code (make that a separate module)
         return posterior_recrudescence_distribution, probability_of_recrudescence
-
-
-class AlgorithmSiteInstance:
-    '''
-    Handles running the MCMC malaria recrudescence algorithm for a single
-    "arm"/site's data
-    '''
-
-    def __init__(
-        self,
-        genotypedata_RR: pd.DataFrame,
-        additional_neutral: pd.DataFrame,
-        locirepeats: typing.List[int]):
-        '''
-        Sets up the initial data structures needed before running the algorithm
-        '''
-        # TODO: Actually implement this!
-        self.genotypedata_RR = genotypedata_RR
-        self.additional_neutral = additional_neutral
-        self.locirepeats = locirepeats
-
-    def run_algorithm(self, jobname: str, nruns: int=1000, burnin: int=100, record_interval: int=10, seed=None):
-        '''
-        Runs the actual algorithm on this site's data and returns the results
-        TODO: Expand on this
-
-        :param jobname: The name to label output data/files from this run with
-        :param nruns: (optional) The number of iterations to run the algorithm;
-        more iterations will take longer, but will be more accurate
-        :param burnin: (optional) The number of initial iterations to not store
-        data for (as the algorithm won't have converged/have usable results by
-        that point)
-        :param record_interval: (optional) Record data from the algorithm every
-        "record_interval" iterations
-        :param seed: (optional) The seed to use for random numbers when running
-        (defaults to completely random)
-        :return: TODO:
-        '''
-        # TODO: Actually implement this!
-        return mcmc.onload(
-            self.genotypedata_RR,
-            self.additional_neutral,
-            self.locirepeats,
-            nruns,
-            burnin,
-            record_interval,
-            jobname)
