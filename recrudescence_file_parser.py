@@ -39,14 +39,51 @@ class RecrudescenceFileParser(DataFileParser):
         pandas
         :return: TODO: Describe structure
         '''
-        # TODO: Implement this!
-        return None
+        genotypedata_latefailures = raw_file_info.parse(
+            "Late Treatment Failures", skiprows=3)
+        cls._replace_missing_data(genotypedata_latefailures)
+
+        # recode sample names so that each pair has a " Day 0" and a " Day Failure"
+        # NOTE: This currently leaves the underscore in the ID name (which the original R code does as well)
+        genotypedata_latefailures['Sample ID'] = genotypedata_latefailures['Sample ID'].str.replace('D0$', ' Day 0')
+        genotypedata_latefailures['Sample ID'] = genotypedata_latefailures['Sample ID'].str.replace('D[0-9]+$', ' Day Failure')
+
+        # verify each sample has a Day 0 and a Day of Failure
+        day_0_ids = cls._get_unique_matching_sample_ids(genotypedata_latefailures, 'Day 0')
+        day_fail_ids = cls._get_unique_matching_sample_ids(genotypedata_latefailures, 'Day Failure')
+
+        print(day_0_ids)
+
+        if day_0_ids.size != day_fail_ids.size:
+            # TODO: Use more specific exception
+            raise Exception('Error - each sample must have day 0 and day of failure data')
+
+        return genotypedata_latefailures
+
+    @classmethod
+    def _get_unique_matching_sample_ids(cls, genotypedata: pd.DataFrame, search_text: str):
+        '''
+        Returns a numpy array of all the "Sample ID"s in the dataframe whose
+        name contains the matching text
+
+        TODO: Currently assumes underscore remains in ID name
+        TODO: Could potentially be refactored to a more general function?
+
+        :param genotypedata: The data to search
+        :param search_text: The substring to look for in the
+        '''
+        matching_sample_names = genotypedata[
+                genotypedata['Sample ID'].str.contains(search_text)
+            ]['Sample ID']
+        # Remove day from sample
+        sample_id_names = matching_sample_names.str.rsplit('_', n=1).str.get(0)
+        return pd.unique(sample_id_names)
 
     @classmethod
     def _get_additional_genotype_data(cls, raw_file_info: pd.ExcelFile):
         '''
-        Returns a dataframe with all the sample data from the "Late Treatment
-        Failures" tab of the Excel data spreadsheet
+        Returns a dataframe with all the sample data from the "Additional" tab
+        of the Excel data spreadsheet
 
         :param raw_file_info: The input data file, opened as an Excel sheet in
         pandas
@@ -56,18 +93,20 @@ class RecrudescenceFileParser(DataFileParser):
         return None
 
     @classmethod
-    def _replace_missing_data(cls, dataframe: pd.DataFrame):
+    def _replace_missing_data(cls, df: pd.DataFrame):
         '''
         Replaces any missing data in the dataframe with NaN values (i.e.
         numpy.nan)
 
-        :param dataframe: The pandas dataframe to replace the values in
+        :param df: The pandas dataframe to replace the values in
         :return: The dataframe with the missing values replaced (although it
         should update the original dataframe anyway)
         '''
-        dataframe.replace(0, np.nan)
-        dataframe.replace('0', np.nan)
-        dataframe.replace('N/A', np.nan)
-        dataframe.replace('NA', np.nan)
-        dataframe.replace('-', np.nan)
-        return dataframe
+        df.replace(0, np.nan)
+        df.replace('0', np.nan)
+        df.replace('N/A', np.nan)
+        df.replace('NA', np.nan)
+        df.replace('-', np.nan)
+        return df
+
+RecrudescenceFileParser.parseFile('Angola2017_example.xlsx')
