@@ -4,13 +4,15 @@ import numpy as np
 import pandas as pd
 
 from data_file_parser import DataFileParser
+import mcmc
 from recrudescence_file_parser import RecrudescenceFileParser
 
 
 class AlgorithmInstance:
     '''
     Handles setting up and running an instance of the MCMC recrudescence
-    algorithm on the given malaria test data file
+    algorithm on the given malaria test data file (for all "arms"/sites in the
+    data)
     '''
 
     def __init__(
@@ -79,12 +81,43 @@ class AlgorithmInstance:
         '''
         Runs the actual MCMC algorithm for each site, and returns the combined
         data for all of the sites
+        TODO: Elaborate
         '''
         # Set up data structures to hold results
-        state_classification_all = pd.DataFrame()
-        state_parameters_all = pd.DataFrame()
+        saved_classification_all = pd.DataFrame()
+        saved_parameters_all = pd.DataFrame()
         ids_all = np.array([])
-        # TODO: Finish implementing this!
+
+        for site_name, algo_instance in self.algorithm_instances:
+            saved_classification, saved_params, ids = algo_instance.run_algorithm(
+                site_name,
+                nruns,
+                burnin,
+                record_interval,
+                seed)
+
+            # save site results
+            saved_classification_all = pd.concat(saved_classification_all, saved_classification)
+            saved_parameters_all = pd.concat(saved_parameters_all, saved_params)
+            ids_all = np.append(ids_all, ids)
+
+        return self._get_summary_stats(saved_classification_all, saved_parameters_all, ids_all)
+
+    def _get_summary_stats(self, saved_classification, saved_parameters, ids):
+        '''
+        Calculate the final recrudescence probabilities and distributions for
+        each sample
+        TODO: Elaborate
+        '''
+        posterior_recrudescence_distribution = pd.concat(ids, saved_classification)
+        posterior_recrudescence_distribution.rename(columns={
+            posterior_recrudescence_distribution.columns[0]: 'ID'
+        }, inplace=True)
+        # Get the mean of each row
+        probability_of_recrudescence = np.mean(saved_classification, axis=1)
+
+        # NOTE: Not saving to .csv yet as in original code (make that a separate module)
+        return posterior_recrudescence_distribution, probability_of_recrudescence
 
 
 class AlgorithmSiteInstance:
@@ -101,4 +134,34 @@ class AlgorithmSiteInstance:
         '''
         Sets up the initial data structures needed before running the algorithm
         '''
-        # TODO: Implement this!
+        # TODO: Actually implement this!
+        self.genotypedata_RR = genotypedata_RR
+        self.additional_neutral = additional_neutral
+        self.locirepeats = locirepeats
+
+    def run_algorithm(self, jobname: str, nruns: int=1000, burnin: int=100, record_interval: int=10, seed=None):
+        '''
+        Runs the actual algorithm on this site's data and returns the results
+        TODO: Expand on this
+
+        :param jobname: The name to label output data/files from this run with
+        :param nruns: (optional) The number of iterations to run the algorithm;
+        more iterations will take longer, but will be more accurate
+        :param burnin: (optional) The number of initial iterations to not store
+        data for (as the algorithm won't have converged/have usable results by
+        that point)
+        :param record_interval: (optional) Record data from the algorithm every
+        "record_interval" iterations
+        :param seed: (optional) The seed to use for random numbers when running
+        (defaults to completely random)
+        :return: TODO:
+        '''
+        # TODO: Actually implement this!
+        return mcmc.onload(
+            self.genotypedata_RR,
+            self.additional_neutral,
+            self.locirepeats,
+            nruns,
+            burnin,
+            record_interval,
+            jobname)
