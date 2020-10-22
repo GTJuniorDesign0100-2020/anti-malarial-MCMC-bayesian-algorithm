@@ -3,8 +3,10 @@ import typing
 import numpy as np
 import pandas as pd
 
-import mcmc
+from calculate_frequencies import calculate_frequencies3
 from define_alleles import define_alleles
+import mcmc
+
 
 class AlgorithmSiteInstance:
     '''
@@ -108,8 +110,11 @@ class SiteInstanceState:
         self._initialize_alleles(
             genotypedata_RR, alleles_definitions_RR, locinames, maxMOI)
 
-        # estimate frequencies (TODO: Unsure if this should be here?)
-        self.frequencies
+        # estimate frequencies (TODO: Unsure if this should be here, since it's
+        # static state?)
+        self.frequencies_RR = calculate_frequencies3(
+            pd.concat([genotypedata_RR, additional_neutral]),
+            alleles_definitions_RR)
 
 
     def _create_empty_state(self, num_ids: int, num_loci: int, max_MOI: int):
