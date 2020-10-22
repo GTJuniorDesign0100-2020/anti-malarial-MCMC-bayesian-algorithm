@@ -385,7 +385,7 @@ def onload(
         tempdata = np.concatenate((tempdata, recodedf),axis = 0)
         for i in range(nloci):
             # TODO: RESOLVE ISSUE IN THIS LOOP! (Use x here, or i?)
-            findposteriorfrequencies(x, np.concatenate((tempdata, recoded_additional_neutral),axis=0))
+            findposteriorfrequencies(i, np.concatenate((tempdata, recoded_additional_neutral),axis=0), maxMOI, frequencies_RR)
 
         # record state
         if iteration > burnin and iteration % record_interval == 0:
