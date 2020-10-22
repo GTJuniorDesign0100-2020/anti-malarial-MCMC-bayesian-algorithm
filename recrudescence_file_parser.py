@@ -10,7 +10,7 @@ class RecrudescenceFileParser(DataFileParser):
     '''
 
     @classmethod
-    def parseFile(cls, input_file_path: str):
+    def parse_file(cls, input_file_path: str):
         '''
         Attempts to parse the given malaria test data file and returns data
         structures usable by the MCMC algorithm; if this fails, throws an
@@ -40,7 +40,7 @@ class RecrudescenceFileParser(DataFileParser):
         :return: TODO: Describe structure
         '''
         genotypedata_latefailures = raw_file_info.parse(
-            "Late Treatment Failures", skiprows=3)
+            'Late Treatment Failures', skiprows=3)
         cls._replace_missing_data(genotypedata_latefailures)
 
         # recode sample names so that each pair has a " Day 0" and a " Day Failure"
@@ -51,8 +51,6 @@ class RecrudescenceFileParser(DataFileParser):
         # verify each sample has a Day 0 and a Day of Failure
         day_0_ids = cls._get_unique_matching_sample_ids(genotypedata_latefailures, 'Day 0')
         day_fail_ids = cls._get_unique_matching_sample_ids(genotypedata_latefailures, 'Day Failure')
-
-        print(day_0_ids)
 
         if day_0_ids.size != day_fail_ids.size:
             # TODO: Use more specific exception
@@ -89,8 +87,16 @@ class RecrudescenceFileParser(DataFileParser):
         pandas
         :return: TODO: Describe structure
         '''
+        additional_genotypedata = raw_file_info.parse('Additional', skiprows=3)
+        cls._replace_missing_data(additional_genotypedata)
+
+        # recode sample names to " Day 0" and " Day Failure"
+        # NOTE: Unlike the above, this does NOT leave underscores
+        additional_genotypedata['Sample ID'] = additional_genotypedata['Sample ID'].str.replace('_D0$', ' Day 0')
+        additional_genotypedata['Sample ID'] = additional_genotypedata['Sample ID'].str.replace('_D[0-9]+$', ' Day Failure')
+
         # TODO: Implement this!
-        return None
+        return additional_genotypedata
 
     @classmethod
     def _replace_missing_data(cls, df: pd.DataFrame):
@@ -102,11 +108,9 @@ class RecrudescenceFileParser(DataFileParser):
         :return: The dataframe with the missing values replaced (although it
         should update the original dataframe anyway)
         '''
-        df.replace(0, np.nan)
-        df.replace('0', np.nan)
-        df.replace('N/A', np.nan)
-        df.replace('NA', np.nan)
-        df.replace('-', np.nan)
+        df.replace(0, np.nan, inplace=True)
+        df.replace('0', np.nan, inplace=True)
+        df.replace('N/A', np.nan, inplace=True)
+        df.replace('NA', np.nan, inplace=True)
+        df.replace('-', np.nan, inplace=True)
         return df
-
-RecrudescenceFileParser.parseFile('Angola2017_example.xlsx')
