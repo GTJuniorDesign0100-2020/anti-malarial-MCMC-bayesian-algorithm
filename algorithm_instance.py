@@ -32,12 +32,10 @@ class AlgorithmInstance:
         site_names = pd.unique(genotypedata_latefailures['Site'])
         self.algorithm_instances = []
         for site_name in site_names:
-            site_genotypedata_RR = genotypedata_latefailures[
-                    genotypedata_latefailures['Site'] == site_name
-                ].drop(columns='Site')
-            site_additional_neutral = additional_genotypedata[
-                    additional_genotypedata['Site'] == site_name
-                ].drop(columns='Site')
+            site_genotypedata_RR = self._get_samples_from_site(
+                genotypedata_latefailures, site_name)
+            site_additional_neutral = self._get_samples_from_site(
+                additional_genotypedata, site_name)
 
             self._replace_sample_names(site_additional_neutral, 'Additional_')
 
@@ -46,6 +44,19 @@ class AlgorithmInstance:
                 site_additional_neutral,
                 locirepeats)
             self.algorithm_instances.append((site_name, site_instance))
+
+    @classmethod
+    def _get_samples_from_site(cls, samples_df: pd.DataFrame, site_name: str):
+        '''
+        Returns a dataframe that only contains samples from the given site, with
+        the site information removed from the dataframe
+
+        :param sample_df: The dataframe containing the sample data
+        :param site_name: The name of the site we want samples for
+        :return: A new dataframe containing only samples from "site_name" with
+        the "Site" column dropped
+        '''
+        return samples_df[samples_df['Site'] == site_name].drop(columns='Site')
 
     @classmethod
     def _replace_sample_names(cls, samples_df: pd.DataFrame, text: str='Additional_'):
