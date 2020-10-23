@@ -435,6 +435,8 @@ expected_maxMOI = 5
 locirepeats = np.array([2, 2, 3, 3, 3, 3, 3])
 expected_ids = pd.unique(["BQ17-269", "BD17-040", "BD17-083", "BD17-085", "BD17-087", "BD17-090"])
 expected_locinames = pd.unique(["313", "383", "TA1", "POLYA", "PFPK2", "2490", "TA109"])
+alleles_definitions_RR = AlgorithmSiteInstance._get_allele_definitions(
+        genotypedata_RR, additional_neutral, expected_locinames.size, locirepeats)
 
 
 def test_max_MOI():
@@ -472,9 +474,6 @@ def test_create_initial_state():
     expected_recoded0_firstCol = np.array([5, 12, 2, 4, 4, 8])
     expected_recodedf_firstCol = np.array([6, 3, 7, 9, 13, 1])
 
-    alleles_definitions_RR = AlgorithmSiteInstance._get_allele_definitions(
-        genotypedata_RR, additional_neutral, expected_locinames.size, locirepeats)
-
     state = SiteInstanceState(expected_ids, expected_locinames, expected_maxMOI, genotypedata_RR, additional_neutral, alleles_definitions_RR)
 
     np.testing.assert_array_equal(
@@ -490,9 +489,6 @@ def test_create_initial_state():
 def test_recode_additional_neutral():
     expected_first_column = np.array([6, 10, 1, 3, 7, 5, 9, 4, 3, 1, 0, 2, 11, 2])
 
-    alleles_definitions_RR = AlgorithmSiteInstance._get_allele_definitions(
-        genotypedata_RR, additional_neutral, expected_locinames.size, locirepeats)
-
     recoded_additional_neutral = SiteInstanceState.recode_additional_neutral(
         additional_neutral, alleles_definitions_RR, expected_locinames, expected_maxMOI)
 
@@ -500,102 +496,19 @@ def test_recode_additional_neutral():
         recoded_additional_neutral[:, 0], expected_first_column)
 
 
-@pytest.mark.xfail(reason='Not implemented in refactor')
-def test_initialize_hidden_alleles():
+@pytest.mark.xfail(reason='Not sure what to test for')
+def test_random_initialization():
     # TODO: How to do expected values for stochastic functions?
-    # ===============================
-    # Initialize
-    maxMOI = 5
-    nids = 6
-    nloci = 7
+    # TODO: Test smaller functions to make sure they're correct first?
 
-    MOI0 = np.array([2, 3, 2, 3, 2, 3])
-    MOIf = np.array([2, 2, 2, 3, 2, 2])
+    state = SiteInstanceState(expected_ids, expected_locinames, expected_maxMOI, genotypedata_RR, additional_neutral, alleles_definitions_RR)
 
-    alleles0 = np.zeros((nids, maxMOI * nloci))
-    recoded0 = np.zeros((nids, maxMOI * nloci))
-    hidden0 = np.full_like(np.empty((nids, maxMOI * nloci)), np.nan)
-    allelesf = np.zeros((nids, maxMOI * nloci))
-    recodedf = np.zeros((nids, maxMOI * nloci))
-    hiddenf = np.full_like(np.empty((nids, maxMOI * nloci)), np.nan)
-
-    # TODO: Not sure what the proper shape of these are (frequencies_RR seems to have different-sized rows, with the 1st row all ints and the 2nd all floats???)
-    # TODO: These are stubbed (waiting on correct implementation)
-    frequencies_RR = np.random.random_sample((3, 7, 19))
-    frequencies_RR[0, :, 0] *= frequencies_RR.shape[1]
-    alleles_definitions_RR = np.zeros((13, 7, 2))
-    # ===============================
-
-    # TODO: Figure out what this code is overall trying to do (replace non-0 elements with random values? Why is it important that the values are assigned from frequencies_RR?)
-    for i in range(nids):
-        for j in range(nloci):
-            # TODO: Code almost duplicated between top/bottom portions; refactor into single function? (needs 9 inputs: maxMOI, nids, nloci, MOIarray, alleles/recoded/hidden array, alleles_definitions_RR, frequencies_RR)
-            # TODO: Start/end of what?
-            start = maxMOI * j
-            end = maxMOI * (j + 1)
-
-            nalleles0 = np.count_nonzero(alleles0[i, start:end])
-            nmissing0 = MOI0[i] - nalleles0
-
-            # TODO: Rename "nonzero_indices" and "zero_indices"?
-            whichnotmissing0 = np.arange(start, end)[
-                np.where(alleles0[i, start : start + MOI0[i]] != 0)
-            ]
-            whichmissing0 = np.arange(start, end)[
-                np.where(alleles0[i, start : start + MOI0[i]] == 0)
-            ]
-
-            if nalleles0 > 0:
-                hidden0[i, whichnotmissing0] = 0
-            if nmissing0 > 0:
-                newhiddenalleles0 = np.random.choice(
-                    np.arange(
-                        0, int(frequencies_RR[0, j, 0])
-                    ),  # Select from first row (count of how many probabilities they are)
-                    size=nmissing0,
-                    replace=True,
-                    p=frequencies_RR[1, j, 0 : int(frequencies_RR[0, j, 0])]
-                    / frequencies_RR[1, j, 0 : int(frequencies_RR[0, j, 0])].sum(),
-                )  # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
-                recoded0[i, whichmissing0] = newhiddenalleles0
-                # calculate row means
-                alleles0[i, whichmissing0] = np.mean(alleles_definitions_RR[j], axis=1)[
-                    newhiddenalleles0
-                ]  # hidden alleles get mean allele length
-                hidden0[i, whichmissing0] = 1
-
-            nallelesf = np.count_nonzero(allelesf[i, start:end])
-            nmissingf = MOIf[i] - nallelesf
-
-            # TODO: Rename "nonzero_indices" and "zero_indices"?
-            whichnotmissingf = np.arange(start, end)[
-                np.where(allelesf[i, start : start + MOIf[i]] != 0)
-            ]
-            whichmissingf = np.arange(start, end)[
-                np.where(allelesf[i, start : start + MOIf[i]] == 0)
-            ]
-
-            if nallelesf > 0:
-                hiddenf[i, whichnotmissingf] = 0
-            if nmissingf > 0:
-                newhiddenallelesf = np.random.choice(
-                    np.arange(
-                        0, int(frequencies_RR[0, j, 0])
-                    ),  # Select from first row (count of how many probabilities they are)
-                    size=nmissingf,
-                    replace=True,
-                    p=frequencies_RR[1, j, 0 : int(frequencies_RR[0, j, 0])]
-                    / frequencies_RR[1, j, 0 : int(frequencies_RR[0, j, 0])].sum(),
-                )  # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
-                recodedf[i, whichmissingf] = newhiddenallelesf
-                # calculate row means
-                allelesf[i, whichmissingf] = np.mean(alleles_definitions_RR[j], axis=1)[
-                    newhiddenallelesf
-                ]  # hidden alleles get mean allele length
-                hiddenf[i, whichmissingf] = 1
-
-        # TODO: Figure out how to actually test this w/ random sampling?
-        assert False, "test_initialize_hidden_alleles() using stubbed data for now"
+    state.randomize_initial_assignments(
+        expected_ids.size,
+        expected_locinames.size,
+        expected_maxMOI,
+        alleles_definitions_RR,
+        2020)
 
 
 @pytest.mark.xfail(reason='Not implemented in refactor')
@@ -629,71 +542,6 @@ def test_create_dvect():
     dvect[3] = 0.05
 
     assert dvect.size == 133, f"Dvect size {dvect.size} (expected {133})"
-
-
-@pytest.mark.xfail(reason='Not implemented in refactor')
-def test_initialize_recrudesences():
-    maxMOI = 5
-    nids = 6
-    nloci = 7
-
-    MOI0 = np.array([2, 3, 2, 3, 2, 3])
-    MOIf = np.array([2, 2, 2, 3, 2, 2])
-
-    recr0 = np.full_like(np.empty((nids, nloci)), np.nan)
-    recrf = np.full_like(np.empty((nids, nloci)), np.nan)
-    recr_repeats0 = np.full_like(np.empty((nids, nloci)), np.nan)
-    recr_repeatsf = np.full_like(np.empty((nids, nloci)), np.nan)
-
-    mindistance = np.zeros((nids, nloci))
-    alldistance = np.full_like(np.empty((nids, nloci, maxMOI ** 2)), np.nan)
-    allrecrf = np.full_like(np.empty((nids, nloci, maxMOI ** 2)), np.nan)
-    classification = np.repeat(0, nids)
-
-    # TODO: Stubbed data
-    alleles0 = 100 * np.random.random_sample((nids, maxMOI * nloci))
-    allelesf = 100 * np.random.random_sample((nids, maxMOI * nloci))
-    recoded0 = np.random.randint(10, size=(nids, maxMOI * nloci))
-    recodedf = np.random.randint(10, size=(nids, maxMOI * nloci))
-
-    for i in range(nids):
-        z = np.random.uniform(size=1)
-        if z < 0.5:
-            classification[i] = 1
-        for j in range(
-            nloci
-        ):  # determine which alleles are recrudescing (for beginning, choose closest pair)
-            allpossiblerecrud = np.stack(
-                np.meshgrid(np.arange(MOI0[i]), np.arange(MOIf[i]))
-            ).T.reshape(-1, 2)
-
-            allele0_col_indices = maxMOI * j + allpossiblerecrud[:, 0]
-            allelef_col_indices = maxMOI * j + allpossiblerecrud[:, 1]
-
-            recrud_distances = np.abs(
-                alleles0[i, allele0_col_indices] - allelesf[i, allelef_col_indices]
-            )
-            # rename to "closest_recrud_index"?
-            closestrecrud = np.argmin(recrud_distances)
-
-            mindistance[i, j] = recrud_distances[closestrecrud]
-            alldistance[i, j, : recrud_distances.size] = recrud_distances
-
-            allrecrf[i, j, : allpossiblerecrud.shape[0]] = recodedf[
-                i, maxMOI * j + allpossiblerecrud[:, 1]
-            ]
-            recr0[i, j] = maxMOI * j + allpossiblerecrud[closestrecrud, 0]
-            recrf[i, j] = maxMOI * j + allpossiblerecrud[closestrecrud, 1]
-
-            recr_repeats0[i, j] = np.sum(
-                recoded0[i, maxMOI * j : maxMOI * (j + 1)]
-                == recoded0[i, int(recr0[i, j])]
-            )  # TODO: int() only needed for stub
-            recr_repeatsf[i, j] = np.sum(
-                recodedf[i, maxMOI * j : maxMOI * (j + 1)]
-                == recodedf[i, int(recrf[i, j])]
-            )  # TODO: int() only needed for stub
-    # TODO: Actually test this
 
 
 @pytest.mark.xfail(reason='Not implemented in refactor')
@@ -893,7 +741,7 @@ def test_summary_stats_output():
     jobname = "TEST"
 
     # summary statistics of parameters
-    pd.DataFrame(state_parameters).to_csv(f"{jobname}_state_parameters.csv")
+    # pd.DataFrame(state_parameters).to_csv(f"{jobname}_state_parameters.csv")
 
     summary_statisticsmatrix = np.concatenate(
         (
@@ -921,4 +769,4 @@ def test_summary_stats_output():
         summary_statisticsmatrix,
         index=["q", "d", *locinames.tolist(), *locinames.tolist(), "Mean diversity"],
     )
-    summary_statisticsmatrix_df.to_csv(f"{jobname}_summarystatistics.csv")
+    # summary_statisticsmatrix_df.to_csv(f"{jobname}_summarystatistics.csv")

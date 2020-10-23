@@ -441,14 +441,10 @@ class SiteInstanceState:
         num_alleles = np.count_nonzero(alleles[i, start:end])
         num_missing = MOIs[i] - num_alleles
 
-        # TODO: Find a way to get the 2nd from the 1st, since they're just
-        # complementary indices?
         missing_alleles_indices = np.arange(start, end)[
             np.where(alleles[i, start: start + MOIs[i]] == 0)
         ]
-        present_alleles_indices = np.arange(start, end)[
-            np.where(alleles[i, start: start + MOIs[i]] != 0)
-        ]
+        present_alleles_indices = np.delete(np.arange(start, end), missing_alleles_indices)
 
         # Sample to randomly initialize the alleles/hidden variables
         if num_alleles > 0:
@@ -498,17 +494,18 @@ class SiteInstanceState:
         closest_recrud_index = np.argmin(recrud_distances)
 
         self.mindistance[i, j] = recrud_distances[closest_recrud_index]
-        self.alldistance[i, j, : recrud_distances.size] = recrud_distances
+        self.alldistance[i, j, :recrud_distances.size] = recrud_distances
 
         self.allrecrf[i, j, :allpossiblerecrud.shape[0]] = self.recodedf[
             i, max_MOI * j + allpossiblerecrud[:, 1]
         ]
-        self.recr0[i, j] = max_MOI * j + allpossiblerecrud[closest_recrud_index, 0]
-        self.recrf[i, j] = max_MOI * j + allpossiblerecrud[closest_recrud_index, 1]
 
-        self.recr_repeats0[i, j] = np.sum(
-            self.recoded0[i, max_MOI * j : max_MOI * (j + 1)] == self.recoded0[i, int(self.recr0[i, j])]
-        )  # TODO: int() only needed for stub
-        self.recr_repeatsf[i, j] = np.sum(
-            self.recodedf[i, max_MOI * j : max_MOI * (j + 1)] == self.recodedf[i, int(self.recrf[i, j])]
-        )  # TODO: int() only needed for stub
+        def set_recrudescences(recr, recr_repeats, recoded, is_0=True):
+            # TODO: Verify what the purpose of this actually is?
+            recrud_column = 0 if is_0 else 1
+            recr[i, j] = max_MOI * j + allpossiblerecrud[closest_recrud_index, recrud_column]
+            recr_repeats[i, j] = np.sum(
+                recoded[i, max_MOI * j: max_MOI * (j+1)] == recoded[i, int(recr[i, j])])
+
+        set_recrudescences(self.recr0, self.recr_repeats0, self.recoded0)
+        set_recrudescences(self.recrf, self.recr_repeatsf, self.recodedf, False)
