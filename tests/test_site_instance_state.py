@@ -5,11 +5,22 @@ TODO: Use an actual testing framework?
 TODO: Double-check axes of EVERYTHING (I'm worried I might've mixed up running function on column/row axes with numpy functions)
 """
 
+import os
+import sys
+
 import numpy as np
 import pandas as pd
+import pytest
 import scipy.stats as sp_stats
 
+# Add parent directory to search path, so we can import those files
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from algorithm_instance import AlgorithmInstance
+from algorithm_site_instance import AlgorithmSiteInstance, SiteInstanceState
 from recode_alleles import *
+from recrudescence_file_parser import RecrudescenceFileParser
+import recrudescence_utils
 
 """
 Full example genotype_RR dataframe in R:
@@ -58,7 +69,7 @@ Full example genotype_RR dataframe in R:
 # Hardcode this in for now
 genotypedata_RR = pd.DataFrame(
     {
-        "Sample.ID": [
+        "Sample ID": [
             "BQ17-269_ Day 0",
             "BQ17-269_ Day Failure",
             "BD17-040_ Day 0",
@@ -72,7 +83,7 @@ genotypedata_RR = pd.DataFrame(
             "BD17-090_ Day 0",
             "BD17-090_ Day Failure",
         ],
-        "X313_1": [
+        "313_1": [
             223.4,
             225.5,
             229.3,
@@ -86,7 +97,7 @@ genotypedata_RR = pd.DataFrame(
             238.4,
             219.4,
         ],
-        "X313_2": [
+        "313_2": [
             np.nan,
             np.nan,
             np.nan,
@@ -100,7 +111,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             249.7,
         ],
-        "X313_3": [
+        "313_3": [
             np.nan,
             np.nan,
             np.nan,
@@ -114,7 +125,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
         ],
-        "X383_1": [
+        "383_1": [
             103.7,
             124.1,
             139.1,
@@ -128,7 +139,7 @@ genotypedata_RR = pd.DataFrame(
             87.0,
             87.0,
         ],
-        "X383_2": [
+        "383_2": [
             140.3,
             162.3,
             np.nan,
@@ -142,7 +153,7 @@ genotypedata_RR = pd.DataFrame(
             123.9,
             123.6,
         ],
-        "X383_3": [
+        "383_3": [
             np.nan,
             np.nan,
             np.nan,
@@ -324,7 +335,7 @@ genotypedata_RR = pd.DataFrame(
             np.nan,
             np.nan,
         ],
-        "X2490_1": [
+        "2490_1": [
             81.6,
             81.8,
             82.0,
@@ -338,7 +349,7 @@ genotypedata_RR = pd.DataFrame(
             81.7,
             81.7,
         ],
-        "X2490_2": [
+        "2490_2": [
             np.nan,
             np.nan,
             78,
@@ -411,77 +422,47 @@ genotypedata_RR = pd.DataFrame(
     }
 )
 
+# TODO: Avoid this, since it makes the test dependent on untested functions
+example_file = os.path.join(
+    os.path.dirname(__file__),
+    '../Angola2017_example.xlsx')
+ignore, additional = RecrudescenceFileParser.parse_file(example_file)
+additional_neutral = AlgorithmInstance._replace_sample_names(
+    AlgorithmInstance._get_samples_from_site(additional, 'Benguela'),
+    'Additional_')
+
+expected_maxMOI = 5
+locirepeats = np.array([2, 2, 3, 3, 3, 3, 3])
+expected_ids = pd.unique(["BQ17-269", "BD17-040", "BD17-083", "BD17-085", "BD17-087", "BD17-090"])
+expected_locinames = pd.unique(["313", "383", "TA1", "POLYA", "PFPK2", "2490", "TA109"])
+
 
 def test_max_MOI():
-    maxMOI = np.nanmax(  # Return array max, ignoring NaNs
-        # NOTE: Assuming genotypedata_RR is a pandas dataframe
-        # Split string like so: https://cmdlinetips.com/2018/06/how-to-split-a-column-or-column-names-in-pandas-and-get-part-of-it/
-        # Gets the
-        pd.to_numeric(genotypedata_RR.columns.str.split("_").str[1])
-    )
-    expected_MOI = 5
-    assert maxMOI == expected_MOI, f"{maxMOI} (expected {expected_MOI})"
+    maxMOI = AlgorithmSiteInstance._get_max_MOI(genotypedata_RR)
+    assert maxMOI == expected_maxMOI
 
 
 def test_getting_ids():
-    expected = np.unique(
-        ["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"]
-    )
+    ids = recrudescence_utils.get_sample_ids(genotypedata_RR, 'Day 0')
 
-    ids = np.unique(
-        genotypedata_RR[genotypedata_RR["Sample.ID"].str.contains("Day 0")][
-            "Sample.ID"
-        ].str.replace(" Day 0", "")
-    )
-
-    assert np.array_equal(ids, expected), f"{ids} (expected {expected})"
+    np.testing.assert_array_equal(ids, expected_ids)
 
 
 def test_getting_locinames():
-    expected = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
+    locinames = pd.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
 
-    locinames = np.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
-
-    assert np.array_equal(locinames, expected), f"{locinames} (expected {expected})"
+    np.testing.assert_array_equal(locinames, expected_locinames)
 
 
 def test_calculate_MOI():
-    # NOTE: These are different orderings than the original (possibly np.unique changes ordering?); I THINK this is okay, but should ask Mat
-    expected_MOI0 = np.array([2, 3, 2, 3, 2, 3])
-    expected_MOIf = np.array([2, 2, 2, 3, 2, 2])
+    expected_MOI0 = np.array([3, 2, 3, 2, 3, 2])
+    expected_MOIf = np.array([2, 2, 2, 2, 3, 2])
 
-    ids = np.unique(
-        ["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"]
-    )
-    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
+    MOI0, MOIf = SiteInstanceState._calculate_sample_MOI(
+        genotypedata_RR, expected_ids, expected_locinames)
 
-    nids = ids.size
-    nloci = locinames.size
-
-    MOI0 = np.repeat(0, nids)
-    MOIf = np.repeat(0, nids)
-    for i, ID in enumerate(ids):
-        for lociname in locinames:
-            locicolumns = genotypedata_RR.columns.str.contains(f"{lociname}_")
-
-            nalleles0 = np.count_nonzero(
-                ~genotypedata_RR.loc[
-                    genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day 0"),
-                    locicolumns,
-                ].isna()
-            )
-            nallelesf = np.count_nonzero(
-                ~genotypedata_RR.loc[
-                    genotypedata_RR["Sample.ID"].str.contains(f"{ID} Day Failure"),
-                    locicolumns,
-                ].isna()
-            )
-
-            MOI0[i] = np.max([MOI0[i], nalleles0])
-            MOIf[i] = np.max([MOIf[i], nallelesf])
-
-    assert np.array_equal(MOI0, expected_MOI0), f"{MOI0} (expected {expected_MOI0})"
-    assert np.array_equal(MOIf, expected_MOIf), f"{MOIf} (expected {expected_MOIf})"
+    np.testing.assert_array_equal(MOI0, expected_MOI0)
+    np.testing.assert_array_equal(MOIf, expected_MOIf)
 
 
 def test_create_initial_state():
@@ -491,113 +472,35 @@ def test_create_initial_state():
     expected_recoded0_firstCol = np.array([5, 12, 2, 4, 4, 8])
     expected_recodedf_firstCol = np.array([6, 3, 7, 9, 13, 1])
 
-    maxMOI = 5
-    ids = np.unique(
-        ["BQ17-269_", "BD17-040_", "BD17-083_", "BD17-085_", "BD17-087_", "BD17-090_"]
-    )
-    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
-    alleles0 = np.zeros((ids.size, maxMOI * locinames.size))
-    recoded0 = np.zeros((ids.size, maxMOI * locinames.size))
-    allelesf = np.zeros((ids.size, maxMOI * locinames.size))
-    recodedf = np.zeros((ids.size, maxMOI * locinames.size))
+    alleles_definitions_RR = AlgorithmSiteInstance._get_allele_definitions(
+        genotypedata_RR, additional_neutral, expected_locinames.size, locirepeats)
 
-    for i, locus in enumerate(locinames):
-        # locicolumns code is duplicated from MOI calculations
-        locicolumns = genotypedata_RR.columns.str.contains(f"{locus}_")
+    state = SiteInstanceState(expected_ids, expected_locinames, expected_maxMOI, genotypedata_RR, additional_neutral, alleles_definitions_RR)
 
-        oldalleles = genotypedata_RR.loc[:, locicolumns].to_numpy()
-        """
-        # TODO: What is this code doing?
-        if (len(oldalleles.shape[1]) == 0) {
-            oldalleles = matrix(oldalleles,length(oldalleles),1)
-        }
-        """
-        newalleles = np.copy(oldalleles)
-        ncolumns = oldalleles.shape[1]
-        for j in range(ncolumns):
-            newalleles[:,j] = np.array(list(map(
-                lambda x: recodeallele(alleles_definitions_RR[i], oldalleles[x,j]),
-                range(0, oldalleles.shape[0])
-                )))
-        newalleles[np.isnan(newalleles)] = 0
-        oldalleles[np.isnan(oldalleles)] = 0
-
-        oldalleles[newalleles == 0] = 0
-
-        startColumn = maxMOI * i
-        # TODO: Changed start/end for indexing reasons in Python vs R; double-check that's valid
-        endColumnOldAllele = maxMOI * i + oldalleles.shape[1]
-        endColumnNewAllele = maxMOI * i + newalleles.shape[1]
-        alleles0[:, startColumn:endColumnOldAllele] = oldalleles[
-            genotypedata_RR["Sample.ID"].str.contains("Day 0"), :
-        ]
-        allelesf[:, startColumn:endColumnOldAllele] = oldalleles[
-            genotypedata_RR["Sample.ID"].str.contains("Day Failure"), :
-        ]
-        recoded0[:, startColumn:endColumnNewAllele] = newalleles[
-            genotypedata_RR["Sample.ID"].str.contains("Day 0"), :
-        ]
-        recodedf[:, startColumn:endColumnNewAllele] = newalleles[
-            genotypedata_RR["Sample.ID"].str.contains("Day Failure"), :
-        ]
-
-    assert np.array_equal(
-        alleles0[:, 0], expected_alleles0_firstCol
-    ), f"{alleles0[:,0]} (expected {expected_alleles0_firstCol})"
-    assert np.array_equal(
-        recoded0[:, 0], expected_recoded0_firstCol
-    ), f"{recoded0[:,0]} (expected {expected_recoded0_firstCol})"
-    assert np.array_equal(
-        allelesf[:, 0], expected_allelesf_firstCol
-    ), f"{allelesf[:,0]} (expected {expected_allelesf_firstCol})"
-    assert np.array_equal(
-        recodedf[:, 0], expected_recodedf_firstCol
-    ), f"{recodedf[:,0]} (expected {expected_recodedf_firstCol})"
+    np.testing.assert_array_equal(
+        state.alleles0[:, 0], expected_alleles0_firstCol)
+    np.testing.assert_array_equal(
+        state.recoded0[:, 0], expected_recoded0_firstCol)
+    np.testing.assert_array_equal(
+        state.allelesf[:, 0], expected_allelesf_firstCol)
+    np.testing.assert_array_equal(
+        state.recodedf[:, 0], expected_recodedf_firstCol)
 
 
 def test_recode_additional_neutral():
     expected_first_column = np.array([6, 10, 1, 3, 7, 5, 9, 4, 3, 1, 0, 2, 11, 2])
 
-    maxMOI = 5
-    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
-    # TODO: additional_neutral currently just stubbed (not using actual values)
-    additional_neutral = np.zeros((14, 25))
+    alleles_definitions_RR = AlgorithmSiteInstance._get_allele_definitions(
+        genotypedata_RR, additional_neutral, expected_locinames.size, locirepeats)
 
-    recoded_additional_neutral = np.zeros((14, maxMOI * locinames.size))
-    # TODO: This is almost the exact same code as in create_initial_state (should refactor both into a common function)
+    recoded_additional_neutral = SiteInstanceState.recode_additional_neutral(
+        additional_neutral, alleles_definitions_RR, expected_locinames, expected_maxMOI)
 
-    for i, locus in enumerate(locinames):
-        locicolumns = genotypedata_RR.columns.str.contains(f"{locus}_")
-
-        oldalleles = additional_neutral[:, locicolumns]  # TODO: stub
-        """
-        # TODO: What is this code doing?
-        if (len(oldalleles.shape[1]) == 0) {
-            oldalleles = matrix(oldalleles,length(oldalleles),1)
-        }
-        """
-        newalleles = np.copy(oldalleles)
-        ncolumns = oldalleles.shape[1]
-        for j in range(ncolumns):
-            newalleles[:,j] = np.array(list(map(
-                lambda x: recodeallele(alleles_definitions_RR[i], oldalleles[x,j]),
-                range(0, oldalleles.shape[0])
-                )))
-        newalleles[np.isnan(newalleles)] = 0
-        oldalleles[np.isnan(oldalleles)] = 0
-
-        oldalleles[newalleles == 0] = 0
-
-        startColumn = maxMOI * i
-        # TODO: Changed start/end for indexing reasons in Python vs R; double-check that's valid
-        endColumnOldAllele = maxMOI * i + oldalleles.shape[1]
-        recoded_additional_neutral[:, startColumn:endColumnOldAllele] = newalleles
-
-    assert np.array_equal(
-        recoded_additional_neutral[:, 0], expected_first_column
-    ), f"{recoded_additional_neutral[:,0]} (expected {expected_first_column})"
+    np.testing.assert_array_equal(
+        recoded_additional_neutral[:, 0], expected_first_column)
 
 
+@pytest.mark.xfail(reason='Not implemented in refactor')
 def test_initialize_hidden_alleles():
     # TODO: How to do expected values for stochastic functions?
     # ===============================
@@ -695,6 +598,7 @@ def test_initialize_hidden_alleles():
         assert False, "test_initialize_hidden_alleles() using stubbed data for now"
 
 
+@pytest.mark.xfail(reason='Not implemented in refactor')
 def test_create_dvect():
     # TODO: This is a stub, not the actual data
     nloci = 7
@@ -727,6 +631,7 @@ def test_create_dvect():
     assert dvect.size == 133, f"Dvect size {dvect.size} (expected {133})"
 
 
+@pytest.mark.xfail(reason='Not implemented in refactor')
 def test_initialize_recrudesences():
     maxMOI = 5
     nids = 6
@@ -791,6 +696,7 @@ def test_initialize_recrudesences():
     # TODO: Actually test this
 
 
+@pytest.mark.xfail(reason='Not implemented in refactor')
 def test_correction_factor():
     expected_fist_row_col = np.array([0, 2, 24, 42, 4, 6, 12, 18, 20, 30, 2, 10, 26])
 
@@ -835,6 +741,7 @@ def test_correction_factor():
     ), f"Column {correction_distance_matrix[0, 0, :]} (expected {expected_fist_row_col})"
 
 
+@pytest.mark.xfail(reason='Not implemented in refactor')
 def test_run_mcmc_new_proposal():
     # TODO: Find what the actual expected ratio is for the stubbed inputs?
     expected_likelihood_ratio = np.zeros(6)
@@ -910,6 +817,7 @@ def test_run_mcmc_new_proposal():
     qq = np.random.beta(q_posterior_alpha, q_posterior_beta)
 
 
+@pytest.mark.xfail(reason='Not implemented in refactor')
 def test_update_dvect():
     nids = 6
     nloci = 7
@@ -942,6 +850,7 @@ def test_update_dvect():
     # TODO: Assert that dvect is updated correctly w/ beta function?
 
 
+@pytest.mark.xfail(reason='Not implemented in refactor')
 def test_find_allele_modes():
     maxMOI = 5
     nids = 6
@@ -972,13 +881,14 @@ def test_find_allele_modes():
             )[0].ravel()
 
 
+@pytest.mark.xfail(reason='Not implemented in refactor')
 def test_summary_stats_output():
     maxMOI = 5
     nids = 6
     nloci = 7
 
     ## TODO: Stubbed data
-    locinames = np.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
+    locinames = pd.unique(["X313", "X383", "TA1", "POLYA", "PFPK2", "X2490", "TA109"])
     state_parameters = np.random.random_sample((2 + 2 * nloci, 25))
     jobname = "TEST"
 
@@ -1012,23 +922,3 @@ def test_summary_stats_output():
         index=["q", "d", *locinames.tolist(), *locinames.tolist(), "Mean diversity"],
     )
     summary_statisticsmatrix_df.to_csv(f"{jobname}_summarystatistics.csv")
-
-
-# =============================================================================
-
-np.random.seed(0)
-
-test_max_MOI()
-test_getting_ids()
-test_getting_locinames()
-test_calculate_MOI()
-# test_create_initial_state()       # TODO: Code not fully implemented yet
-# test_recode_additional_neutral()  # TODO: Code not fully implemented yet
-# test_initialize_hidden_alleles()  # TODO: Code not fully implemented yet
-test_create_dvect()
-test_initialize_recrudesences()
-test_correction_factor()
-test_run_mcmc_new_proposal()
-test_update_dvect()
-test_find_allele_modes()
-test_summary_stats_output()
