@@ -6,6 +6,7 @@ import pandas as pd
 from calculate_frequencies import calculate_frequencies3
 from define_alleles import define_alleles
 import mcmc
+import recrudescence_utils
 
 
 class AlgorithmSiteInstance:
@@ -23,25 +24,17 @@ class AlgorithmSiteInstance:
         Sets up the initial data structures needed before running the algorithm
         '''
         # MOI = multiplicity of infection
-        maxMOI = int(np.nanmax(
-            pd.to_numeric(genotypedata_RR.columns.str.split('_').str[1])
-        ))
+        maxMOI = self._get_max_MOI(genotypedata_RR)
 
         # Get the unique Sample IDs/loci in the dataset
         # NOTE: pd.unique used instead of np.unique to preserve ordering
-        ids = pd.unique(
-            genotypedata_RR[genotypedata_RR['Sample ID'].str.contains('Day 0')][
-                'Sample ID'
-            ].str.replace(' Day 0', '')
-        )
+        ids = recrudescence_utils.get_sample_ids(genotypedata_RR, 'Day 0')
         locinames = pd.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
 
-        maxalleles = 30
-        k = np.repeat(maxalleles, locinames.size)
-        alleles_definitions_RR = define_alleles(
-            pd.concat([genotypedata_RR, additional_neutral]), locirepeats, k
-        )
+        alleles_definitions_RR = self._get_allele_definitions(
+            genotypedata_RR, additional_neutral, locinames.size, locirepeats)
 
+        # Set up the initial state for the algorithm
         self.state = SiteInstanceState(
             ids,
             locinames,
@@ -85,12 +78,40 @@ class AlgorithmSiteInstance:
             record_interval,
             jobname)
 
+    @classmethod
+    def _get_max_MOI(cls, genotypedata_RR: pd.DataFrame) -> int:
+        '''
+        Get the maximum "multiplicity of infection" (MOI) in the dataset
+        '''
+        return int(np.nanmax(
+            pd.to_numeric(genotypedata_RR.columns.str.split('_').str[1])
+        ))
+
+    @classmethod
+    def _get_allele_definitions(
+        cls,
+        genotypedata_RR: pd.DataFrame,
+        additional_neutral: pd.DataFrame,
+        num_loci: int,
+        locirepeats: typing.List[int]) -> pd.DataFrame:
+        '''
+        TODO: Elaborate
+        Get the allele definitions in the dataset
+        '''
+        maxalleles = 30
+        k = np.repeat(maxalleles, num_loci)
+        alleles_definitions = define_alleles(
+            pd.concat([genotypedata_RR, additional_neutral]), locirepeats, k
+        )
+        return alleles_definitions
+
 
 class SiteInstanceState:
     '''
     A class that holds the current state for a single "arm"/site instance when
     running the malaria recrudescence algorithm
     '''
+
     def __init__(
         self,
         ids: np.ndarray,
@@ -115,7 +136,6 @@ class SiteInstanceState:
         self.frequencies_RR = calculate_frequencies3(
             pd.concat([genotypedata_RR, additional_neutral]),
             alleles_definitions_RR)
-
 
     def _create_empty_state(self, num_ids: int, num_loci: int, max_MOI: int):
         '''
@@ -142,8 +162,9 @@ class SiteInstanceState:
         self.allrecrf = np.full_like(np.empty((num_ids, num_loci, max_MOI ** 2)), np.nan)
         self.classification = np.repeat(0, num_ids)
 
+    @classmethod
     def _calculate_sample_MOI(
-        self,
+        cls,
         genotypedata_RR: pd.DataFrame,
         ids: np.ndarray,
         locinames: np.ndarray):
@@ -169,12 +190,12 @@ class SiteInstanceState:
 
                 num_alleles0 = np.count_nonzero(
                     ~genotypedata_RR.loc[
-                        genotypedata_RR["Sample ID"].str.contains(f"{ID} Day 0"), locicolumns
+                        genotypedata_RR["Sample ID"].str.contains(f"{ID}_ Day 0"), locicolumns
                     ].isna()
                 )
                 num_allelesf = np.count_nonzero(
                     ~genotypedata_RR.loc[
-                        genotypedata_RR["Sample ID"].str.contains(f"{ID} Day Failure"),
+                        genotypedata_RR["Sample ID"].str.contains(f"{ID}_ Day Failure"),
                         locicolumns,
                     ].isna()
                 )
@@ -244,15 +265,13 @@ class SiteInstanceState:
         if additional_neutral.size == 0 or additional_neutral.shape[0] == 0:
             return None
 
-        recoded_additional_neutral = np.zeros((additional_neutral.shape[0], maxMOI * nloci))
+        recoded_additional_neutral = np.zeros((additional_neutral.shape[0], max_MOI * locinames.size))
         for i, locus in enumerate(locinames):
             oldalleles, newalleles = cls._get_original_alleles(
                 additional_neutral, alleles_definitions_RR, locus, i)
 
-            startColumn = maxMOI * (
-                i - 1
-            )  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
-            endColumnOldAllele = maxMOI * (i - 1) + oldalleles.shape[1]
+            startColumn = max_MOI * (i - 1)  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
+            endColumnOldAllele = max_MOI * (i - 1) + oldalleles.shape[1]
             recoded_additional_neutral[:, startColumn:endColumnOldAllele] = newalleles
         return recoded_additional_neutral
 

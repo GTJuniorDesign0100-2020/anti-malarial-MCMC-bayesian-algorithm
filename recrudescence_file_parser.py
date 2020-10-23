@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from data_file_parser import DataFileParser
-
+import recrudescence_utils
 
 class RecrudescenceFileParser(DataFileParser):
     '''
@@ -49,33 +49,14 @@ class RecrudescenceFileParser(DataFileParser):
         genotypedata_latefailures['Sample ID'] = genotypedata_latefailures['Sample ID'].str.replace('D[0-9]+$', ' Day Failure')
 
         # verify each sample has a Day 0 and a Day of Failure
-        day_0_ids = cls._get_unique_matching_sample_ids(genotypedata_latefailures, 'Day 0')
-        day_fail_ids = cls._get_unique_matching_sample_ids(genotypedata_latefailures, 'Day Failure')
+        day_0_ids = recrudescence_utils.get_sample_ids(genotypedata_latefailures, 'Day 0')
+        day_fail_ids = recrudescence_utils.get_sample_ids(genotypedata_latefailures, 'Day Failure')
 
         if day_0_ids.size != day_fail_ids.size:
             # TODO: Use more specific exception
             raise Exception('Error - each sample must have day 0 and day of failure data')
 
         return genotypedata_latefailures
-
-    @classmethod
-    def _get_unique_matching_sample_ids(cls, genotypedata: pd.DataFrame, search_text: str):
-        '''
-        Returns a numpy array of all the "Sample ID"s in the dataframe whose
-        name contains the matching text
-
-        TODO: Currently assumes underscore remains in ID name
-        TODO: Could potentially be refactored to a more general function?
-
-        :param genotypedata: The data to search
-        :param search_text: The substring to look for in the
-        '''
-        matching_sample_names = genotypedata[
-                genotypedata['Sample ID'].str.contains(search_text)
-            ]['Sample ID']
-        # Remove day from sample
-        sample_id_names = matching_sample_names.str.rsplit('_', n=1).str.get(0)
-        return pd.unique(sample_id_names)
 
     @classmethod
     def _get_additional_genotype_data(cls, raw_file_info: pd.ExcelFile):
