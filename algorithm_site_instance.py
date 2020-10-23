@@ -1,3 +1,4 @@
+import enum
 import typing
 
 import numpy as np
@@ -7,6 +8,11 @@ from calculate_frequencies import calculate_frequencies3
 from define_alleles import define_alleles
 import mcmc
 import recrudescence_utils
+
+
+class SampleClass(enum.Enum):
+    REINFECTION = 0
+    RECRUDESCENCE = 1
 
 
 class AlgorithmSiteInstance:
@@ -24,25 +30,28 @@ class AlgorithmSiteInstance:
         Sets up the initial data structures needed before running the algorithm
         '''
         # MOI = multiplicity of infection
-        maxMOI = self._get_max_MOI(genotypedata_RR)
+        self.max_MOI = self._get_max_MOI(genotypedata_RR)
 
         # Get the unique Sample IDs/loci in the dataset
         # NOTE: pd.unique used instead of np.unique to preserve ordering
-        ids = recrudescence_utils.get_sample_ids(genotypedata_RR, 'Day 0')
-        locinames = pd.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
+        self.ids = recrudescence_utils.get_sample_ids(genotypedata_RR, 'Day 0')
+        self.locinames = pd.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
 
-        alleles_definitions_RR = self._get_allele_definitions(
-            genotypedata_RR, additional_neutral, locinames.size, locirepeats)
+        # TODO: Should this be here or on the state?
+        self.alleles_definitions_RR = self._get_allele_definitions(
+            genotypedata_RR, additional_neutral, self.locinames.size, locirepeats)
 
         # Set up the initial state for the algorithm
         self.state = SiteInstanceState(
-            ids,
-            locinames,
-            maxMOI,
+            self.ids,
+            self.locinames,
+            self.max_MOI,
             genotypedata_RR,
             additional_neutral,
-            alleles_definitions_RR
+            self.alleles_definitions_RR
         )
+
+
 
         # =====================================================================
         # TODO: Remove this!
@@ -51,7 +60,13 @@ class AlgorithmSiteInstance:
         self.locirepeats = locirepeats
         # =====================================================================
 
-    def run_algorithm(self, jobname: str, nruns: int=1000, burnin: int=100, record_interval: int=10, seed=None):
+    def run_algorithm(
+        self,
+        jobname: str,
+        nruns: int=1000,
+        burnin: int=100,
+        record_interval: int=10,
+        seed: int=None):
         '''
         Runs the actual algorithm on this site's data and returns the results
         TODO: Expand on this
@@ -68,6 +83,12 @@ class AlgorithmSiteInstance:
         (defaults to completely random)
         :return: TODO:
         '''
+        self.state.randomize_initial_assignments(
+            self.ids.size,
+            self.locinames.size,
+            self.max_MOI,
+            self.alleles_definitions_RR,
+            seed)
         # TODO: Actually implement this!
         return mcmc.onload(
             self.genotypedata_RR,
@@ -160,7 +181,7 @@ class SiteInstanceState:
         self.mindistance = np.zeros((num_ids, num_loci))
         self.alldistance = np.full_like(np.empty((num_ids, num_loci, max_MOI ** 2)), np.nan)
         self.allrecrf = np.full_like(np.empty((num_ids, num_loci, max_MOI ** 2)), np.nan)
-        self.classification = np.repeat(0, num_ids)
+        self.classification = np.repeat(SampleClass.REINFECTION, num_ids)
 
     @classmethod
     def _calculate_sample_MOI(
@@ -322,8 +343,8 @@ class SiteInstanceState:
         '''
         TODO: Figure out what this actually does?
 
-        :param alleles_definitions_subset: 2D numpy array
-        :param proposed: 1D numpy vector
+        :param alleles_definitions_subset: 2D numpy array (?)
+        :param proposed: 1D numpy vector (?)
         :return: Returns a single integer index, or np.nan if no valid index was
         found
         '''
@@ -341,3 +362,153 @@ class SiteInstanceState:
         else:
             return result[0]
         return result
+
+    def randomize_initial_assignments(
+        self,
+        num_ids: int,
+        num_loci: int,
+        max_MOI: int,
+        alleles_definitions_RR: pd.DataFrame,
+        seed: int = None):
+        '''
+        TODO: Elaborate
+        Assign random initial values for the hidden alleles and
+        reinfection/recrudescence classifications, based on the prior calculated
+        frequencies for the malaria dataset
+        '''
+        random = np.random.RandomState(seed)
+        for id_index in range(num_ids):
+            # 50% chance if this sample should be initialized as a reinfection
+            # or recrudescence
+            if random.uniform(size=1):
+                self.classification[id_index] = SampleClass.RECRUDESCENCE
+            for locus_index in range(num_loci):
+                self._randomize_hidden_alleles(
+                    id_index,
+                    locus_index,
+                    max_MOI,
+                    alleles_definitions_RR,
+                    random)
+                self._randomize_recrudescences(id_index, locus_index, max_MOI)
+
+    def _randomize_hidden_alleles(
+        self,
+        id_index: int,
+        locus_index: int,
+        max_MOI: int,
+        alleles_definitions_RR: pd.DataFrame,
+        rand: np.random.RandomState):
+        '''
+        TODO: Elaborate
+        Randomizes the initial allele values for the given ID/locus
+
+        :param id_index: The index of the current ID to set alleles for
+        :param locus_index: The index of the current locus to set alleles for
+        :param max_MOI: The maximum multiplicity of infection in the dataset
+        :param alleles_definitions_RR:
+        :param rand: A generator for the random numbers in this function
+        '''
+        self._randomize_allele_group(
+            self.alleles0, self.recoded0, self.hidden0, self.MOI0,
+            id_index, locus_index, max_MOI, alleles_definitions_RR, rand)
+        self._randomize_allele_group(
+            self.allelesf, self.recodedf, self.hiddenf, self.MOIf,
+            id_index, locus_index, max_MOI, alleles_definitions_RR, rand)
+
+    def _randomize_allele_group(
+        self,
+        alleles: np.ndarray,
+        recoded: np.ndarray,
+        hidden: np.ndarray,
+        MOIs: np.ndarray,
+        id_index: int,
+        locus_index: int,
+        max_MOI: int,
+        alleles_definitions_RR: pd.DataFrame,
+        rand: np.random.RandomState):
+        '''
+        TODO: Cut down on the parameter list (combine last few elements in
+        tuple?)
+        NOTE: Depends on assuming alleles, recoded, and hidden will be modified
+        in-place (i.e. that they're passed by reference)
+        '''
+        i = id_index
+        j = locus_index
+        # TODO: Start/end of what? The portion of the row w/ this locus information?
+        start = max_MOI * j
+        end = max_MOI * (j + 1)
+
+        num_alleles = np.count_nonzero(alleles[i, start:end])
+        num_missing = MOIs[i] - num_alleles
+
+        # TODO: Find a way to get the 2nd from the 1st, since they're just
+        # complementary indices?
+        missing_alleles_indices = np.arange(start, end)[
+            np.where(alleles[i, start: start + MOIs[i]] == 0)
+        ]
+        present_alleles_indices = np.arange(start, end)[
+            np.where(alleles[i, start: start + MOIs[i]] != 0)
+        ]
+
+        # Sample to randomly initialize the alleles/hidden variables
+        if num_alleles > 0:
+            hidden[i, present_alleles_indices] = 0
+        elif num_missing > 0:
+            new_hidden_alleles = rand.choice(
+                np.arange(
+                    0, int(self.frequencies_RR[0][j])
+                ),  # Select from first row (count of how many probabilities they are)
+                size=num_missing,
+                replace=True,
+                p=self.frequencies_RR[1][j, 0: int(self.frequencies_RR[0][j])]
+            )  # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
+            recoded[i, missing_alleles_indices] = new_hidden_alleles
+            # calculate row means
+            alleles[i, missing_alleles_indices] = np.mean(alleles_definitions_RR[j], axis=1)[
+                new_hidden_alleles
+            ]  # hidden alleles get mean allele length
+            hidden[i, missing_alleles_indices] = 1
+
+    def _randomize_recrudescences(
+        self,
+        id_index: int,
+        locus_index: int,
+        max_MOI: int):
+        '''
+        TODO: Elaborate (since this doesn't seem to actually do anything random?
+        So what is it doing?)
+        Randomly assign initial recrudscences/reinfections
+        '''
+        i = id_index
+        j = locus_index
+
+        # determine which alleles are recrudescing (for beginning, choose closest pair)
+        allpossiblerecrud = np.stack(
+            np.meshgrid(np.arange(self.MOI0[i]), np.arange(self.MOIf[i]))
+        ).T.reshape(-1, 2)
+
+        # TODO: Much of the below code near-duplicated?
+        allele0_col_indices = max_MOI * j + allpossiblerecrud[:, 0]
+        allelef_col_indices = max_MOI * j + allpossiblerecrud[:, 1]
+
+        recrud_distances = np.abs(
+            self.alleles0[i, allele0_col_indices] - self.allelesf[i, allelef_col_indices]
+        )
+
+        closest_recrud_index = np.argmin(recrud_distances)
+
+        self.mindistance[i, j] = recrud_distances[closest_recrud_index]
+        self.alldistance[i, j, : recrud_distances.size] = recrud_distances
+
+        self.allrecrf[i, j, :allpossiblerecrud.shape[0]] = self.recodedf[
+            i, max_MOI * j + allpossiblerecrud[:, 1]
+        ]
+        self.recr0[i, j] = max_MOI * j + allpossiblerecrud[closest_recrud_index, 0]
+        self.recrf[i, j] = max_MOI * j + allpossiblerecrud[closest_recrud_index, 1]
+
+        self.recr_repeats0[i, j] = np.sum(
+            self.recoded0[i, max_MOI * j : max_MOI * (j + 1)] == self.recoded0[i, int(self.recr0[i, j])]
+        )  # TODO: int() only needed for stub
+        self.recr_repeatsf[i, j] = np.sum(
+            self.recodedf[i, max_MOI * j : max_MOI * (j + 1)] == self.recodedf[i, int(self.recrf[i, j])]
+        )  # TODO: int() only needed for stub
