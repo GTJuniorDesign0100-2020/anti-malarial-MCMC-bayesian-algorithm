@@ -390,7 +390,7 @@ def onload(
         # record state
         if iteration > burnin and iteration % record_interval == 0:
             # print(iteration)
-            record_index = (iteration - burnin) / record_interval
+            record_index = int((iteration - burnin) / record_interval)
             state_classification[:, record_index] = classification
             state_alleles0[:, :, record_index] = alleles0
             state_allelesf[:, :, record_index] = allelesf
