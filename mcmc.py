@@ -296,9 +296,9 @@ def onload(
     )
     state_parameters = np.full_like(np.empty((2 + 2 * nloci, num_saved_records)), np.nan)
 
+    # TODO: This is big bad, don't ever do this. Temporary until we have state object passed around.
+    global dposterior
     dposterior = 0.75
-
-
     def runmcmc(iteration, dvect, classification, qq, correction_distance_matrix):
         # propose new classification
         likelihoodratio = np.zeros(nids)
@@ -367,6 +367,7 @@ def onload(
             ):  ## algorithm will get stuck if dposterior is allowed to go to 1 (TODO: Wait, so why is it setting d_posterior_beta to 1??)
                 d_posterior_beta = 1
 
+            global dposterior
             dposterior = np.random.beta(d_posterior_alpha, d_posterior_beta)
             dvect = dposterior * (np.array(1 - dposterior) ** np.arange(0, dvect.size))
             dvect = dvect / np.sum(dvect)
@@ -377,10 +378,18 @@ def onload(
         tempdata = copy.deepcopy(recoded0)
         # TODO: Ask about this line *** sapply(which(classification == 1), function (x) tempdata[x,recr0[x,]] <<- 0) *** in the OG code.
         recrudescent_alleles = np.where(classification == 1)
+        end = recr0[recrudescent_alleles, :]
         if (np.shape(recrudescent_alleles)[1] > 0):
-            end = recr0[recrudescent_alleles, :]
-            index = recrudescent_alleles, end.astype(int)
-            tempdata[index] = 0
+            for recrud in recrudescent_alleles:
+                columns = recr0[recrud,].astype(int)
+                tempdata[recrud,columns] = 0
+
+        # TODO: Get rid
+        # if (np.shape(recrudescent_alleles)[1] > 0):
+        #     end = recr0[recrudescent_alleles, :]
+        #     index = np.array((len(recrudescent_alleles),len(end)))
+        #     #recrudescent_alleles, end.astype(int)
+        #     tempdata[index] = 0
 
         tempdata = np.concatenate((tempdata, recodedf),axis = 0)
         for i in range(nloci):
@@ -396,10 +405,12 @@ def onload(
             state_allelesf[:, :, record_index] = allelesf
             state_parameters[0, record_index] = qq
             state_parameters[1, record_index] = dposterior
-            state_parameters[2 : (2 + nloci), record_index] = frequencies_RR[1].max(axis=0)
+            state_parameters[2 : (2 + nloci), record_index] = frequencies_RR[1].max(axis=1)
             state_parameters[2 + nloci : (2 + 2 * nloci), record_index] = np.sum(
-                frequencies_RR[1, :nloci, :] ** 2
+                frequencies_RR[1][:nloci, :] ** 2
             )
+
+        print("MCMC iteration " + str(iteration+1))
 
 
     for i in range(nruns):
