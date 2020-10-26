@@ -377,9 +377,9 @@ def onload(
         # TODO: Deep or Shallow?
         tempdata = copy.deepcopy(recoded0)
         # TODO: Ask about this line *** sapply(which(classification == 1), function (x) tempdata[x,recr0[x,]] <<- 0) *** in the OG code.
-        recrudescent_alleles = np.where(classification == 1)
+        recrudescent_alleles = np.where(classification == 1)[0] # unboxes the tuple.
         end = recr0[recrudescent_alleles, :]
-        if (np.shape(recrudescent_alleles)[1] > 0):
+        if (len(recrudescent_alleles) > 0):
             for recrud in recrudescent_alleles:
                 columns = recr0[recrud,].astype(int)
                 tempdata[recrud,columns] = 0
