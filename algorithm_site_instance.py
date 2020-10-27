@@ -1,3 +1,4 @@
+from collections import namedtuple
 import enum
 from typing import List
 
@@ -13,6 +14,10 @@ import recrudescence_utils
 class SampleType(enum.Enum):
     REINFECTION = 0
     RECRUDESCENCE = 1
+
+SavedState = namedtuple(
+    'SavedState',
+    'num_records classification alleles0 allelesf parameters')
 
 
 class AlgorithmSiteInstance:
@@ -94,6 +99,14 @@ class AlgorithmSiteInstance:
         dvect = self._get_initial_dvect(self.alleles_definitions_RR)
         correction_distance_matrix = self._get_correction_distances(
             self.alleles_definitions_RR)
+
+        self.saved_state = self._get_initial_saved_state(
+            nruns,
+            burnin,
+            record_interval,
+            self.ids.size,
+            self.locinames.size,
+            self.max_MOI)
 
         # =====================================================================
         # TODO: Replace this wtih the actual implementation!
@@ -184,6 +197,32 @@ class AlgorithmSiteInstance:
             distance_combinations = np.abs(distances.T - distances)
             correction_distance_matrix.append(distance_combinations)
         return correction_distance_matrix
+
+    @classmethod
+    def _get_initial_saved_state(
+        cls,
+        nruns: int,
+        burnin: int,
+        record_interval: int,
+        num_ids: int,
+        num_loci: int,
+        max_MOI: int) -> SavedState:
+        '''
+        TODO: Reduce the number of parameters here
+        Return a newly initialized SavedState object for a new algorithm run
+        '''
+        num_records = int((nruns - burnin) / record_interval)
+        alleles_shape = (num_ids, max_MOI * num_loci, num_records)
+        return SavedState(
+            num_records=num_records,
+            classification=recrudescence_utils.nan_array(
+                (num_ids, num_records)),
+            alleles0=recrudescence_utils.nan_array(alleles_shape),
+            allelesf=recrudescence_utils.nan_array(alleles_shape),
+            parameters=recrudescence_utils.nan_array(
+                (2 + 2 * num_loci, num_records))
+        )
+
 
 
 class SiteInstanceState:
