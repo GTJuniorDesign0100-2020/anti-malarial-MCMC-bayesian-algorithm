@@ -471,8 +471,10 @@ def test_create_initial_state():
     # TODO: Finish implementing so test will pass
     expected_alleles0_firstCol = np.array([223.4, 229.3, 221.3, 261.7, 261.7, 238.4])
     expected_allelesf_firstCol = np.array([225.5, 243.6, 231.5, 239.6, 245.3, 219.4])
-    expected_recoded0_firstCol = np.array([5, 12, 2, 4, 4, 8])
-    expected_recodedf_firstCol = np.array([6, 3, 7, 9, 13, 1])
+    # NOTE: These values are all 1 less than in the R code since python indexes
+    # from 0 (not 1)
+    expected_recoded0_firstCol = np.array([4, 11, 1, 3, 3, 7])
+    expected_recodedf_firstCol = np.array([5, 2, 6, 8, 12, 0])
 
     state = SiteInstanceState(expected_ids, expected_locinames, expected_maxMOI, genotypedata_RR, additional_neutral, alleles_definitions_RR)
 
@@ -484,6 +486,37 @@ def test_create_initial_state():
         state.allelesf[:, 0], expected_allelesf_firstCol)
     np.testing.assert_array_equal(
         state.recodedf[:, 0], expected_recodedf_firstCol)
+
+
+def test_recode_allele_within_existing_range():
+    expected_row_index = 2
+    alleles_definitions_RR_subset = np.array([
+        [219, 221],
+        [221, 223],
+        [243, 245],
+        [261, 263]
+    ])
+
+    row_index = SiteInstanceState._recode_allele(
+        alleles_definitions_RR_subset,
+        proposed=243.4)
+
+    assert row_index == expected_row_index
+
+
+def test_recode_allele_proposed_not_in_range():
+    alleles_definitions_RR_subset = np.array([
+        [219, 221],
+        [221, 223],
+        [243, 245],
+        [261, 263]
+    ])
+
+    row_index = SiteInstanceState._recode_allele(
+        alleles_definitions_RR_subset,
+        proposed=164.3)
+
+    assert np.isnan(row_index)
 
 
 def test_recode_additional_neutral():

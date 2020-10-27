@@ -339,20 +339,22 @@ class SiteInstanceState:
     def _recode_allele(
         cls,
         alleles_definitions_subset: np.ndarray,
-        proposed: np.ndarray):
+        proposed: float):
         '''
         TODO: Figure out what this actually does?
 
-        :param alleles_definitions_subset: 2D numpy array (?)
-        :param proposed: 1D numpy vector (?)
-        :return: Returns a single integer index, or np.nan if no valid index was
+        :param alleles_definitions_subset: Nx2 2D numpy array, representing
+        (mutually exclusive) ranges of allele lengths the proposed value can
+        fall between
+        :param proposed: Value that should fall between one of the ranges in the
+        subset
+        :return: Returns a single integer index of the row/range the proposed
+        number falls within in the subset, or np.nan if no valid range was
         found
         '''
         # verify shapes.
         if len(alleles_definitions_subset.shape) != 2 or alleles_definitions_subset.shape[1] != 2:
             raise ValueError(f'Improper alleles_definition_subset shape {alleles_definitions_subset.shape} (expected (:,2))')
-        if len(proposed.shape) > 1:
-            raise ValueError(f'Improper proposed vector shape {proposed.shape} (expected 1D vector)')
 
         # alleles_definitions_subset ranges guaranteed to be non-overlapping, so it will always fall within either 0 or exactly 1 of the ranges (i.e. rows)
         result = np.argwhere(np.logical_and(proposed > alleles_definitions_subset[:, 0], proposed <= alleles_definitions_subset[:, 1]))
