@@ -562,49 +562,51 @@ def test_create_dvect():
     assert dvect.size == 133
 
 
-@pytest.mark.xfail(reason='Not implemented in refactor')
+def test_get_qq():
+    expected_qq = 0.5555556
+    hidden0_subset = np.array([
+        [0, 1, 1],
+        [0, 1, np.nan]
+    ])
+    hiddenf_subset = np.array([
+        [0, 1, np.nan],
+        [0, 1, np.nan]
+    ])
+
+    qq = AlgorithmSiteInstance._get_initial_qq(hidden0_subset, hiddenf_subset)
+    np.testing.assert_almost_equal(qq, expected_qq, decimal=5)
+
+
 def test_correction_factor():
     expected_fist_row_col = np.array([0, 2, 24, 42, 4, 6, 12, 18, 20, 30, 2, 10, 26])
 
-    nloci = 7
     # TODO: Confirm what the right alleles_definitions_RR shape is?
-    alleles_definitions_RR = np.zeros((nloci, 13, 2))
-    alleles_definitions_RR[0, :, :] = np.array(
-        [
-            [219, 221],
-            [221, 223],
-            [243, 245],
-            [261, 263],
-            [223, 225],
-            [225, 227],
-            [231, 233],
-            [237, 239],
-            [239, 241],
-            [249, 251],
-            [217, 219],
-            [229, 231],
-            [245, 247],
-        ]
-    )
+    alleles_definitions_RR_stub = [np.zeros((13, 2)), np.zeros((13, 2))]
+    alleles_definitions_RR_stub[0][:, :] = np.array([
+        [219, 221],
+        [221, 223],
+        [243, 245],
+        [261, 263],
+        [223, 225],
+        [225, 227],
+        [231, 233],
+        [237, 239],
+        [239, 241],
+        [249, 251],
+        [217, 219],
+        [229, 231],
+        [245, 247],
+    ])
 
-    correction_distance_matrix = np.zeros(
-        (nloci, alleles_definitions_RR.shape[1], alleles_definitions_RR.shape[1])
-    )  # for each locus, matrix of distances between each allele
-    for i in range(nloci):
-        # Wrap mean call in "array" so we get a 2D array we can transpose (getting us a grid of distances, not just a 1D vector)
-        distances = np.array([np.mean(alleles_definitions_RR[i], axis=1)])
-        distance_combinations = np.abs(distances.T - distances)
-        correction_distance_matrix[i] = distance_combinations
+    correction_distance_matrix = AlgorithmSiteInstance._get_correction_distances(alleles_definitions_RR_stub)
 
-    assert np.array_equal(
-        correction_distance_matrix.shape, np.array([7, 13, 13])
-    ), f"{correction_distance_matrix.shape} (expected {np.array([7, 13, 13])})"
-    assert np.array_equal(
-        correction_distance_matrix[0, :, 0], expected_fist_row_col
-    ), f"Row {correction_distance_matrix[0, :, 0]} (expected {expected_fist_row_col})"
-    assert np.array_equal(
-        correction_distance_matrix[0, 0, :], expected_fist_row_col
-    ), f"Column {correction_distance_matrix[0, 0, :]} (expected {expected_fist_row_col})"
+    assert len(correction_distance_matrix) == 2
+    np.testing.assert_array_equal(
+        correction_distance_matrix[0].shape, np.array([13, 13]))
+    np.testing.assert_array_equal(
+        correction_distance_matrix[0][:, 0], expected_fist_row_col)
+    np.testing.assert_array_equal(
+        correction_distance_matrix[0][0, :], expected_fist_row_col)
 
 
 @pytest.mark.xfail(reason='Not implemented in refactor')

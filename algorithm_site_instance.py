@@ -1,5 +1,5 @@
 import enum
-import typing
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -10,7 +10,7 @@ import mcmc
 import recrudescence_utils
 
 
-class SampleClass(enum.Enum):
+class SampleType(enum.Enum):
     REINFECTION = 0
     RECRUDESCENCE = 1
 
@@ -25,7 +25,7 @@ class AlgorithmSiteInstance:
         self,
         genotypedata_RR: pd.DataFrame,
         additional_neutral: pd.DataFrame,
-        locirepeats: typing.List[int]):
+        locirepeats: List[int]):
         '''
         Sets up the initial data structures needed before running the algorithm
         '''
@@ -90,7 +90,10 @@ class AlgorithmSiteInstance:
             self.alleles_definitions_RR,
             seed)
 
+        qq = self._get_initial_qq(self.state.hidden0, self.state.hiddenf)
         dvect = self._get_initial_dvect(self.alleles_definitions_RR)
+        correction_distance_matrix = self._get_correction_distances(
+            self.alleles_definitions_RR)
 
         # =====================================================================
         # TODO: Replace this wtih the actual implementation!
@@ -119,7 +122,7 @@ class AlgorithmSiteInstance:
         genotypedata_RR: pd.DataFrame,
         additional_neutral: pd.DataFrame,
         num_loci: int,
-        locirepeats: typing.List[int]) -> pd.DataFrame:
+        locirepeats: List[int]) -> pd.DataFrame:
         '''
         TODO: Elaborate
         Get the allele definitions in the dataset
@@ -150,6 +153,38 @@ class AlgorithmSiteInstance:
 
         return dvect
 
+    @classmethod
+    def _get_initial_qq(cls, hidden0: np.ndarray, hiddenf: np.ndarray):
+        '''
+        TODO: What does qq stand for?
+        Initial estimate of q, the probability of an allele being missed
+
+        :param hidden0: TODO:
+        :param hiddenf: TODO:
+        :return: A single number q, the mean of the known hidden variables
+        '''
+        return np.nanmean(np.concatenate([hidden0, hiddenf]))
+
+    @classmethod
+    def _get_correction_distances(
+        cls,
+        alleles_definitions_RR: List[pd.DataFrame]) -> List[np.ndarray]:
+        '''
+        TODO: Verify this description
+        Returns the matrix of distances between each pair of alleles
+        :param alleles_definitions_RR: TODO:
+        :return: Python array of 2D matrices of distances between each allele
+        pair for a given locus
+        '''
+        correction_distance_matrix = [] # for each locus, matrix of distances between each allele
+        # TODO: Vectorize this (it seems fairly doable)
+        for i in range(len(alleles_definitions_RR)):
+            # Wrap mean call in "array" so we get a 2D array we can transpose (getting us a grid of distances, not just a 1D vector)
+            distances = np.array([np.mean(alleles_definitions_RR[i], axis=1)])
+            distance_combinations = np.abs(distances.T - distances)
+            correction_distance_matrix.append(distance_combinations)
+        return correction_distance_matrix
+
 
 class SiteInstanceState:
     '''
@@ -164,7 +199,7 @@ class SiteInstanceState:
         maxMOI: int,
         genotypedata_RR: pd.DataFrame,
         additional_neutral: pd.DataFrame,
-        alleles_definitions_RR: pd.DataFrame):
+        alleles_definitions_RR: List[pd.DataFrame]):
         '''
         Sets up the deterministic initial state of the algorithm
         TODO: Elaborate, shorten argument list?
@@ -205,7 +240,7 @@ class SiteInstanceState:
         self.mindistance = np.zeros((num_ids, num_loci))
         self.alldistance = np.full_like(np.empty((num_ids, num_loci, max_MOI ** 2)), np.nan)
         self.allrecrf = np.full_like(np.empty((num_ids, num_loci, max_MOI ** 2)), np.nan)
-        self.classification = np.repeat(SampleClass.REINFECTION, num_ids)
+        self.classification = np.repeat(SampleType.REINFECTION, num_ids)
 
     @classmethod
     def _calculate_sample_MOI(
@@ -252,7 +287,7 @@ class SiteInstanceState:
     def _initialize_alleles(
         self,
         genotypedata_RR: pd.DataFrame,
-        alleles_definitions_RR: pd.DataFrame,
+        alleles_definitions_RR: List[pd.DataFrame],
         locinames: np.ndarray,
         max_MOI: int):
         '''
@@ -291,7 +326,7 @@ class SiteInstanceState:
     def recode_additional_neutral(
         cls,
         additional_neutral: pd.DataFrame,
-        alleles_definitions_RR: pd.DataFrame,
+        alleles_definitions_RR: List[pd.DataFrame],
         locinames: np.ndarray,
         max_MOI: int):
         '''
@@ -325,7 +360,7 @@ class SiteInstanceState:
     def _get_original_alleles(
         cls,
         samples_df: pd.DataFrame,
-        alleles_definitions_RR: pd.DataFrame,
+        alleles_definitions_RR: List[pd.DataFrame],
         locus: str,
         locus_index: int):
         '''
@@ -395,7 +430,7 @@ class SiteInstanceState:
         num_ids: int,
         num_loci: int,
         max_MOI: int,
-        alleles_definitions_RR: pd.DataFrame,
+        alleles_definitions_RR: List[pd.DataFrame],
         seed: int = None):
         '''
         TODO: Elaborate
@@ -408,7 +443,7 @@ class SiteInstanceState:
             # 50% chance if this sample should be initialized as a reinfection
             # or recrudescence
             if random.uniform(size=1):
-                self.classification[id_index] = SampleClass.RECRUDESCENCE
+                self.classification[id_index] = SampleType.RECRUDESCENCE
             for locus_index in range(num_loci):
                 self._randomize_hidden_alleles(
                     id_index,
@@ -423,7 +458,7 @@ class SiteInstanceState:
         id_index: int,
         locus_index: int,
         max_MOI: int,
-        alleles_definitions_RR: pd.DataFrame,
+        alleles_definitions_RR: List[pd.DataFrame],
         rand: np.random.RandomState):
         '''
         TODO: Elaborate
@@ -451,7 +486,7 @@ class SiteInstanceState:
         id_index: int,
         locus_index: int,
         max_MOI: int,
-        alleles_definitions_RR: pd.DataFrame,
+        alleles_definitions_RR: List[pd.DataFrame],
         rand: np.random.RandomState):
         '''
         TODO: Cut down on the parameter list (combine last few elements in
