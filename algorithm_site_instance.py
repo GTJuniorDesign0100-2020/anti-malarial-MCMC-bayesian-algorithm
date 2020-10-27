@@ -284,16 +284,17 @@ class SiteInstanceState:
         data
         '''
         if additional_neutral.size == 0 or additional_neutral.shape[0] == 0:
-            return None
+            return np.empty([0,0])
 
         recoded_additional_neutral = np.zeros((additional_neutral.shape[0], max_MOI * locinames.size))
         for i, locus in enumerate(locinames):
             oldalleles, newalleles = cls._get_original_alleles(
                 additional_neutral, alleles_definitions_RR, locus, i)
 
-            startColumn = max_MOI * (i - 1)  # TODO: Subtracted 1 for indexing reasons in Python vs R, but not for endColumn; double-check that's valid
-            endColumnOldAllele = max_MOI * (i - 1) + oldalleles.shape[1]
-            recoded_additional_neutral[:, startColumn:endColumnOldAllele] = newalleles
+            # TODO: Same indexing as for _initializing_alleles?
+            startColumn = max_MOI * i
+            endColumn = startColumn + oldalleles.shape[1]
+            recoded_additional_neutral[:, startColumn:endColumn] = newalleles
         return recoded_additional_neutral
 
     @classmethod

@@ -520,11 +520,12 @@ def test_recode_allele_proposed_not_in_range():
 
 
 def test_recode_additional_neutral():
-    expected_first_column = np.array([6, 10, 1, 3, 7, 5, 9, 4, 3, 1, 0, 2, 11, 2])
+    expected_first_column = np.array([5, 9, 0, 2, 6, 4, 8, 3, 2, 0, 0, 1, 10, 1])
 
     recoded_additional_neutral = SiteInstanceState.recode_additional_neutral(
         additional_neutral, alleles_definitions_RR, expected_locinames, expected_maxMOI)
 
+    np.testing.assert_array_equal(recoded_additional_neutral.shape, np.array([14, 35]))
     np.testing.assert_array_equal(
         recoded_additional_neutral[:, 0], expected_first_column)
 
