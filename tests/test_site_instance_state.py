@@ -557,7 +557,7 @@ def test_create_dvect():
     ])
 
     # TODO: What does dvect stand for?
-    dvect = AlgorithmSiteInstance._get_initial_dvect(alleles_definitions_subset)
+    dvect = SiteInstanceState._get_initial_dvect(alleles_definitions_subset)
 
     assert dvect.size == 133
 
@@ -573,7 +573,7 @@ def test_get_qq():
         [0, 1, np.nan]
     ])
 
-    qq = AlgorithmSiteInstance._get_initial_qq(hidden0_subset, hiddenf_subset)
+    qq = SiteInstanceState._get_initial_qq(hidden0_subset, hiddenf_subset)
     np.testing.assert_almost_equal(qq, expected_qq, decimal=5)
 
 
@@ -598,7 +598,7 @@ def test_correction_factor():
         [245, 247],
     ])
 
-    correction_distance_matrix = AlgorithmSiteInstance._get_correction_distances(alleles_definitions_RR_stub)
+    correction_distance_matrix = SiteInstanceState._get_correction_distances(alleles_definitions_RR_stub)
 
     assert len(correction_distance_matrix) == 2
     np.testing.assert_array_equal(

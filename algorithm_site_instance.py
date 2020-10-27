@@ -95,11 +95,6 @@ class AlgorithmSiteInstance:
             self.alleles_definitions_RR,
             seed)
 
-        qq = self._get_initial_qq(self.state.hidden0, self.state.hiddenf)
-        dvect = self._get_initial_dvect(self.alleles_definitions_RR)
-        correction_distance_matrix = self._get_correction_distances(
-            self.alleles_definitions_RR)
-
         self.saved_state = self._get_initial_saved_state(
             nruns,
             burnin,
@@ -148,57 +143,6 @@ class AlgorithmSiteInstance:
         return alleles_definitions
 
     @classmethod
-    def _get_initial_dvect(cls, alleles_definitions_RR: pd.DataFrame):
-        '''
-        TODO: Understand this better?
-        Return the initial distance vector (estimating the likelihood of error
-        in the analysis)
-        '''
-        ranges = []
-        for dataframe in alleles_definitions_RR:
-            # Get the range (max-min) of the first "nloci" dataframes, then the max of all those
-            ranges.append(dataframe.max().max() - dataframe.min().min())
-
-        dvect = np.zeros(1 + int(round(max(ranges))))
-        dvect[0] = 0.75
-        dvect[1] = 0.2
-        dvect[2] = 0.05
-
-        return dvect
-
-    @classmethod
-    def _get_initial_qq(cls, hidden0: np.ndarray, hiddenf: np.ndarray):
-        '''
-        TODO: What does qq stand for?
-        Initial estimate of q, the probability of an allele being missed
-
-        :param hidden0: TODO:
-        :param hiddenf: TODO:
-        :return: A single number q, the mean of the known hidden variables
-        '''
-        return np.nanmean(np.concatenate([hidden0, hiddenf]))
-
-    @classmethod
-    def _get_correction_distances(
-        cls,
-        alleles_definitions_RR: List[pd.DataFrame]) -> List[np.ndarray]:
-        '''
-        TODO: Verify this description
-        Returns the matrix of distances between each pair of alleles
-        :param alleles_definitions_RR: TODO:
-        :return: Python array of 2D matrices of distances between each allele
-        pair for a given locus
-        '''
-        correction_distance_matrix = [] # for each locus, matrix of distances between each allele
-        # TODO: Vectorize this (it seems fairly doable)
-        for i in range(len(alleles_definitions_RR)):
-            # Wrap mean call in "array" so we get a 2D array we can transpose (getting us a grid of distances, not just a 1D vector)
-            distances = np.array([np.mean(alleles_definitions_RR[i], axis=1)])
-            distance_combinations = np.abs(distances.T - distances)
-            correction_distance_matrix.append(distance_combinations)
-        return correction_distance_matrix
-
-    @classmethod
     def _get_initial_saved_state(
         cls,
         nruns: int,
@@ -222,7 +166,6 @@ class AlgorithmSiteInstance:
             parameters=recrudescence_utils.nan_array(
                 (2 + 2 * num_loci, num_records))
         )
-
 
 
 class SiteInstanceState:
@@ -249,11 +192,15 @@ class SiteInstanceState:
             genotypedata_RR, ids, locinames)
         self._initialize_alleles(
             genotypedata_RR, alleles_definitions_RR, locinames, maxMOI)
+        self.dvect = self._get_initial_dvect(alleles_definitions_RR)
+        self.qq = np.nan
 
-        # estimate frequencies (TODO: Unsure if this should be here, since it's
-        # static state?)
+        # TODO: Unsure if these should be here, since they're read-only state?
+        # estimate frequencies
         self.frequencies_RR = calculate_frequencies3(
             pd.concat([genotypedata_RR, additional_neutral]),
+            alleles_definitions_RR)
+        self.correction_distance_matrix = self._get_correction_distances(
             alleles_definitions_RR)
 
     def _create_empty_state(self, num_ids: int, num_loci: int, max_MOI: int):
@@ -464,6 +411,45 @@ class SiteInstanceState:
             return result[0]
         return result
 
+    @classmethod
+    def _get_initial_dvect(cls, alleles_definitions_RR: pd.DataFrame):
+        '''
+        TODO: Understand this better?
+        Return the initial distance vector (estimating the likelihood of error
+        in the analysis)
+        '''
+        ranges = []
+        for dataframe in alleles_definitions_RR:
+            # Get the range (max-min) of the first "nloci" dataframes, then the max of all those
+            ranges.append(dataframe.max().max() - dataframe.min().min())
+
+        dvect = np.zeros(1 + int(round(max(ranges))))
+        dvect[0] = 0.75
+        dvect[1] = 0.2
+        dvect[2] = 0.05
+
+        return dvect
+
+    @classmethod
+    def _get_correction_distances(
+        cls,
+        alleles_definitions_RR: List[pd.DataFrame]) -> List[np.ndarray]:
+        '''
+        TODO: Verify this description
+        Returns the matrix of distances between each pair of alleles
+        :param alleles_definitions_RR: TODO:
+        :return: Python array of 2D matrices of distances between each allele
+        pair for a given locus
+        '''
+        correction_distance_matrix = [] # for each locus, matrix of distances between each allele
+        # TODO: Vectorize this (it seems fairly doable)
+        for i in range(len(alleles_definitions_RR)):
+            # Wrap mean call in "array" so we get a 2D array we can transpose (getting us a grid of distances, not just a 1D vector)
+            distances = np.array([np.mean(alleles_definitions_RR[i], axis=1)])
+            distance_combinations = np.abs(distances.T - distances)
+            correction_distance_matrix.append(distance_combinations)
+        return correction_distance_matrix
+
     def randomize_initial_assignments(
         self,
         num_ids: int,
@@ -491,6 +477,8 @@ class SiteInstanceState:
                     alleles_definitions_RR,
                     random)
                 self._randomize_recrudescences(id_index, locus_index, max_MOI)
+
+        self.qq = self._get_initial_qq(self.hidden0, self.hiddenf)
 
     def _randomize_hidden_alleles(
         self,
@@ -610,3 +598,15 @@ class SiteInstanceState:
 
         set_recrudescences(self.recr0, self.recr_repeats0, self.recoded0)
         set_recrudescences(self.recrf, self.recr_repeatsf, self.recodedf, False)
+
+    @classmethod
+    def _get_initial_qq(cls, hidden0: np.ndarray, hiddenf: np.ndarray):
+        '''
+        TODO: What does qq stand for?
+        Initial estimate of q, the probability of an allele being missed
+
+        :param hidden0: TODO:
+        :param hiddenf: TODO:
+        :return: A single number q, the mean of the known hidden variables
+        '''
+        return np.nanmean(np.concatenate([hidden0, hiddenf]))
