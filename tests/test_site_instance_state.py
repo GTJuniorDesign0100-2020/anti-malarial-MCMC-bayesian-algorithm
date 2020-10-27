@@ -545,37 +545,21 @@ def test_random_initialization():
         2020)
 
 
-@pytest.mark.xfail(reason='Not implemented in refactor')
 def test_create_dvect():
-    # TODO: This is a stub, not the actual data
-    nloci = 7
-    alleles_definitions_RR = np.array(
-        [
-            [217, 263],
-            [85, 171],
-            [71.5, 203.5],
-            [102.5, 180.5],
-            [136.5, 202.5],
-            [71.5, 89.5],
-            [146.5, 197.5],
-        ]
-    )
+    alleles_definitions_subset = np.array([
+        [217, 263],
+        [85, 171],
+        [71.5, 203.5], # Largest range (132) should determine dvect size
+        [102.5, 180.5],
+        [136.5, 202.5],
+        [71.5, 89.5],
+        [146.5, 197.5],
+    ])
 
     # TODO: What does dvect stand for?
-    dvect = np.zeros(
-        1
-        + int(
-            np.rint(
-                # Get the range (max-min) of the first "nloci" rows, then the max of all those
-                np.ptp(alleles_definitions_RR[0:nloci], axis=1).max()
-            )
-        )
-    )
-    dvect[1] = 0.75
-    dvect[2] = 0.2
-    dvect[3] = 0.05
+    dvect = AlgorithmSiteInstance._get_initial_dvect(alleles_definitions_subset)
 
-    assert dvect.size == 133, f"Dvect size {dvect.size} (expected {133})"
+    assert dvect.size == 133
 
 
 @pytest.mark.xfail(reason='Not implemented in refactor')

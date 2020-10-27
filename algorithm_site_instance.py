@@ -89,7 +89,11 @@ class AlgorithmSiteInstance:
             self.max_MOI,
             self.alleles_definitions_RR,
             seed)
-        # TODO: Actually implement this!
+
+        dvect = self._get_initial_dvect(self.alleles_definitions_RR)
+
+        # =====================================================================
+        # TODO: Replace this wtih the actual implementation!
         return mcmc.onload(
             self.genotypedata_RR,
             self.additional_neutral,
@@ -98,6 +102,7 @@ class AlgorithmSiteInstance:
             burnin,
             record_interval,
             jobname)
+        # =====================================================================
 
     @classmethod
     def _get_max_MOI(cls, genotypedata_RR: pd.DataFrame) -> int:
@@ -125,6 +130,25 @@ class AlgorithmSiteInstance:
             pd.concat([genotypedata_RR, additional_neutral]), locirepeats, k
         )
         return alleles_definitions
+
+    @classmethod
+    def _get_initial_dvect(cls, alleles_definitions_RR: pd.DataFrame):
+        '''
+        TODO: Understand this better?
+        Return the initial distance vector (estimating the likelihood of error
+        in the analysis)
+        '''
+        ranges = []
+        for dataframe in alleles_definitions_RR:
+            # Get the range (max-min) of the first "nloci" dataframes, then the max of all those
+            ranges.append(dataframe.max().max() - dataframe.min().min())
+
+        dvect = np.zeros(1 + int(round(max(ranges))))
+        dvect[0] = 0.75
+        dvect[1] = 0.2
+        dvect[2] = 0.05
+
+        return dvect
 
 
 class SiteInstanceState:
