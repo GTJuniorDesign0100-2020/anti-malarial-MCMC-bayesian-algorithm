@@ -1,5 +1,4 @@
 from collections import namedtuple
-import copy
 from typing import List
 
 import numpy as np
@@ -74,7 +73,8 @@ class AlgorithmSiteInstance:
         "record_interval" iterations
         :param seed: (optional) The seed to use for random numbers when running
         (defaults to completely random)
-        :return: TODO:
+        :return: TODO: Currently returns the saved classifications, parameter
+        matrix, and ids from this run (determine if more/less should be returned?)
         '''
         self.state.randomize_initial_assignments(
             self.ids.size,
@@ -104,7 +104,13 @@ class AlgorithmSiteInstance:
                 i, burnin, record_interval)
             print(f'MCMC Iteration {i + 1}')
 
-        # TODO: Add in summary stats / return
+        # TODO: Add in summary stats
+
+        return (
+            self.saved_state.classification,
+            self.saved_state.parameters,
+            self.ids
+        )
 
     @classmethod
     def _get_max_MOI(cls, genotypedata_RR: pd.DataFrame) -> int:
@@ -226,8 +232,8 @@ class AlgorithmSiteInstance:
 
         # update frequencies
         # # first, remove recrudescing alleles from calculations
-        # TODO: Deep or Shallow?
-        tempdata = copy.deepcopy(state.recoded0)
+        # TODO: Deep or Shallow copy?
+        tempdata = np.copy(state.recoded0)
         # TODO: Ask about this line *** sapply(which(classification == 1), function (x) tempdata[x,recr0[x,]] <<- 0) *** in the OG code.
         recrudescent_alleles = np.where(state.classification == 1)[0] # unboxes the tuple.
         end = state.recr0[recrudescent_alleles, :]
@@ -238,9 +244,14 @@ class AlgorithmSiteInstance:
 
         tempdata = np.concatenate((tempdata, state.recodedf), axis=0)
         for i in range(num_loci):
+            # TODO: Verify ignoring recoded_additional_neutral is correct if it
+            # wasn't initialized?
+            tempdata_with_recoded = tempdata
+            if state.recoded_additional_neutral.size > 0:
+                tempdata_with_recoded = np.concatenate((tempdata, state.recoded_additional_neutral), axis=0)
             findposteriorfrequencies(
                 i,
-                np.concatenate((tempdata, state.recoded_additional_neutral),axis=0),
+                tempdata_with_recoded,
                 max_MOI,
                 state.frequencies_RR)
 

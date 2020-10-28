@@ -97,8 +97,11 @@ class AlgorithmInstance:
                 seed)
 
             # save site results
-            saved_classification_all = pd.concat(saved_classification_all, saved_classification)
-            saved_parameters_all = pd.concat(saved_parameters_all, saved_params)
+            # TODO: Determine output array is correct shape
+            saved_classification_all = saved_classification_all.append(
+                pd.DataFrame(saved_classification), ignore_index=True)
+            saved_parameters_all = saved_parameters_all.append(
+                pd.DataFrame(saved_params), ignore_index=True)
             ids_all = np.append(ids_all, ids)
 
         return self._get_summary_stats(saved_classification_all, saved_parameters_all, ids_all)
@@ -107,9 +110,11 @@ class AlgorithmInstance:
         '''
         Calculate the final recrudescence probabilities and distributions for
         each sample
-        TODO: Elaborate
+        TODO: Elaborate (why does taking overall stats for separate sites make
+        sense?)
         '''
-        posterior_recrudescence_distribution = pd.concat(ids, saved_classification)
+        posterior_recrudescence_distribution = pd.concat([
+            pd.DataFrame(ids), saved_classification])
         posterior_recrudescence_distribution.rename(columns={
             posterior_recrudescence_distribution.columns[0]: 'ID'
         }, inplace=True)
