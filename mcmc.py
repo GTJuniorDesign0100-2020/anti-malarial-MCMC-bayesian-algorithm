@@ -417,9 +417,13 @@ def onload(
         runmcmc(i, dvect, classification, qq, correction_distance_matrix)
 
     ## make sure no NAs in result matrices
-    state_parameters = state_parameters[:, ~np.isnan(np.sum(state_parameters, axis=1))]
+    #state_parameters = state_parameters[:, ~np.isnan(np.sum(state_parameters, axis=1))]
+    state_parameters = state_parameters[:, np.sum(~np.isnan(state_parameters), axis=1)]
+    #state_classification = state_classification[
+    #    :, ~np.isnan(np.sum(state_classification, axis=1))
+    #]
     state_classification = state_classification[
-        :, ~np.isnan(np.sum(state_classification, axis=1))
+        :, np.sum(~np.isnan(state_classification), axis=1)
     ]
 
     modealleles = np.zeros((2 * nids, maxMOI * nloci))
