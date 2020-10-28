@@ -1,4 +1,5 @@
 from collections import namedtuple
+import copy
 from typing import List
 
 import numpy as np
@@ -94,6 +95,7 @@ class AlgorithmSiteInstance:
         for i in range(nruns):
             self._run_mcmc(
                 self.state,
+                self.alleles_definitions_RR,
                 self.ids.size,
                 self.locinames.size,
                 self.max_MOI,
@@ -160,6 +162,7 @@ class AlgorithmSiteInstance:
     def _run_mcmc(
         cls,
         state: SiteInstanceState,
+        alleles_definitions_RR: List[pd.DataFrame],
         num_ids: int,
         num_loci: int,
         max_MOI: int,
@@ -167,6 +170,7 @@ class AlgorithmSiteInstance:
         '''
         NOTE: Modifies state via side-effects for performance reasons (no
         return)
+        TODO: Cut down on parameters
         TODO: Explain this more fully
         Runs 1 iteration of the main MCMC algorithm loop, updating the state
         appropriately
@@ -184,7 +188,7 @@ class AlgorithmSiteInstance:
         # propose new hidden states
         # TODO: What does switch_hidden do? Is it entirely side effects?
         for i in range(num_ids):
-            switch_hidden(i, num_loci, max_MOI, alleles_definitions_RR)
+            switch_hidden(i, num_loci, max_MOI, alleles_definitions_RR, state)
 
         # propose q (beta distribution is conjugate distribution for binomial process)
         q_prior_alpha = 0
@@ -254,11 +258,10 @@ class AlgorithmSiteInstance:
         # TODO: Finish vectorizing this
         for x in range(num_ids):
             # id mean for what?
-            id_means = np.zeros(num_ids)
+            id_means = np.zeros(num_loci)
             for y in range(num_loci):
                 dvect_indices = np.round(
                     state.alldistance[x, y, :][~np.isnan(state.alldistance[x, y, :])]).astype(int)
-                print(dvect_indices)
                 id_means[y] = np.nanmean(
                     state.dvect[dvect_indices]
                     # Should get an array of maxMOI**2 sums

@@ -36,6 +36,8 @@ class SiteInstanceState:
             genotypedata_RR, ids, locinames)
         self._initialize_alleles(
             genotypedata_RR, alleles_definitions_RR, locinames, maxMOI)
+        self.recoded_additional_neutral = self.recode_additional_neutral(
+            additional_neutral, alleles_definitions_RR, locinames, maxMOI)
         self.dvect = self._get_initial_dvect(alleles_definitions_RR)
         self.qq = np.nan
         self.dposterior = 0.75  # TODO: What is this?
@@ -71,7 +73,7 @@ class SiteInstanceState:
         self.mindistance = np.zeros((num_ids, num_loci))
         self.alldistance = np.full_like(np.empty((num_ids, num_loci, max_MOI ** 2)), np.nan)
         self.allrecrf = np.full_like(np.empty((num_ids, num_loci, max_MOI ** 2)), np.nan)
-        self.classification = np.repeat(SampleType.REINFECTION, num_ids)
+        self.classification = np.repeat(SampleType.REINFECTION.value, num_ids)
 
     @classmethod
     def _calculate_sample_MOI(
@@ -314,7 +316,7 @@ class SiteInstanceState:
             # 50% chance if this sample should be initialized as a reinfection
             # or recrudescence
             if random.uniform(size=1):
-                self.classification[id_index] = SampleType.RECRUDESCENCE
+                self.classification[id_index] = SampleType.RECRUDESCENCE.value
             for locus_index in range(num_loci):
                 self._randomize_hidden_alleles(
                     id_index,
@@ -384,21 +386,22 @@ class SiteInstanceState:
         # Sample to randomly initialize the alleles/hidden variables
         if num_alleles > 0:
             hidden[i, present_alleles_indices] = 0
-        elif num_missing > 0:
-            new_hidden_alleles = rand.choice(
-                np.arange(
-                    0, int(self.frequencies_RR[0][j])
-                ),  # Select from first row (count of how many probabilities they are)
-                size=num_missing,
-                replace=True,
-                p=self.frequencies_RR[1][j, 0: int(self.frequencies_RR[0][j])]
-            )  # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
-            recoded[i, missing_alleles_indices] = new_hidden_alleles
-            # calculate row means
-            alleles[i, missing_alleles_indices] = np.mean(alleles_definitions_RR[j], axis=1)[
-                new_hidden_alleles
-            ]  # hidden alleles get mean allele length
-            hidden[i, missing_alleles_indices] = 1
+        if num_missing == 0:
+            return
+        new_hidden_alleles = rand.choice(
+            np.arange(
+                0, int(self.frequencies_RR[0][j])
+            ),  # Select from first row (count of how many probabilities they are)
+            size=num_missing,
+            replace=True,
+            p=self.frequencies_RR[1][j, 0: int(self.frequencies_RR[0][j])]
+        )  # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
+        recoded[i, missing_alleles_indices] = new_hidden_alleles
+        # calculate row means
+        alleles[i, missing_alleles_indices] = np.mean(alleles_definitions_RR[j], axis=1)[
+            new_hidden_alleles
+        ]  # hidden alleles get mean allele length
+        hidden[i, missing_alleles_indices] = 1
 
     def _randomize_recrudescences(
         self,
@@ -414,6 +417,7 @@ class SiteInstanceState:
         j = locus_index
 
         # determine which alleles are recrudescing (for beginning, choose closest pair)
+        # NOTE: Correct indices generated, but in a different order than R
         allpossiblerecrud = np.stack(
             np.meshgrid(np.arange(self.MOI0[i]), np.arange(self.MOIf[i]))
         ).T.reshape(-1, 2)
@@ -427,7 +431,6 @@ class SiteInstanceState:
         )
 
         closest_recrud_index = np.argmin(recrud_distances)
-        print(recrud_distances)
 
         # print(recrud_distances)
         self.mindistance[i, j] = recrud_distances[closest_recrud_index]
