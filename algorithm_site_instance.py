@@ -277,9 +277,6 @@ class AlgorithmSiteInstance:
         likelihoodratio = np.zeros(num_ids)
         # TODO: Finish vectorizing this
 
-        def non_nan(array: np.ndarray):
-            return array[~np.isnan(array)]
-
         for x in range(num_ids):
             # id mean for what?
             id_means = np.zeros(num_loci)
@@ -296,7 +293,11 @@ class AlgorithmSiteInstance:
         TODO: What does this actually do?
         Returns a 1D vector of max_MOI**2 length
         '''
-        dvect_indices = np.round(state.alldistance[x, y, :]).astype(int)
+        def non_nan(array: np.ndarray):
+            # Needed since converting NaN to int has undefined behavior
+            return array[~np.isnan(array)]
+
+        dvect_indices = np.round(non_nan(state.alldistance[x, y, :])).astype(int)
         return (state.dvect[dvect_indices] /
             # Should get an array of maxMOI**2 sums
             np.sum(
@@ -306,7 +307,7 @@ class AlgorithmSiteInstance:
                 * state.dvect[
                     state.correction_distance_matrix[y][
                         :,
-                        state.allrecrf[x, y, :max_MOI**2].astype(int),
+                        non_nan(state.allrecrf[x, y, :max_MOI**2]).astype(int),
                     ].astype(int)
                 ].T).T,
                 axis=0
