@@ -53,19 +53,33 @@ class SiteInstanceState:
     def _create_empty_state(self, num_ids: int, num_loci: int, max_MOI: int):
         '''
         Creates the initial empty data structures in the state to be populated
-        later
-        TODO: Explain what each created structure is and what it's used for
+        later. The data structures are as follows:
+
+        alleles0 - Holds the allele fragment lengths found on Day 0
+        recoded0 - Holds the indices of the bins the allele0 lengths fall into
+        hidden0 - Records if a given allele was directly observed in the
+        original dataset (0) or has to be inferred (1) (TODO: What does nan
+        mean?)
+        recr0 - Records which strain we think is recrudescing for each sample
+        (e.g. recr0[i, j] = 2 means "For sample i at locus j, we think the
+        2nd strain of the locus is the recrudescent one")
+        *f - All the "f" variants are the same thing, but for the day of failure
+        mindistance - The closest of all possible allele length pairs for a
+        given sample/locus
+        alldistance - All possible allele length pairs for a given sample/locus
+        allrecrf - Holds all possible allele combinations for the given sample/
+        locus, and marks which one we estimate is the recrudescent one
+        classification - Holds whether we think a given sample is a reinfection
+        or a recrudescence
+
+        :param num_ids: The number of samples in the dataset
+        :param num_loci: The number of loci in the dataset
+        :param max_MOI: The max multiplicity of infection in the dataset
         '''
         self.alleles0 = np.zeros((num_ids, max_MOI * num_loci))
         self.recoded0 = np.zeros((num_ids, max_MOI * num_loci))
         self.hidden0 = np.full_like(np.empty((num_ids, max_MOI * num_loci)), np.nan)
         self.recr0 = np.full_like(np.empty((num_ids, num_loci)), np.nan)
-        self.recr_repeats0 = np.full_like(
-            np.empty((num_ids, num_loci)), np.nan
-        )  # number of times recrudescing allele is repeated on day 0
-        self.recr_repeatsf = np.full_like(
-            np.empty((num_ids, num_loci)), np.nan
-        )  # number of times recrudescing allele is repeated on day 0
         self.allelesf = np.zeros((num_ids, max_MOI * num_loci))
         self.recodedf = np.zeros((num_ids, max_MOI * num_loci))
         self.hiddenf = np.full_like(np.empty((num_ids, max_MOI * num_loci)), np.nan)
@@ -88,7 +102,8 @@ class SiteInstanceState:
         arrays
         # TODO: Explain what multiplicity of infection actually means
 
-        :param genotypedata_RR: The dataset holding the samples
+        :param genotypedata_RR: The day 0 and day of failure genotype data for
+        this site's samples
         :param ids: The sample ids in the dataset to calculate MOIs for
         :locinames: The names of the unique loci in the dataset
         :return: A tuple of 1D numpy arrays of length "ids.size", (MOI0, MOIf)
@@ -103,12 +118,12 @@ class SiteInstanceState:
 
                 num_alleles0 = np.count_nonzero(
                     ~genotypedata_RR.loc[
-                        genotypedata_RR["Sample ID"].str.contains(f"{ID}_ Day 0"), locicolumns
+                        genotypedata_RR["Sample ID"].str.contains(f"{ID} Day 0"), locicolumns
                     ].isna()
                 )
                 num_allelesf = np.count_nonzero(
                     ~genotypedata_RR.loc[
-                        genotypedata_RR["Sample ID"].str.contains(f"{ID}_ Day Failure"),
+                        genotypedata_RR["Sample ID"].str.contains(f"{ID} Day Failure"),
                         locicolumns,
                     ].isna()
                 )
@@ -128,8 +143,10 @@ class SiteInstanceState:
         Initialize the alleles/recoded state, filling them with the appropriate
         initial/failure data from the dataframe
 
-        :param genotypedata_RR: The genotype data for this site the sample data
-        :param alleles_definitions_RR: TODO:
+        :param genotypedata_RR: The day 0 and day of failure genotype data for
+        this site's samples
+        :param alleles_definitions_RR: The bins/ranges that the alleles lengths
+        could fall into
         :param locinames: The names of the loci in genotypedata_RR to get
         alleles for
         :param max_MOI: The maximum multiplicity of infection in the genotype
@@ -164,16 +181,19 @@ class SiteInstanceState:
         max_MOI: int):
         '''
         TODO: Verify what this actually does?
-        If additional_neutral data is present, return a recoded version
-        TODO: Figure out what recoding actually means?
+        If additional_neutral data is present, return a recoded version with
+        the allele lengths appropriately binned; otherwise, returns an empty
+        numpy array
 
-        :param additional_neutral: The genotype data for this site the sample
-        data
+        :param additional_neutral: The background genotype data for this site's
+        sample data
         :param alleles_definitions_RR: TODO:
         :param locinames: The names of the loci in additional_neutral to get
         alleles for
         :param max_MOI: The maximum multiplicity of infection in the additional
         data
+        :return: The recoded additional_neutral array, or an empty numpy array
+        if there is no additional_neutral data
         '''
         if additional_neutral.size == 0 or additional_neutral.shape[0] == 0:
             return np.empty([0,0])
@@ -234,7 +254,9 @@ class SiteInstanceState:
         alleles_definitions_subset: np.ndarray,
         proposed: float):
         '''
-        TODO: Figure out what this actually does?
+        Returns the index of the alleles_definitions bin that the proposed
+        allele length falls into, or np.nan if it doesn't fall within any
+        of the subset's ranges
 
         :param alleles_definitions_subset: Nx2 2D numpy array, representing
         (mutually exclusive) ranges of allele lengths the proposed value can
@@ -324,7 +346,7 @@ class SiteInstanceState:
                     max_MOI,
                     alleles_definitions_RR,
                     random)
-                self._randomize_recrudescences(id_index, locus_index, max_MOI)
+                self._assign_closest_recrudescences(id_index, locus_index, max_MOI)
 
         self.qq = self._get_initial_qq(self.hidden0, self.hiddenf)
 
@@ -403,21 +425,29 @@ class SiteInstanceState:
         ]  # hidden alleles get mean allele length
         hidden[i, missing_alleles_indices] = 1
 
-    def _randomize_recrudescences(
+    def _assign_closest_recrudescences(
         self,
         id_index: int,
         locus_index: int,
         max_MOI: int):
         '''
-        TODO: Elaborate (since this doesn't seem to actually do anything random?
-        So what is it doing?)
-        Randomly assign initial recrudscences/reinfections
+        Finds the closest possible recrudescing allele pairs known for each
+        locus and sample ID, records them as our initial guess for the
+        recrudescence, and updates the variables appropriately.
+
+        The closest allele pair is assigned as our initial guess for the most
+        likely allele to be recrudescent with the sample's day 0 allele.
+
+        :param id_index: The index of the sample ID being evaluated
+        :param locus_index: The index of the locus being evaluated
+        :max_MOI: The maximum multiplicity of infection for the dataset
         '''
         i = id_index
         j = locus_index
 
-        # determine which alleles are recrudescing (for beginning, choose closest pair)
-        # NOTE: Correct indices generated, but in a different order than R
+        # calculate all possible pairs of alleles that could be recrudescing for
+        # this sample
+        # NOTE: Correct indices generated, but in a different order than R code
         allpossiblerecrud = np.stack(
             np.meshgrid(np.arange(self.MOI0[i]), np.arange(self.MOIf[i]))
         ).T.reshape(-1, 2)
@@ -426,13 +456,15 @@ class SiteInstanceState:
         allele0_col_indices = max_MOI * j + allpossiblerecrud[:, 0]
         allelef_col_indices = max_MOI * j + allpossiblerecrud[:, 1]
 
+        # calculate distances between each possible pair of alleles
         recrud_distances = np.abs(
             self.alleles0[i, allele0_col_indices] - self.allelesf[i, allelef_col_indices]
         )
 
+        # select the closest pair, and record the closest distance/distances for
+        # this sample
         closest_recrud_index = np.argmin(recrud_distances)
 
-        # print(recrud_distances)
         self.mindistance[i, j] = recrud_distances[closest_recrud_index]
         self.alldistance[i, j, :recrud_distances.size] = recrud_distances
 
@@ -440,15 +472,13 @@ class SiteInstanceState:
             i, max_MOI * j + allpossiblerecrud[:, 1]
         ]
 
-        def set_recrudescences(recr, recr_repeats, recoded, is_0=True):
+        def set_recrudescences(recr, is_day_0=True):
             # TODO: Verify what the purpose of this actually is?
-            recrud_column = 0 if is_0 else 1
+            recrud_column = 0 if is_day_0 else 1
             recr[i, j] = max_MOI * j + allpossiblerecrud[closest_recrud_index, recrud_column]
-            recr_repeats[i, j] = np.sum(
-                recoded[i, max_MOI * j: max_MOI * (j+1)] == recoded[i, int(recr[i, j])])
 
-        set_recrudescences(self.recr0, self.recr_repeats0, self.recoded0)
-        set_recrudescences(self.recrf, self.recr_repeatsf, self.recodedf, False)
+        set_recrudescences(self.recr0)
+        set_recrudescences(self.recrf, False)
 
     @classmethod
     def _get_initial_qq(cls, hidden0: np.ndarray, hiddenf: np.ndarray):

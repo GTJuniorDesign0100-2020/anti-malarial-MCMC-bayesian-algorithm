@@ -24,6 +24,7 @@ class AlgorithmInstance:
         Parses the given malaria test data file and sets up the initial data
         structures needed to run the algorithm for each "arm"/site location in
         the file
+
         :param input_file_path: The string path to the data file
         :param locirepeats: TODO:
         :param input_file_parser: (optional) The parser specifying how to read/
@@ -34,6 +35,9 @@ class AlgorithmInstance:
         site_names = pd.unique(genotypedata_latefailures['Site'])
         self.algorithm_instances = []
         for site_name in site_names:
+            # NOTE: "RR" stands for "recrudescence and/or reinfection"; it marks
+            # datasets that deals specifically with day 0/day of failure info,
+            # as opposed to background data
             site_genotypedata_RR = self._get_samples_from_site(
                 genotypedata_latefailures, site_name)
             site_additional_neutral = self._get_samples_from_site(

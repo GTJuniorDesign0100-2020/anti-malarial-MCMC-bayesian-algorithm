@@ -29,6 +29,11 @@ class AlgorithmSiteInstance:
         locirepeats: List[int]):
         '''
         Sets up the initial data structures needed before running the algorithm
+
+        :param genotypedata_RR: The dataset with day 0/day of failure data for
+        each sample in the site
+        :param additional_neutral: The set of additional initial samples taken
+        to provide background information about allele prevalence
         '''
         # MOI = multiplicity of infection
         self.max_MOI = self._get_max_MOI(genotypedata_RR)
@@ -115,7 +120,9 @@ class AlgorithmSiteInstance:
     @classmethod
     def _get_max_MOI(cls, genotypedata_RR: pd.DataFrame) -> int:
         '''
-        Get the maximum "multiplicity of infection" (MOI) in the dataset
+        Get the maximum "multiplicity of infection" (MOI) in the dataset (i.e.
+        the maximum number of strains there are for a single locus in the
+        dataset)
         '''
         return int(np.nanmax(
             pd.to_numeric(genotypedata_RR.columns.str.split('_').str[1])
@@ -129,8 +136,8 @@ class AlgorithmSiteInstance:
         num_loci: int,
         locirepeats: List[int]) -> pd.DataFrame:
         '''
-        TODO: Elaborate
-        Get the allele definitions in the dataset
+        Get the allele definitions in the dataset (i.e. the set of ranges/
+        "bins" the allele lengths can fall into)
         '''
         maxalleles = 30
         k = np.repeat(maxalleles, num_loci)
@@ -317,3 +324,14 @@ class AlgorithmSiteInstance:
         saved_state.parameters[2 + num_loci : (2 + 2 * num_loci), record_index] = np.sum(
             state.frequencies_RR[1][:num_loci, :] ** 2
         )
+
+    @classmethod
+    def _remove_nan_from_array(cls, array: np.ndarray) -> np.ndarray:
+        '''
+        Returns a version of the array with NaNs removed (does not modify the
+        original array)
+
+        :param array: The array to process
+        :return: A version of the array with all np.nan values removed
+        '''
+        return array[:, np.sum(~np.isnan(array), axis=1)]

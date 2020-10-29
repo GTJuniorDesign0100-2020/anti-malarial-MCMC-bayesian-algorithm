@@ -6,7 +6,13 @@ import recrudescence_utils
 
 class RecrudescenceFileParser(DataFileParser):
     '''
-    Parses the given malaria test data file and returns
+    Parses the given malaria test data file and returns the data. The data
+    is returned in 2 parts:
+    -   A set of genotypedata containing a set of initial samples and a day of
+        failure when those samples returned positive for malaria again
+    -   A set of background "additional" geotypedata composed of only single
+        samples, and used for determining allele frequency, etc., sametimes
+        known as the "background day 0 samples"
     '''
 
     @classmethod
@@ -19,8 +25,9 @@ class RecrudescenceFileParser(DataFileParser):
 
         :param input_file_path: The string path to the Excel data file to
         attempt parsing
-        :return: Tuple of (genotypedata_latefailures, additional_genotypedata)
-        # TODO: Figure out what these actually mean?
+        :return: Tuple of (genotypedata_latefailures, additional_genotypedata),
+        with the former being the data for day 0/day of failure samples and the
+        latter being background samples
         # TODO: Add proper exceptions/error handling
         '''
         raw_file_info = pd.ExcelFile(input_file_path)
@@ -44,9 +51,8 @@ class RecrudescenceFileParser(DataFileParser):
         cls._replace_missing_data(genotypedata_latefailures)
 
         # recode sample names so that each pair has a " Day 0" and a " Day Failure"
-        # NOTE: This currently leaves the underscore in the ID name (which the original R code does as well)
-        genotypedata_latefailures['Sample ID'] = genotypedata_latefailures['Sample ID'].str.replace('D0$', ' Day 0')
-        genotypedata_latefailures['Sample ID'] = genotypedata_latefailures['Sample ID'].str.replace('D[0-9]+$', ' Day Failure')
+        genotypedata_latefailures['Sample ID'] = genotypedata_latefailures['Sample ID'].str.replace('_D0$', ' Day 0')
+        genotypedata_latefailures['Sample ID'] = genotypedata_latefailures['Sample ID'].str.replace('_D[0-9]+$', ' Day Failure')
 
         # verify each sample has a Day 0 and a Day of Failure
         day_0_ids = recrudescence_utils.get_sample_ids(genotypedata_latefailures, 'Day 0')
@@ -72,7 +78,6 @@ class RecrudescenceFileParser(DataFileParser):
         cls._replace_missing_data(additional_genotypedata)
 
         # recode sample names to " Day 0" and " Day Failure"
-        # NOTE: Unlike the above, this does NOT leave underscores
         additional_genotypedata['Sample ID'] = additional_genotypedata['Sample ID'].str.replace('_D0$', ' Day 0')
         additional_genotypedata['Sample ID'] = additional_genotypedata['Sample ID'].str.replace('_D[0-9]+$', ' Day Failure')
 

@@ -26,7 +26,7 @@ def test_angola_example_parser_output_correct():
     # TODO: Find better way than just testing the 1st row?
     expected_genotype_row_0 = pd.DataFrame(
         [[
-            'BQ17-269_ Day 0', 'Benguela',
+            'BQ17-269 Day 0', 'Benguela',
             223.4, np.nan, np.nan,
             103.7, 140.3, np.nan,
             169, np.nan, np.nan,

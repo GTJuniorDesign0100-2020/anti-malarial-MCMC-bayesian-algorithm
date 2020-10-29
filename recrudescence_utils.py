@@ -15,7 +15,7 @@ def get_sample_ids(genotypedata: pd.DataFrame, search_text: str) -> np.ndarray:
     Returns a numpy array of all the unique "Sample ID"s in the dataframe
     whose name contains the matching text
 
-    TODO: Currently assumes underscore remains in ID name
+    NOTE: Currently assumes space in ID name
     TODO: Could potentially be refactored to a more general function?
 
     :param genotypedata: The data to search
@@ -25,7 +25,7 @@ def get_sample_ids(genotypedata: pd.DataFrame, search_text: str) -> np.ndarray:
             genotypedata['Sample ID'].str.contains(search_text)
         ]['Sample ID']
     # Remove day from sample
-    sample_id_names = matching_sample_names.str.rsplit('_', n=1).str.get(0)
+    sample_id_names = matching_sample_names.str.split(' ', n=1).str.get(0)
     return pd.unique(sample_id_names)
 
 

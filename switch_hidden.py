@@ -52,8 +52,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 					state.allrecrf[x][chosenlocus - 1][0:allpossiblerecrud.shape[0]] = state.recodedf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1]]
 					state.recr0[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][closestrecrud]
 					state.recrf[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][closestrecrud]
-					state.recr_repeats0[x][chosenlocus - 1] = sum(state.recoded0[x][maxMOI * (chosenlocus - 1) : maxMOI * chosenlocus] == state.recr0[x][chosenlocus - 1])
-					state.recr_repeatsf[x][chosenlocus - 1] = sum(state.recodedf[x][maxMOI * (chosenlocus - 1) : maxMOI * chosenlocus] == state.recrf[x][chosenlocus - 1])
+
 			else:
 				chosen = chosen - nloci * maxMOI
 				chosenlocus = math.ceil(chosen/maxMOI)
@@ -89,8 +88,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 					state.allrecrf[x][chosenlocus - 1][0:allpossiblerecrud.shape[0]] = state.recodedf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1]]
 					state.recr0[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][closestrecrud]
 					state.recrf[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][closestrecrud]
-					state.recr_repeats0[x][chosenlocus - 1] = sum(state.recoded0[x][maxMOI * (chosenlocus - 1) : maxMOI * chosenlocus] == state.recr0[x][chosenlocus - 1])
-					state.recr_repeatsf[x][chosenlocus - 1] = sum(state.recodedf[x][maxMOI * (chosenlocus - 1) : maxMOI * chosenlocus] == state.recrf[x][chosenlocus - 1])
+
 		else:
 			if chosen <= (nloci * maxMOI):
 				chosenlocus = math.ceil(chosen/maxMOI)
@@ -124,8 +122,6 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 
 				newrecr0 = maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][newclosestrecrud]
 				newrecrf = maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][newclosestrecrud]
-				newrecr_repeats0 = sum(temprecoded == temprecoded[allpossiblerecrud[0][newclosestrecrud]])
-				newrecr_repeatsf = sum(state.recodedf[x][maxMOI * (chosenlocus - 1) : maxMOI * chosenlocus] == state.recodedf[x][newrecrf])
 
 
 				## likelihoodnew
@@ -172,8 +168,6 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 					state.allrecrf[x][chosenlocus - 1][0:allpossiblerecrud.shape[0]] = newallrecrf
 					state.recr0[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][newclosestrecrud]
 					state.recrf[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][newclosestrecrud]
-					state.recr_repeats0[x][chosenlocus - 1] = sum(state.recoded0[x][maxMOI * (chosenlocus - 1) : maxMOI * chosenlocus] == state.recoded0[x][state.recr0[x][chosenlocus - 1].astype(np.int64)])
-					state.recr_repeatsf[x][chosenlocus - 1] = sum(state.recodedf[x][maxMOI * (chosenlocus - 1) : maxMOI * chosenlocus] == state.recodedf[x][state.recrf[x][chosenlocus - 1].astype(np.int64)])
 			else:
 				chosen = chosen - nloci * maxMOI
 				chosenlocus = math.ceil(chosen/maxMOI)
@@ -207,8 +201,6 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 
 				newrecr0 = maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][newclosestrecrud]
 				newrecrf = maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][newclosestrecrud]
-				newrecr_repeats0 = sum(state.recoded0[x][maxMOI * (chosenlocus - 1) : maxMOI * chosenlocus] == state.recoded0[x][newrecr0])
-				newrecr_repeatsf = sum(temprecoded == temprecoded[allpossiblerecrud[1][newclosestrecrud]])
 
 				## likelihoodnew
 				likelihoodnew_numerator = state.dvect[np.round(newalldistance).astype(np.int64)]
@@ -251,5 +243,3 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 					state.allrecrf[x][chosenlocus - 1][0:allpossiblerecrud.shape[0]] = newallrecrf
 					state.recr0[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][newclosestrecrud]
 					state.recrf[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][newclosestrecrud]
-					state.recr_repeats0[x][chosenlocus - 1] = sum(state.recoded0[x][maxMOI * (chosenlocus - 1) : maxMOI * chosenlocus] == state.recoded0[x][state.recr0[x][chosenlocus - 1].astype(np.int64)])
-					state.recr_repeatsf[x][chosenlocus - 1] = sum(state.recodedf[x][maxMOI * (chosenlocus - 1) : maxMOI * chosenlocus] == state.recodedf[x][state.recrf[x][chosenlocus - 1].astype(np.int64)])
