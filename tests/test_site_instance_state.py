@@ -1,9 +1,6 @@
-"""
+'''
 A series of tests to make sure mcmc.py's functionality is equivalent to mcmc.r's
-
-TODO: Use an actual testing framework?
-TODO: Double-check axes of EVERYTHING (I'm worried I might've mixed up running function on column/row axes with numpy functions)
-"""
+'''
 
 import os
 import sys
@@ -22,7 +19,7 @@ from recode_alleles import *
 from recrudescence_file_parser import RecrudescenceFileParser
 import recrudescence_utils
 
-"""
+'''
 Full example genotype_RR dataframe in R:
 
                Sample ID  313_1  313_2  313_3  383_1  383_2  383_3 TA1_1 TA1_2
@@ -64,7 +61,7 @@ Full example genotype_RR dataframe in R:
 10      NA    82.0      NA   152.4   163.1      NA      NA
 11      NA    81.7      NA   148.8   160.4      NA      NA
 12      NA    81.7      NA   163.2   175.3      NA      NA
-"""
+'''
 
 # NOTE: Makes this reliant on AlgorithmInstance tests passing
 example_file = os.path.join(

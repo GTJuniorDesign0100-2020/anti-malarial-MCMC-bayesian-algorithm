@@ -12,6 +12,12 @@ class SampleType(enum.Enum):
     RECRUDESCENCE = 1
 
 
+class HiddenAlleleType(enum.Enum):
+    OBSERVED = 0
+    MISSING = 1
+    UNKNOWN = np.nan    # TODO: Confirm this is correct?
+
+
 class SiteInstanceState:
     '''
     A class that holds the current state for a single "arm"/site instance when
@@ -78,12 +84,13 @@ class SiteInstanceState:
         '''
         self.alleles0 = np.zeros((num_ids, max_MOI * num_loci))
         self.recoded0 = np.zeros((num_ids, max_MOI * num_loci))
-        self.hidden0 = np.full_like(np.empty((num_ids, max_MOI * num_loci)), np.nan)
+        self.hidden0 = np.full_like(np.empty((num_ids, max_MOI * num_loci)),
+            HiddenAlleleType.UNKNOWN.value)
         self.recr0 = np.full_like(np.empty((num_ids, num_loci)), np.nan)
-        self.allelesf = np.zeros((num_ids, max_MOI * num_loci))
-        self.recodedf = np.zeros((num_ids, max_MOI * num_loci))
-        self.hiddenf = np.full_like(np.empty((num_ids, max_MOI * num_loci)), np.nan)
-        self.recrf = np.full_like(np.empty((num_ids, num_loci)), np.nan)
+        self.allelesf = np.copy(self.alleles0)
+        self.recodedf = np.copy(self.recoded0)
+        self.hiddenf = np.copy(self.hidden0)
+        self.recrf = np.copy(self.recr0)
         self.mindistance = np.zeros((num_ids, num_loci))
         self.alldistance = np.full_like(np.empty((num_ids, num_loci, max_MOI ** 2)), np.nan)
         self.allrecrf = np.full_like(np.empty((num_ids, num_loci, max_MOI ** 2)), np.nan)
@@ -407,23 +414,22 @@ class SiteInstanceState:
 
         # Sample to randomly initialize the alleles/hidden variables
         if num_alleles > 0:
-            hidden[i, present_alleles_indices] = 0
+            hidden[i, present_alleles_indices] = HiddenAlleleType.OBSERVED.value
         if num_missing == 0:
             return
+
         new_hidden_alleles = rand.choice(
-            np.arange(
-                0, int(self.frequencies_RR[0][j])
-            ),  # Select from first row (count of how many probabilities they are)
+            # Select from first row (count of how many probabilities they are)
+            np.arange(0, int(self.frequencies_RR[0][j])),
             size=num_missing,
             replace=True,
             p=self.frequencies_RR[1][j, 0: int(self.frequencies_RR[0][j])]
-        )  # Sum so probabilities add up to 1 (TODO: Can remove this when using real data and not just stubbing)
+        )
+        # Choose random initial data for missing alleles
         recoded[i, missing_alleles_indices] = new_hidden_alleles
-        # calculate row means
-        alleles[i, missing_alleles_indices] = np.mean(alleles_definitions_RR[j], axis=1)[
-            new_hidden_alleles
-        ]  # hidden alleles get mean allele length
-        hidden[i, missing_alleles_indices] = 1
+        # calculate row means (mean allele lengths)
+        alleles[i, missing_alleles_indices] = np.mean(alleles_definitions_RR[j], axis=1)[new_hidden_alleles]
+        hidden[i, missing_alleles_indices] = HiddenAlleleType.MISSING.value
 
     def _assign_closest_recrudescences(
         self,

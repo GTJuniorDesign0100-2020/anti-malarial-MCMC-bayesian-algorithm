@@ -189,7 +189,7 @@ class AlgorithmSiteInstance:
         appropriately
         '''
         # propose new classification
-        likelihoodratio = cls._likelihood_ratio(
+        likelihoodratio = cls._likelihood_ratios(
             state, num_ids, num_loci, max_MOI)
 
         z = rand.uniform(size=num_ids)
@@ -263,7 +263,7 @@ class AlgorithmSiteInstance:
                 state.frequencies_RR)
 
     @classmethod
-    def _likelihood_ratio(
+    def _likelihood_ratios(
         cls,
         state: SiteInstanceState,
         num_ids: int,
@@ -271,33 +271,46 @@ class AlgorithmSiteInstance:
         max_MOI: int):
         '''
         TODO: Explain what this does?
+        Returns the likelihood ratio for each sample in the dataset, given our
+        current state
         '''
         likelihoodratio = np.zeros(num_ids)
         # TODO: Finish vectorizing this
+
+        def non_nan(array: np.ndarray):
+            return array[~np.isnan(array)]
+
         for x in range(num_ids):
             # id mean for what?
             id_means = np.zeros(num_loci)
             for y in range(num_loci):
-                dvect_indices = np.round(
-                    state.alldistance[x, y, :][~np.isnan(state.alldistance[x, y, :])]).astype(int)
                 id_means[y] = np.nanmean(
-                    state.dvect[dvect_indices]
-                    # Should get an array of maxMOI**2 sums
-                    / np.sum(
-                        # TODO: Make sure multiplications are down the right axis (I believe each element in the frequencies_RR 1D vector should multiply across 1 dvect row)
-                        # Double-transpose to multiply across rows, not columns
-                        (state.frequencies_RR[1][y, :int(state.frequencies_RR[0][y])]
-                        * state.dvect[
-                            state.correction_distance_matrix[y][
-                                :,
-                                state.allrecrf[x, y, :max_MOI**2][~np.isnan(state.allrecrf[x, y, :max_MOI**2])].astype(int),
-                            ].astype(int)
-                        ].T).T,
-                        axis=0, # TODO: Verify it's the right axis?
-                    ),
+                    cls._likelihood_inner_loop(state, max_MOI, x, y)
                 )
             likelihoodratio[x] = np.exp(np.sum(np.log(id_means)))
         return likelihoodratio
+
+    @classmethod
+    def _likelihood_inner_loop(cls, state, max_MOI, x: int, y: int):
+        '''
+        TODO: What does this actually do?
+        Returns a 1D vector of max_MOI**2 length
+        '''
+        dvect_indices = np.round(state.alldistance[x, y, :]).astype(int)
+        return (state.dvect[dvect_indices] /
+            # Should get an array of maxMOI**2 sums
+            np.sum(
+                # TODO: Make sure multiplications are down the right axis (I believe each element in the frequencies_RR 1D vector should multiply across 1 dvect row)
+                # Double-transpose to multiply across rows, not columns
+                (state.frequencies_RR[1][y, :int(state.frequencies_RR[0][y])]
+                * state.dvect[
+                    state.correction_distance_matrix[y][
+                        :,
+                        state.allrecrf[x, y, :max_MOI**2].astype(int),
+                    ].astype(int)
+                ].T).T,
+                axis=0
+            ))
 
     def _update_saved_state(
         self,
