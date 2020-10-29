@@ -14,8 +14,7 @@ def test_runs_without_error():
         os.path.dirname(__file__),
         '../Angola2017_example.xlsx')
     test = AlgorithmInstance(example_file, [2,2,3,3,3,3,3])
-    # TODO:
-    # test.run_algorithm(nruns=10, burnin=1, record_interval=2, seed=2020)
+    test.run_algorithm(nruns=5, burnin=1, record_interval=2, seed=2020)
 
 
 def test_getting_site_samples():
