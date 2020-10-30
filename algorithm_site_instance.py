@@ -7,7 +7,7 @@ import pandas as pd
 from define_alleles import define_alleles
 from findposteriorfrequencies import findposteriorfrequencies
 import recrudescence_utils
-from site_instance_state import SiteInstanceState
+from site_instance_state import SiteInstanceState, SampleType, HiddenAlleleType
 from switch_hidden import switch_hidden
 
 
@@ -189,13 +189,13 @@ class AlgorithmSiteInstance:
         appropriately
         '''
         # propose new classification
-        likelihoodratio = cls._likelihood_ratios(
+        likelihoodratios = cls._likelihood_ratios(
             state, num_ids, num_loci, max_MOI)
 
         z = rand.uniform(size=num_ids)
         newclassification = state.classification
-        newclassification[np.logical_and(state.classification == 0, z < likelihoodratio)] = 1
-        newclassification[np.logical_and(state.classification == 1, z < 1 / likelihoodratio)] = 0
+        newclassification[np.logical_and(state.classification == 0, z < likelihoodratios)] = 1
+        newclassification[np.logical_and(state.classification == 1, z < 1 / likelihoodratios)] = 0
         state.classification = newclassification
 
         # propose new hidden states
@@ -203,22 +203,11 @@ class AlgorithmSiteInstance:
         for i in range(num_ids):
             switch_hidden(i, num_loci, max_MOI, alleles_definitions_RR, state)
 
-        # propose q (beta distribution is conjugate distribution for binomial process)
-        q_prior_alpha = 0
-        q_prior_beta = 0
-        q_posterior_alpha = (
-            q_prior_alpha + np.nansum(state.hidden0 == 1) + np.nansum(state.hiddenf == 1)
-        )
-        q_posterior_beta = q_prior_beta + np.nansum(state.hidden0 == 0) + np.nansum(state.hiddenf == 0)
-        if q_posterior_alpha == 0:
-            q_posterior_alpha = 1
-        if q_posterior_beta == 0:  # TODO: Added this due to numpy warning, possibly remove?
-            q_posterior_beta = 1
-        state.qq = rand.beta(q_posterior_alpha, q_posterior_beta)
+        cls._update_q(state, rand)
 
         #  update dvect (approximate using geometric distribution)
-        # only if there is at least 1 recrudescent infection
-        if np.sum(state.classification == 1) >= 1:
+        # only update if there is at least 1 recrudescent infection
+        if np.sum(state.classification == SampleType.RECRUDESCENCE.value) >= 1:
             d_prior_alpha = 0
             d_prior_beta = 0
             d_posterior_alpha = d_prior_alpha + state.mindistance[state.classification == 1, :].size
@@ -232,7 +221,7 @@ class AlgorithmSiteInstance:
             ):  ## algorithm will get stuck if dposterior is allowed to go to 1 (TODO: Wait, so why is it setting d_posterior_beta to 1??)
                 d_posterior_beta = 1
 
-            state.dposterior = np.random.beta(d_posterior_alpha, d_posterior_beta)
+            state.dposterior = rand.beta(d_posterior_alpha, d_posterior_beta)
             state.dvect = state.dposterior * (
                 np.array(1 - state.dposterior)**np.arange(0, state.dvect.size))
             state.dvect = state.dvect / np.sum(state.dvect)
@@ -312,6 +301,40 @@ class AlgorithmSiteInstance:
                 ].T).T,
                 axis=0
             ))
+
+    @classmethod
+    def _update_q(cls, state: SiteInstanceState, rand: np.random.RandomState):
+        '''
+        TODO: Possibly move this to the state object itself?
+        Propose a new value for q (the proportion of alleles that are hidden/
+        not directly observed) and update it appropriately, based on the
+        current state
+        :param state: The current state of the algorithm
+        :param rand: The random number generator to use
+        '''
+        # TODO: What are the alpha/beta used for, in high-level terms? They seem
+        # to be counts of observed/missing alleles in the hidden state?
+        q_prior_alpha = 0
+        q_prior_beta = 0
+
+        q_posterior_alpha = (
+            q_prior_alpha
+            + np.nansum(state.hidden0 == HiddenAlleleType.OBSERVED.value)
+            + np.nansum(state.hiddenf == HiddenAlleleType.OBSERVED.value))
+        q_posterior_beta = (
+            q_prior_beta
+            + np.nansum(state.hidden0 == HiddenAlleleType.MISSING.value)
+            + np.nansum(state.hiddenf == HiddenAlleleType.MISSING.value))
+
+        # Edge case if there are no missing/observed alleles, to avoid div by 0
+        if q_posterior_alpha == 0:
+            q_posterior_alpha = 1
+        if q_posterior_beta == 0:  # TODO: Added this due to numpy warning, possibly remove?
+            q_posterior_beta = 1
+
+        # propose new q (beta distribution is conjugate distribution for
+        # binomial process)
+        state.qq = rand.beta(q_posterior_alpha, q_posterior_beta)
 
     def _update_saved_state(
         self,

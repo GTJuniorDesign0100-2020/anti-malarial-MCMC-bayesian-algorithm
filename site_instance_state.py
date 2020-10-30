@@ -13,8 +13,9 @@ class SampleType(enum.Enum):
 
 
 class HiddenAlleleType(enum.Enum):
-    OBSERVED = 0
-    MISSING = 1
+    # TODO: Verify I don't have these switched?
+    MISSING = 0
+    OBSERVED = 1
     UNKNOWN = np.nan    # TODO: Confirm this is correct?
 
 
@@ -408,13 +409,13 @@ class SiteInstanceState:
         num_missing = MOIs[i] - num_alleles
 
         missing_alleles_indices = np.arange(start, end)[
-            np.where(alleles[i, start: start + MOIs[i]] == 0)
+            np.where(alleles[i, start: start + MOIs[i]] == HiddenAlleleType.MISSING.value)
         ]
         present_alleles_indices = np.delete(np.arange(start, end), missing_alleles_indices)
 
         # Sample to randomly initialize the alleles/hidden variables
         if num_alleles > 0:
-            hidden[i, present_alleles_indices] = HiddenAlleleType.OBSERVED.value
+            hidden[i, present_alleles_indices] = HiddenAlleleType.MISSING.value
         if num_missing == 0:
             return
 
@@ -429,7 +430,7 @@ class SiteInstanceState:
         recoded[i, missing_alleles_indices] = new_hidden_alleles
         # calculate row means (mean allele lengths)
         alleles[i, missing_alleles_indices] = np.mean(alleles_definitions_RR[j], axis=1)[new_hidden_alleles]
-        hidden[i, missing_alleles_indices] = HiddenAlleleType.MISSING.value
+        hidden[i, missing_alleles_indices] = HiddenAlleleType.OBSERVED.value
 
     def _assign_closest_recrudescences(
         self,

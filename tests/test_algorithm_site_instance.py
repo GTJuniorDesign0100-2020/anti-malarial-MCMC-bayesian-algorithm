@@ -88,7 +88,6 @@ def test_likelihood_ratio_inner_loop_middle(mcmc_initial_state):
 
 
 def test_likelihood_ratio(mcmc_initial_state):
-    # NOTE: Middle number changes by +/-3 in the R code?
     expected_likelihood_ratios = np.array([56.024203, 1.438889, 0.0])
 
     likelihood_ratios = AlgorithmSiteInstance._likelihood_ratios(
@@ -98,3 +97,14 @@ def test_likelihood_ratio(mcmc_initial_state):
         mcmc_initial_state.max_MOI)
 
     np.testing.assert_array_almost_equal(likelihood_ratios, expected_likelihood_ratios, decimal=5)
+
+
+def test_updating_q(mcmc_initial_state):
+    rand = np.random.RandomState(2020)
+    q_sum = 0.0
+    for i in range(1000):
+        AlgorithmSiteInstance._update_q(mcmc_initial_state.state, rand)
+        q_sum += mcmc_initial_state.state.qq
+
+    q_average = q_sum / 1000.0
+    assert 0.375 <= q_average <= 0.380
