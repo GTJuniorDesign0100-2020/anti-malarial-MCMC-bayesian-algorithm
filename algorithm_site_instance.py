@@ -205,31 +205,7 @@ class AlgorithmSiteInstance:
 
         cls._update_q(state, rand)
         cls._update_dvect(state, rand)
-
-        # update frequencies
-        # # first, remove recrudescing alleles from calculations
-        # TODO: Deep or Shallow copy?
-        tempdata = np.copy(state.recoded0)
-        # TODO: Ask about this line *** sapply(which(classification == 1), function (x) tempdata[x,recr0[x,]] <<- 0) *** in the OG code.
-        recrudescent_alleles = np.where(state.classification == 1)[0] # unboxes the tuple.
-        end = state.recr0[recrudescent_alleles, :]
-        if (len(recrudescent_alleles) > 0):
-            for recrud in recrudescent_alleles:
-                columns = state.recr0[recrud,].astype(int)
-                tempdata[recrud, columns] = 0
-
-        tempdata = np.concatenate((tempdata, state.recodedf), axis=0)
-        for i in range(num_loci):
-            # TODO: Verify ignoring recoded_additional_neutral is correct if it
-            # wasn't initialized?
-            tempdata_with_recoded = tempdata
-            if state.recoded_additional_neutral.size > 0:
-                tempdata_with_recoded = np.concatenate((tempdata, state.recoded_additional_neutral), axis=0)
-            findposteriorfrequencies(
-                i,
-                tempdata_with_recoded,
-                max_MOI,
-                state.frequencies_RR)
+        cls._update_frequencies(state, num_loci, max_MOI, rand)
 
     @classmethod
     def _likelihood_ratios(
@@ -347,6 +323,37 @@ class AlgorithmSiteInstance:
         state.dvect = state.dposterior * (
             np.array(1 - state.dposterior)**np.arange(0, state.dvect.size))
         state.dvect = state.dvect / np.sum(state.dvect)
+
+    @classmethod
+    def _update_frequencies(cls, state: SiteInstanceState, num_loci: int, max_MOI: int, rand: np.random.RandomState):
+        '''
+        # TODO: Verify what this does, in full?
+        Update the (allele?) frequencies based on the current algorithm state
+        '''
+        # first, remove recrudescing alleles from calculations
+        tempdata = np.copy(state.recoded0)
+        # TODO: Ask about line: "sapply(which(classification == 1), function
+        # (x) tempdata[x,recr0[x,]] <<- 0)" in the original code.
+        recrudescent_allele_indices = np.where(state.classification == SampleType.RECRUDESCENCE.value)[0]  # [0] unboxes the tuple.
+
+        for recrud_index in recrudescent_allele_indices:
+            columns = state.recr0[recrud_index, :].astype(int)
+            tempdata[recrud_index, columns] = 0
+
+        # actually update the frequencies
+        tempdata = np.concatenate((tempdata, state.recodedf), axis=0)
+        for i in range(num_loci):
+            # TODO: Verify ignoring recoded_additional_neutral is correct if it
+            # wasn't initialized?
+            tempdata_with_recoded = tempdata
+            if state.recoded_additional_neutral.size > 0:
+                tempdata_with_recoded = np.concatenate((tempdata, state.recoded_additional_neutral), axis=0)
+            findposteriorfrequencies(
+                i,
+                tempdata_with_recoded,
+                max_MOI,
+                state.frequencies_RR,
+                rand)
 
 
     def _update_saved_state(

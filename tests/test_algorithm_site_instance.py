@@ -111,6 +111,7 @@ def test_updating_q(mcmc_initial_state):
     # TODO: Find a more robust way of testing this (since there's still a tiny chance it randomly falls outside this range?)
     assert 0.375 <= q_average <= 0.380
 
+
 def test_updating_dvect(mcmc_initial_state):
     rand = np.random.RandomState(2020)
     dposterior_sum = 0
@@ -125,3 +126,14 @@ def test_updating_dvect(mcmc_initial_state):
     assert 0.31 <= dpost_average <= 0.32
     np.testing.assert_approx_equal(dvect_average[0], dpost_average)
     assert 0.202 <= dvect_average[1] <= 0.206
+
+
+@pytest.mark.xfail(reason='Still need to figure out correct test output')
+def test_updating_frequencies(mcmc_initial_state):
+    rand = np.random.RandomState(2020)
+
+    AlgorithmSiteInstance._update_frequencies(
+        mcmc_initial_state.state,
+        mcmc_initial_state.num_loci,
+        mcmc_initial_state.max_MOI,
+        rand)
