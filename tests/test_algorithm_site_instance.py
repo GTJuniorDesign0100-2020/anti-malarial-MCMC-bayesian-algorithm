@@ -59,6 +59,7 @@ def mcmc_initial_state():
         [2.4, 2.8, 3.2],
     ])
     state.allrecrf = np.floor(np.arange(0, 9, step=0.25).reshape(3, 3, max_MOI**2))
+    state.classification = np.array([0, 1, 1])
 
     return BasicState(state, num_ids, num_loci, max_MOI)
 
@@ -107,4 +108,20 @@ def test_updating_q(mcmc_initial_state):
         q_sum += mcmc_initial_state.state.qq
 
     q_average = q_sum / 1000.0
+    # TODO: Find a more robust way of testing this (since there's still a tiny chance it randomly falls outside this range?)
     assert 0.375 <= q_average <= 0.380
+
+def test_updating_dvect(mcmc_initial_state):
+    rand = np.random.RandomState(2020)
+    dposterior_sum = 0
+    dvect_sum = np.zeros(133)
+    for i in range(1000):
+        AlgorithmSiteInstance._update_dvect(mcmc_initial_state.state, rand)
+        dposterior_sum += mcmc_initial_state.state.dposterior
+        dvect_sum += mcmc_initial_state.state.dvect
+
+    dpost_average = dposterior_sum / 1000.0
+    dvect_average = dvect_sum / 1000.0
+    assert 0.31 <= dpost_average <= 0.32
+    np.testing.assert_approx_equal(dvect_average[0], dpost_average)
+    assert 0.202 <= dvect_average[1] <= 0.206

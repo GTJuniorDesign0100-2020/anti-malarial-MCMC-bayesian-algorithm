@@ -204,27 +204,7 @@ class AlgorithmSiteInstance:
             switch_hidden(i, num_loci, max_MOI, alleles_definitions_RR, state)
 
         cls._update_q(state, rand)
-
-        #  update dvect (approximate using geometric distribution)
-        # only update if there is at least 1 recrudescent infection
-        if np.sum(state.classification == SampleType.RECRUDESCENCE.value) >= 1:
-            d_prior_alpha = 0
-            d_prior_beta = 0
-            d_posterior_alpha = d_prior_alpha + state.mindistance[state.classification == 1, :].size
-            d_posterior_beta = d_prior_beta + np.sum(
-                np.round(state.mindistance[state.classification == 1, :])
-            )
-            if d_posterior_beta == 0:
-                d_posterior_beta = np.sum(state.mindistance[state.classification == 1, :])
-            if (
-                d_posterior_beta == 0
-            ):  ## algorithm will get stuck if dposterior is allowed to go to 1 (TODO: Wait, so why is it setting d_posterior_beta to 1??)
-                d_posterior_beta = 1
-
-            state.dposterior = rand.beta(d_posterior_alpha, d_posterior_beta)
-            state.dvect = state.dposterior * (
-                np.array(1 - state.dposterior)**np.arange(0, state.dvect.size))
-            state.dvect = state.dvect / np.sum(state.dvect)
+        cls._update_dvect(state, rand)
 
         # update frequencies
         # # first, remove recrudescing alleles from calculations
@@ -309,7 +289,8 @@ class AlgorithmSiteInstance:
         Propose a new value for q (the proportion of alleles that are hidden/
         not directly observed) and update it appropriately, based on the
         current state
-        :param state: The current state of the algorithm
+
+        :param state: The current state variables of the algorithm
         :param rand: The random number generator to use
         '''
         # TODO: What are the alpha/beta used for, in high-level terms? They seem
@@ -335,6 +316,38 @@ class AlgorithmSiteInstance:
         # propose new q (beta distribution is conjugate distribution for
         # binomial process)
         state.qq = rand.beta(q_posterior_alpha, q_posterior_beta)
+
+    @classmethod
+    def _update_dvect(cls, state: SiteInstanceState, rand: np.random.RandomState):
+        '''
+        Update the distance vector (approximated using the geometric
+        distribution) and dposterior based on the new state
+
+        :param state: The current state variables of the algorithm
+        :param rand: The random number generator to use
+        '''
+        # only update if there is at least 1 recrudescent infection
+        if np.sum(state.classification == SampleType.RECRUDESCENCE.value) == 0:
+            return
+        d_prior_alpha = 0
+        d_prior_beta = 0
+        min_recrudescence_distances = state.mindistance[state.classification == SampleType.RECRUDESCENCE.value, :]
+
+        d_posterior_alpha = d_prior_alpha + min_recrudescence_distances.size
+        d_posterior_beta = d_prior_beta + np.sum(
+            np.round(min_recrudescence_distances))
+        if d_posterior_beta == 0:
+            d_posterior_beta = np.sum(min_recrudescence_distances)
+        if d_posterior_beta == 0:  # algorithm will get stuck if dposterior is allowed to go to 1 (TODO: Wait, so why is it setting d_posterior_beta to 1??)
+            d_posterior_beta = 1
+
+        # TODO: Verify how this update actually works?
+        state.dposterior = rand.beta(d_posterior_alpha, d_posterior_beta)
+        #  update dvect (approximate using geometric distribution)
+        state.dvect = state.dposterior * (
+            np.array(1 - state.dposterior)**np.arange(0, state.dvect.size))
+        state.dvect = state.dvect / np.sum(state.dvect)
+
 
     def _update_saved_state(
         self,
