@@ -100,6 +100,27 @@ def test_likelihood_ratio(mcmc_initial_state):
     np.testing.assert_array_almost_equal(likelihood_ratios, expected_likelihood_ratios, decimal=5)
 
 
+def test_updating_classifications(mcmc_initial_state):
+    expected_avg_classifications = np.array([1.0, 0.31, 0.0])
+
+    original_classifications = np.copy(mcmc_initial_state.state.classification)
+    classifications_sum = np.zeros(original_classifications.size)
+    likelihood_ratios = np.array([56.024203, 1.438889, 0.0])
+    rand = np.random.RandomState(2020)
+    for i in range(1000):
+        classifications = AlgorithmSiteInstance._update_classifications(
+            mcmc_initial_state.state,
+            likelihood_ratios,
+            mcmc_initial_state.num_ids,
+            rand)
+        classifications_sum += classifications
+        mcmc_initial_state.state.classification = original_classifications
+
+    avg_classes = classifications_sum / 1000.0
+    # TODO: Find a more robust way of testing this (since there's still a tiny chance it randomly falls outside this range?)
+    np.testing.assert_array_almost_equal(avg_classes, expected_avg_classifications, decimal=2)
+
+
 def test_updating_q(mcmc_initial_state):
     rand = np.random.RandomState(2020)
     q_sum = 0.0

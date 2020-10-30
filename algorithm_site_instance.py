@@ -189,14 +189,10 @@ class AlgorithmSiteInstance:
         appropriately
         '''
         # propose new classification
-        likelihoodratios = cls._likelihood_ratios(
+        likelihood_ratios = cls._likelihood_ratios(
             state, num_ids, num_loci, max_MOI)
 
-        z = rand.uniform(size=num_ids)
-        newclassification = state.classification
-        newclassification[np.logical_and(state.classification == 0, z < likelihoodratios)] = 1
-        newclassification[np.logical_and(state.classification == 1, z < 1 / likelihoodratios)] = 0
-        state.classification = newclassification
+        cls._update_classifications(state, likelihood_ratios, num_ids, rand)
 
         # propose new hidden states
         # TODO: What does switch_hidden do? Is it entirely side effects?
@@ -259,6 +255,35 @@ class AlgorithmSiteInstance:
             ))
 
     @classmethod
+    def _update_classifications(
+        cls,
+        state: SiteInstanceState,
+        likelihood_ratios: np.ndarray,
+        num_ids: int,
+        rand: np.random.RandomState):
+        '''
+        Update the recrudescence/reinfection classification of each sample,
+        based on the current state's calculate likelihood ratios
+
+        :param state: The current state variables of the algorithm
+        :param likelihood_ratios:
+        :param num_ids:
+        :param rand: The random number generator to use
+        :return: The new classifications (will also modify the state
+        classifications)
+        '''
+        z = rand.uniform(size=num_ids)
+        new_classifications = np.copy(state.classification)
+        new_classifications[np.logical_and(
+            state.classification == SampleType.REINFECTION.value,
+            z < likelihood_ratios)] = SampleType.RECRUDESCENCE.value
+        new_classifications[np.logical_and(
+            state.classification == SampleType.RECRUDESCENCE.value,
+            z < 1.0 / likelihood_ratios)] = SampleType.REINFECTION.value
+        state.classification = new_classifications
+        return state.classification
+
+    @classmethod
     def _update_q(cls, state: SiteInstanceState, rand: np.random.RandomState):
         '''
         TODO: Possibly move this to the state object itself?
@@ -268,6 +293,7 @@ class AlgorithmSiteInstance:
 
         :param state: The current state variables of the algorithm
         :param rand: The random number generator to use
+        :return: The updated q value (will also modify state.q)
         '''
         # TODO: What are the alpha/beta used for, in high-level terms? They seem
         # to be counts of observed/missing alleles in the hidden state?
@@ -292,6 +318,7 @@ class AlgorithmSiteInstance:
         # propose new q (beta distribution is conjugate distribution for
         # binomial process)
         state.qq = rand.beta(q_posterior_alpha, q_posterior_beta)
+        return state.qq
 
     @classmethod
     def _update_dvect(cls, state: SiteInstanceState, rand: np.random.RandomState):
@@ -301,6 +328,8 @@ class AlgorithmSiteInstance:
 
         :param state: The current state variables of the algorithm
         :param rand: The random number generator to use
+        :return: The modified dvector (will also modify state.dvect and
+        state.dposterior)
         '''
         # only update if there is at least 1 recrudescent infection
         if np.sum(state.classification == SampleType.RECRUDESCENCE.value) == 0:
@@ -323,6 +352,8 @@ class AlgorithmSiteInstance:
         state.dvect = state.dposterior * (
             np.array(1 - state.dposterior)**np.arange(0, state.dvect.size))
         state.dvect = state.dvect / np.sum(state.dvect)
+
+        return state.dvect
 
     @classmethod
     def _update_frequencies(cls, state: SiteInstanceState, num_loci: int, max_MOI: int, rand: np.random.RandomState):
