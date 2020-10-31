@@ -439,6 +439,7 @@ def onload(
 
     # TODO: Combined what?
     temp_combined = np.repeat(np.mean(state_classification, axis=0)[:nids], 2)
+    temp_combined = temp_combined.reshape(12, 1)
     outputmatrix = np.concatenate((temp_combined, modealleles), axis=1)
     outputmatrix_columns = [
         [f"{locus}_{i+1}" for i in range(maxMOI)] for locus in locinames
