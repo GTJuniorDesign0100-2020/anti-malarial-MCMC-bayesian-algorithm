@@ -1,8 +1,8 @@
-from collections import namedtuple
 from typing import List
 
 import numpy as np
 import pandas as pd
+import scipy.stats as sp_stats
 
 from define_alleles import define_alleles
 from findposteriorfrequencies import findposteriorfrequencies
@@ -11,9 +11,13 @@ from site_instance_state import SiteInstanceState, SampleType, HiddenAlleleType
 from switch_hidden import switch_hidden
 
 
-SavedState = namedtuple(
-    'SavedState',
-    'num_records classification alleles0 allelesf parameters')
+class SavedState:
+    def __init__(self, num_records, classification, alleles0, allelesf, parameters):
+        self.num_records = num_records
+        self.classification = classification
+        self.alleles0 = alleles0
+        self.allelesf = allelesf
+        self.parameters = parameters
 
 
 class AlgorithmSiteInstance:
@@ -110,6 +114,12 @@ class AlgorithmSiteInstance:
             print(f'MCMC Iteration {i + 1}')
 
         # TODO: Add in summary stats
+        self._post_process_saved_state(self.saved_state)
+        posterior_df, summary_stats_df = self.get_summary_stats(
+            self.saved_state,
+            self.locinames,
+            self.ids.size,
+            self.max_MOI)
 
         return (
             self.saved_state.classification,
@@ -240,7 +250,7 @@ class AlgorithmSiteInstance:
 
         dvect_indices = np.round(non_nan(state.alldistance[x, y, :])).astype(int)
         return (state.dvect[dvect_indices] /
-            # Should get an array of maxMOI**2 sums
+            # Should get an array of max_MOI**2 sums
             np.sum(
                 # TODO: Make sure multiplications are down the right axis (I believe each element in the frequencies_RR 1D vector should multiply across 1 dvect row)
                 # Double-transpose to multiply across rows, not columns
@@ -414,12 +424,67 @@ class AlgorithmSiteInstance:
         )
 
     @classmethod
-    def _remove_nan_from_array(cls, array: np.ndarray) -> np.ndarray:
+    def _post_process_saved_state(cls, saved_state: SavedState):
         '''
-        Returns a version of the array with NaNs removed (does not modify the
-        original array)
+        TODO: Verify correctness here
+        Remove NaN columns from the saved state arrays
+        '''
+        saved_state.parameters = saved_state.parameters[
+            :, ~np.isnan(np.sum(saved_state.parameters, axis=0))]
+        saved_state.classification = saved_state.classification[
+            :, ~np.isnan(np.sum(saved_state.classification, axis=0))]
 
-        :param array: The array to process
-        :return: A version of the array with all np.nan values removed
+    def get_summary_stats(self, saved_state: SavedState, locinames: np.ndarray, num_ids: int, max_MOI: int):
         '''
-        return array[:, np.sum(~np.isnan(array), axis=1)]
+        Returns dataframes containing the summary statistics of the algorithm
+        run
+        :return: A tuple of (posterior_df, summary_stats_df)
+        '''
+        num_loci = locinames.size
+        # TODO: What does this mean?
+        # Find the mode of the hidden alleles on the first/last day
+        modealleles = np.zeros((2 * num_ids, max_MOI * num_loci))
+        for i in range(num_ids):
+            for j in range(num_loci):
+                modealleles[2 * i, j * max_MOI: (j + 1) * max_MOI] = sp_stats.mode(
+                    saved_state.alleles0[i, j * max_MOI: (j + 1) * max_MOI, :], axis=1
+                )[0].ravel()
+
+                modealleles[2 * i + 1, j * max_MOI: (j + 1) * max_MOI] = sp_stats.mode(
+                    saved_state.allelesf[i, j * max_MOI: (j + 1) * max_MOI, :], axis=1
+                )[0].ravel()
+
+        # TODO: Combined what? Why is this doubled?
+        temp_combined = np.repeat(np.mean(saved_state.classification, axis=0)[:num_ids], 2)
+        # Reshape into a single column
+        # TODO: Crash when number of runs is too small for this array to reshape
+
+        temp_combined = temp_combined.reshape(2 * num_ids, 1)
+        posterior_matrix = np.concatenate((temp_combined, modealleles), axis=1)
+        posterior_matrix_columns = [
+            [f"{locus}_{i+1}" for i in range(max_MOI)] for locus in locinames
+        ]
+        posterior_matrix_columns.insert(0, "Prob Rec")
+        posterior_df = pd.DataFrame(posterior_matrix, columns=posterior_matrix_columns)
+
+        # TODO: Understand what's being printed here? Separate out into its own
+        # function?
+        summary_statisticsmatrix = np.concatenate((
+                np.mean(saved_state.parameters, axis=1).reshape(-1, 1),
+                np.quantile(saved_state.parameters, (0.25, 0.75), axis=1).T),
+            axis=1)
+        summary_statisticsmatrix = np.concatenate((
+                summary_statisticsmatrix,
+                np.append(
+                    np.quantile(saved_state.parameters[2 + num_loci:, :], (0.25, 0.75)),
+                    np.mean(saved_state.parameters[2 + num_loci:, :]),
+                ).reshape(1, -1)))
+        summary_statisticsmatrix = np.array([
+                f"{summary_statisticsmatrix[i,0]:.2f} ({summary_statisticsmatrix[i,1]:.2f}, {summary_statisticsmatrix[i,2]:.2f})"
+                for i in range(summary_statisticsmatrix.shape[0])
+            ])
+        summary_statistics_df = pd.DataFrame(
+            summary_statisticsmatrix,
+            index=["q", "d", *locinames.tolist(), *locinames.tolist(), "Mean diversity"])
+
+        return posterior_df, summary_statistics_df
