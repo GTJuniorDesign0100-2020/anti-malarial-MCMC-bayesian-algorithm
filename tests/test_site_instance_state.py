@@ -15,7 +15,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from algorithm_instance import AlgorithmInstance
 from algorithm_site_instance import AlgorithmSiteInstance, SiteInstanceState
-from recode_alleles import *
 from recrudescence_file_parser import RecrudescenceFileParser
 import recrudescence_utils
 

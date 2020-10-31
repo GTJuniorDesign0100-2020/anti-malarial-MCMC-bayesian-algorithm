@@ -1,9 +1,8 @@
 import random
 import math
 import numpy as np
+import pandas as pd
 import itertools
-
-from mcmc import *
 
 def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 	z = random.uniform(0,1)
