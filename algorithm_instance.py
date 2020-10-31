@@ -91,9 +91,11 @@ class AlgorithmInstance:
         saved_classification_all = pd.DataFrame()
         saved_parameters_all = pd.DataFrame()
         ids_all = np.array([])
+        run_posterior_dfs = {}
+        run_summary_stat_dfs = {}
 
         for site_name, algo_instance in self.algorithm_instances:
-            saved_classification, saved_params, ids = algo_instance.run_algorithm(
+            saved_classification, saved_params, ids, posterior_df, summary_stats_df = algo_instance.run_algorithm(
                 site_name,
                 nruns,
                 burnin,
@@ -108,7 +110,11 @@ class AlgorithmInstance:
                 pd.DataFrame(saved_params), ignore_index=True)
             ids_all = np.append(ids_all, ids)
 
-        return self._get_summary_stats(saved_classification_all, saved_parameters_all, ids_all)
+            run_posterior_dfs[site_name] = posterior_df
+            run_summary_stat_dfs[site_name] = summary_stats_df
+
+        # TODO: Have a more defined return structure?
+        return self._get_summary_stats(saved_classification_all, saved_parameters_all, ids_all), run_posterior_dfs, run_summary_stat_dfs
 
     def _get_summary_stats(self, saved_classification, saved_parameters, ids):
         '''

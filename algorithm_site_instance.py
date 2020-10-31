@@ -19,6 +19,32 @@ class SavedState:
         self.allelesf = allelesf
         self.parameters = parameters
 
+    def update_saved_state(
+        self,
+        state: SiteInstanceState,
+        locinames: np.ndarray,
+        iteration: int,
+        burnin: int,
+        record_interval: int):
+        '''
+        Updates the saved state instance
+        '''
+        if iteration <= burnin or iteration % record_interval != 0:
+            return
+        record_index = int((iteration - burnin) / record_interval)
+
+        self.classification[:, record_index] = state.classification
+        self.alleles0[:, :, record_index] = state.alleles0
+        self.allelesf[:, :, record_index] = state.allelesf
+
+        num_loci = locinames.size
+        self.parameters[0, record_index] = state.qq
+        self.parameters[1, record_index] = state.dposterior
+        self.parameters[2 : (2 + num_loci), record_index] = state.frequencies_RR[1].max(axis=1)
+        self.parameters[2 + num_loci : (2 + 2 * num_loci), record_index] = np.sum(
+            state.frequencies_RR[1][:num_loci, :] ** 2
+        )
+
 
 class AlgorithmSiteInstance:
     '''
@@ -109,7 +135,7 @@ class AlgorithmSiteInstance:
                 self.locinames.size,
                 self.max_MOI,
                 rand)
-            self._update_saved_state(self.state, self.saved_state,
+            self.saved_state.update_saved_state(self.state, self.locinames,
                 i, burnin, record_interval)
             print(f'MCMC Iteration {i + 1}')
 
@@ -121,10 +147,14 @@ class AlgorithmSiteInstance:
             self.ids.size,
             self.max_MOI)
 
+        # TODO: Encapsulate this in a "returned algorithm data" object? Or just
+        # use the saved state for that?
         return (
             self.saved_state.classification,
             self.saved_state.parameters,
-            self.ids
+            self.ids,
+            posterior_df,
+            summary_stats_df
         )
 
     @classmethod
@@ -395,33 +425,6 @@ class AlgorithmSiteInstance:
                 max_MOI,
                 state.frequencies_RR,
                 rand)
-
-
-    def _update_saved_state(
-        self,
-        state: SiteInstanceState,
-        saved_state: SavedState,
-        iteration: int,
-        burnin: int,
-        record_interval: int):
-        '''
-        Updates the saved state instance
-        '''
-        if iteration <= burnin or iteration % record_interval != 0:
-            return
-        record_index = int((iteration - burnin) / record_interval)
-
-        saved_state.classification[:, record_index] = state.classification
-        saved_state.alleles0[:, :, record_index] = state.alleles0
-        saved_state.allelesf[:, :, record_index] = state.allelesf
-
-        num_loci = self.locinames.size
-        saved_state.parameters[0, record_index] = state.qq
-        saved_state.parameters[1, record_index] = state.dposterior
-        saved_state.parameters[2 : (2 + num_loci), record_index] = state.frequencies_RR[1].max(axis=1)
-        saved_state.parameters[2 + num_loci : (2 + 2 * num_loci), record_index] = np.sum(
-            state.frequencies_RR[1][:num_loci, :] ** 2
-        )
 
     @classmethod
     def _post_process_saved_state(cls, saved_state: SavedState):
