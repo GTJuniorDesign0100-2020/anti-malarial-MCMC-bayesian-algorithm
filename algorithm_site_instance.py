@@ -458,12 +458,12 @@ class AlgorithmSiteInstance:
         temp_combined = np.repeat(np.mean(saved_state.classification, axis=0)[:num_ids], 2)
         # Reshape into a single column
         # TODO: Crash when number of runs is too small for this array to reshape
-
         temp_combined = temp_combined.reshape(2 * num_ids, 1)
         posterior_matrix = np.concatenate((temp_combined, modealleles), axis=1)
         posterior_matrix_columns = [
             [f"{locus}_{i+1}" for i in range(max_MOI)] for locus in locinames
         ]
+        posterior_matrix_columns = np.array(posterior_matrix_columns).flatten().tolist()
         posterior_matrix_columns.insert(0, "Prob Rec")
         posterior_df = pd.DataFrame(posterior_matrix, columns=posterior_matrix_columns)
 
