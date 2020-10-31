@@ -17,4 +17,13 @@ test_run = AlgorithmInstance(inputfile, locirepeats)
 record_interval = np.ceil(nruns / 1000)
 burnin = np.ceil(nruns * 0.25)
 
-test_run.run_algorithm(nruns, burnin, record_interval)
+posterior_recrudescence_distribution_df, probability_of_recrudescence_df, run_posterior_dfs, run_summary_stat_dfs = test_run.run_algorithm(nruns, burnin, record_interval)
+
+# Output summary data to .csv files
+for site_name, posterior_df in run_posterior_dfs.items():
+    posterior_df.to_csv(f'{site_name}_posterior.csv')
+for site_name, summary_df in run_summary_stat_dfs.items():
+    summary_df.to_csv(f'{site_name}_summary_statistics.csv')
+
+posterior_recrudescence_distribution_df.to_csv('microsatellite_correction.csv', index=False)
+probability_of_recrudescence_df.to_csv('probability_of_recrudescence.csv', index=False)

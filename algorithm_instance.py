@@ -114,7 +114,13 @@ class AlgorithmInstance:
             run_summary_stat_dfs[site_name] = summary_stats_df
 
         # TODO: Have a more defined return structure?
-        return self._get_summary_stats(saved_classification_all, saved_parameters_all, ids_all), run_posterior_dfs, run_summary_stat_dfs
+        posterior_recrudescence_distribution_df, probability_of_recrudescence_df = self._get_summary_stats(saved_classification_all, saved_parameters_all, ids_all)
+        return (
+            posterior_recrudescence_distribution_df,
+            probability_of_recrudescence_df,
+            run_posterior_dfs,
+            run_summary_stat_dfs
+        )
 
     def _get_summary_stats(self, saved_classification, saved_parameters, ids):
         '''
