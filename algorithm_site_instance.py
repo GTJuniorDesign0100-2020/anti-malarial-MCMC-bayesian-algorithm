@@ -455,9 +455,8 @@ class AlgorithmSiteInstance:
                 )[0].ravel()
 
         # TODO: Combined what? Why is this doubled?
-        temp_combined = np.repeat(np.mean(saved_state.classification, axis=0)[:num_ids], 2)
+        temp_combined = np.repeat(np.mean(saved_state.classification, axis=1)[:num_ids], 2)
         # Reshape into a single column
-        # TODO: Crash when number of runs is too small for this array to reshape
         temp_combined = temp_combined.reshape(2 * num_ids, 1)
         posterior_matrix = np.concatenate((temp_combined, modealleles), axis=1)
         posterior_matrix_columns = [
