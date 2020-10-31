@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import scipy.stats as sp_stats
 import copy
+from itertools import chain
 
 from define_alleles import *
 from calculate_frequencies import *
@@ -394,7 +395,10 @@ def onload(
         tempdata = np.concatenate((tempdata, recodedf),axis = 0)
         for i in range(nloci):
             # TODO: RESOLVE ISSUE IN THIS LOOP! (Use x here, or i?)
-            findposteriorfrequencies(i, np.concatenate((tempdata, recoded_additional_neutral),axis=0), maxMOI, frequencies_RR)
+            if tempdata is not None and recoded_additional_neutral is not None and tempdata.shape == recoded_additional_neutral.shape:
+                findposteriorfrequencies(i, np.concatenate((tempdata, recoded_additional_neutral),axis=0), maxMOI, frequencies_RR)
+            else:
+                findposteriorfrequencies(i, tempdata, maxMOI, frequencies_RR)                
 
         # record state
         if iteration > burnin and iteration % record_interval == 0:
@@ -439,11 +443,14 @@ def onload(
 
     # TODO: Combined what?
     temp_combined = np.repeat(np.mean(state_classification, axis=0)[:nids], 2)
-    temp_combined = temp_combined.reshape(12, 1)
+    temp_combined = temp_combined.reshape(temp_combined.shape[0], 1)
     outputmatrix = np.concatenate((temp_combined, modealleles), axis=1)
+
     outputmatrix_columns = [
         [f"{locus}_{i+1}" for i in range(maxMOI)] for locus in locinames
     ]
+
+    outputmatrix_columns = list(chain.from_iterable(outputmatrix_columns))
     outputmatrix_columns.insert(0, "Prob Rec")
     outputmatrix = pd.DataFrame(outputmatrix, columns=outputmatrix_columns)
     outputmatrix.to_csv(f"{jobname}_posterior.csv")
@@ -458,6 +465,7 @@ def onload(
         ),
         axis=1,
     )
+    
     summary_statisticsmatrix = np.concatenate(
         (
             summary_statisticsmatrix,
