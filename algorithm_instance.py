@@ -137,5 +137,4 @@ class AlgorithmInstance:
         # Get the mean of each row
         probability_of_recrudescence = np.mean(saved_classification, axis=1)
 
-        # NOTE: Not saving to .csv yet as in original code (make that a separate module)
         return posterior_recrudescence_distribution, probability_of_recrudescence
