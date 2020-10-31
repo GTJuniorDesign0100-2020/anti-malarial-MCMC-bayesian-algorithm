@@ -12,6 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from algorithm_instance import AlgorithmInstance
 from algorithm_site_instance import AlgorithmSiteInstance, SiteInstanceState
+from findposteriorfrequencies import findposteriorfrequencies
 from recode_alleles import *
 from recrudescence_file_parser import RecrudescenceFileParser
 import recrudescence_utils
@@ -158,3 +159,55 @@ def test_updating_frequencies(mcmc_initial_state):
         mcmc_initial_state.num_loci,
         mcmc_initial_state.max_MOI,
         rand)
+
+
+@pytest.mark.xfail(reason='Still need to figure out correct test output')
+def test_find_posterior_frequencies():
+    # TODO: Frequencies don't update at all in the R code with this test case?
+    # It clearly does over enough iterations, but...?
+    expected_frequencies = [
+        np.array([2, 4, 5]),
+        np.array([
+            [0.5, 0.5, 0, 0, 0],
+            [0.25, 0.25, 0.25, 0.25, 0],
+            [0.5, 0.125, 0.125, 0.125, 0.125]
+        ]),
+        np.array([0.0, 0.0, 0.167705])
+    ]
+
+    rand = np.random.RandomState(2020)
+    test_frequencies = [
+        np.array([2, 4, 5]),
+        np.array([
+            [0.5, 0.5, 0, 0, 0],
+            [0.25, 0.25, 0.25, 0.25, 0],
+            [0.5, 0.125, 0.125, 0.125, 0.125]
+        ]),
+        np.array([0.0, 0.0, 0.167705])
+    ]
+    test_tempdata = np.array([
+        [0, 1, 0, 3, 0, 5],
+        [1, 0, 2, 0, 4, 0],
+        [3, 0, 0, 0, 0, 0],
+    ])
+
+    findposteriorfrequencies(0, test_tempdata, 2, test_frequencies, rand)
+
+    np.testing.assert_array_equal(test_frequencies[0], expected_frequencies[0])
+    np.testing.assert_array_almost_equal(test_frequencies[1], expected_frequencies[1])
+    np.testing.assert_array_almost_equal(test_frequencies[2], expected_frequencies[2])
+
+
+@pytest.mark.xfail(reason='Still need to figure out correct test output')
+def test_updating_saved_state(mcmc_initial_state):
+    rand = np.random.RandomState(2020)
+
+
+@pytest.mark.xfail(reason='Still need to figure out correct test output')
+def test_finding_allele_modes(mcmc_initial_state):
+    rand = np.random.RandomState(2020)
+
+
+@pytest.mark.xfail(reason='Still need to figure out correct test output')
+def test_getting_summary_stats(mcmc_initial_state):
+    rand = np.random.RandomState(2020)
