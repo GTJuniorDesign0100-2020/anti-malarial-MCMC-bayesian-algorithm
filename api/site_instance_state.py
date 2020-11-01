@@ -408,10 +408,13 @@ class SiteInstanceState:
         num_alleles = np.count_nonzero(alleles[i, start:end])
         num_missing = MOIs[i] - num_alleles
 
+        # TODO: Eliminate code duplication if possible?
         missing_alleles_indices = np.arange(start, end)[
             np.where(alleles[i, start: start + MOIs[i]] == HiddenAlleleType.MISSING.value)
         ]
-        present_alleles_indices = np.delete(np.arange(start, end), missing_alleles_indices)
+        present_alleles_indices = np.arange(start, end)[
+            np.where(alleles[i, start: start + MOIs[i]] != HiddenAlleleType.MISSING.value)
+        ]
 
         # Sample to randomly initialize the alleles/hidden variables
         if num_alleles > 0:
