@@ -3,9 +3,9 @@ import typing
 import numpy as np
 import pandas as pd
 
-from algorithm_site_instance import AlgorithmSiteInstance
-from data_file_parser import DataFileParser
-from recrudescence_file_parser import RecrudescenceFileParser
+from api.algorithm_site_instance import AlgorithmSiteInstance
+from api.data_file_parser import DataFileParser
+from api.recrudescence_file_parser import RecrudescenceFileParser
 
 
 class AlgorithmInstance:

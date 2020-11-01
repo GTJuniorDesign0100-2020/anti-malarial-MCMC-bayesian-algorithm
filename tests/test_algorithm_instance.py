@@ -6,7 +6,7 @@ import pytest
 
 # Add parent directory to search path, so we can import those files
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from algorithm_instance import AlgorithmInstance
+from api.algorithm_instance import AlgorithmInstance
 
 
 def test_runs_without_error():

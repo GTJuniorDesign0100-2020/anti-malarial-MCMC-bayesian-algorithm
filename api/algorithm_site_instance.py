@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 import scipy.stats as sp_stats
 
-from define_alleles import define_alleles
-from findposteriorfrequencies import findposteriorfrequencies
-import recrudescence_utils
-from site_instance_state import SiteInstanceState, SampleType, HiddenAlleleType
-from switch_hidden import switch_hidden
+from api.define_alleles import define_alleles
+from api.findposteriorfrequencies import findposteriorfrequencies
+import api.recrudescence_utils as recrudescence_utils
+from api.site_instance_state import SiteInstanceState, SampleType, HiddenAlleleType
+from api.switch_hidden import switch_hidden
 
 
 class SavedState:

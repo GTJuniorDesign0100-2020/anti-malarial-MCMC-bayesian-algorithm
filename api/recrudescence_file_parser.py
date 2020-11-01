@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from data_file_parser import DataFileParser
-import recrudescence_utils
+from api.data_file_parser import DataFileParser
+import api.recrudescence_utils as recrudescence_utils
 
 class RecrudescenceFileParser(DataFileParser):
     '''

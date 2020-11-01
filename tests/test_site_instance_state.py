@@ -13,10 +13,10 @@ import scipy.stats as sp_stats
 # Add parent directory to search path, so we can import those files
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from algorithm_instance import AlgorithmInstance
-from algorithm_site_instance import AlgorithmSiteInstance, SiteInstanceState
-from recrudescence_file_parser import RecrudescenceFileParser
-import recrudescence_utils
+from api.algorithm_instance import AlgorithmInstance
+from api.algorithm_site_instance import AlgorithmSiteInstance, SiteInstanceState
+from api.recrudescence_file_parser import RecrudescenceFileParser
+import api.recrudescence_utils as recrudescence_utils
 
 '''
 Full example genotype_RR dataframe in R:

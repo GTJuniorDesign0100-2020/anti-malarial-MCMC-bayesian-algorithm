@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-from algorithm_instance import AlgorithmInstance
+from api.algorithm_instance import AlgorithmInstance
 
 
 # user inputs

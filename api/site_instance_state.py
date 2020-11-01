@@ -4,7 +4,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from calculate_frequencies import calculate_frequencies3
+from api.calculate_frequencies import calculate_frequencies3
 
 
 class SampleType(enum.Enum):

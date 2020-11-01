@@ -6,7 +6,7 @@ import pandas as pd
 
 # Add parent directory to search path, so we can import those files
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from recrudescence_file_parser import RecrudescenceFileParser
+from api.recrudescence_file_parser import RecrudescenceFileParser
 
 
 def test_angola_example_parser_output_correct():

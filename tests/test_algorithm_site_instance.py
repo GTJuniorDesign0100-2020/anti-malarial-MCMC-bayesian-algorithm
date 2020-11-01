@@ -10,11 +10,11 @@ import scipy.stats as sp_stats
 # Add parent directory to search path, so we can import those files
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from algorithm_instance import AlgorithmInstance
-from algorithm_site_instance import AlgorithmSiteInstance, SiteInstanceState
-from findposteriorfrequencies import findposteriorfrequencies
-from recrudescence_file_parser import RecrudescenceFileParser
-import recrudescence_utils
+from api.algorithm_instance import AlgorithmInstance
+from api.algorithm_site_instance import AlgorithmSiteInstance, SiteInstanceState
+from api.findposteriorfrequencies import findposteriorfrequencies
+from api.recrudescence_file_parser import RecrudescenceFileParser
+import api.recrudescence_utils as recrudescence_utils
 
 
 # NOTE: Makes this reliant on AlgorithmInstance tests passing
