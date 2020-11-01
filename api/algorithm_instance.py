@@ -129,7 +129,8 @@ class AlgorithmInstance:
             posterior_recrudescence_distribution_df,
             probability_of_recrudescence_df,
             run_posterior_dfs,
-            run_summary_stat_dfs
+            run_summary_stat_dfs,
+            ids_all
         )
 
     def _get_summary_stats(self, saved_classification, saved_parameters, ids):

@@ -17,7 +17,7 @@ test_run = AlgorithmInstance(inputfile, locirepeats)
 record_interval = np.ceil(nruns / 1000)
 burnin = np.ceil(nruns * 0.25)
 
-posterior_recrudescence_distribution_df, probability_of_recrudescence_df, run_posterior_dfs, run_summary_stat_dfs = test_run.run_algorithm(nruns, burnin, record_interval)
+posterior_recrudescence_distribution_df, probability_of_recrudescence_df, run_posterior_dfs, run_summary_stat_dfs, sample_ids = test_run.run_algorithm(nruns, burnin, record_interval)
 
 # Output summary data to .csv files
 for site_name, posterior_df in run_posterior_dfs.items():

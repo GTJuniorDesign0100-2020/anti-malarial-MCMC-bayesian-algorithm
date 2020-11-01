@@ -5,6 +5,8 @@ import time
 
 from flask import Flask, request
 from flask_restful import Resource, Api
+import numpy as np
+import pandas as pd
 import werkzeug
 
 from api.algorithm_instance import AlgorithmInstance
@@ -73,8 +75,14 @@ class RecrudescenceTest(Resource):
         if iterations < 0:
             return error_response(f'{iterations} is an invalid iteration count')
 
-        # TODO: Actually process the file
-        return self._get_test_results_json(uploaded_file, iterations)
+        json_results = {}
+        try:
+            json_results = self._get_test_results_json(uploaded_file, iterations)
+        except Exception as e:
+            # TODO: Return more specific error message?
+            return error_response('A problem occurred while the server was processing this data', 500)
+
+        return json_results, 200
 
     def _get_test_results_json(
         self,
@@ -95,15 +103,32 @@ class RecrudescenceTest(Resource):
         record_interval = math.ceil(iterations / 1000)
         burnin = math.ceil(iterations * 0.25)
 
-        posterior_recrudescence_distribution_df, probability_of_recrudescence_df, run_posterior_dfs, run_summary_stat_dfs = test_run.run_algorithm(iterations, burnin, record_interval)
+        posterior_recrudescence_distribution_df, probability_of_recrudescence_df, run_posterior_dfs, run_summary_stat_dfs, sample_ids = test_run.run_algorithm(iterations, burnin, record_interval)
 
         end_time = time.time()
         json_response = {
             'runDate': run_start_datetime.isoformat(),
             'totalRunTime': int(end_time - start_time),
-            'samples': {}   # TODO: Add actual sample results
+            'samples': self._get_sample_information(sample_ids, probability_of_recrudescence_df)
         }
-        return json_response, 200
+        return json_response
+
+    def _get_sample_information(self, sample_ids, probability_of_recrudescence_df: pd.DataFrame):
+        '''
+        Return a dictionary of the probability of each sample
+        TODO: Modify format to better reflect sample information?
+        '''
+        samples = {}
+        for i, sample_id in enumerate(sample_ids):
+            recrud_prob = probability_of_recrudescence_df.iloc[i]
+
+            sample_info = {}
+            sample_info['isRecrudescence'] = False if recrud_prob <= 0.5 else True
+            sample_info['probability'] = recrud_prob
+
+            samples[sample_id] = sample_info
+        return samples
+
 
 
 # =============================================================================
