@@ -2,25 +2,23 @@ import pandas as pd
 import numpy as np
 import math
 
-""" generate definitions of alleles (i.e. binning)
-	inputs (parameters):
-		- genotypedata:
+def define_alleles(genotypedata: pd.DataFrame, locirepeats: np.ndarray, maxk: np.ndarray):
+	'''
+	Generate definitions of alleles (i.e. binning)
+
+	:param genotypedata:
 			type: pandas dataframe
-			description: genetic data, where first column (name 'Sample ID') has the id of the sample,
-						 and rest of columns have the format nameoflocus_X, where X is the xth allele detected
-		- locirepeats:
+			description: genetic data, where first column (name 'Sample ID') has the id of the sample, and rest of columns have the format nameoflocus_X, where X is the xth allele detected
+	:param locirepeats:
 			type: numpy.array
 			description: a vector of length number of loci with type of locus (dinucleotide, trinucleotide, etc. repeats)
-		- maxk:
+	:param maxk:
 			type: numpy.array
 			description: a vector of length of loci with the maximum number of alleles for each locus
-
-	output:
+	:return:
 			type: list that contains dataframe
-			description: list of length number of loci
-						 each entry is a number of alleles by 2 matrix (1st column = lower bound, 2nd column = upper bound)
-"""
-def define_alleles(genotypedata, locirepeats, maxk):
+			description: list of length number of loci, each entry is a number of alleles by 2 matrix (1st column = lower bound, 2nd column = upper bound)
+	'''
 
 	# retrieve IDs from the Genotypedata
 	ids = genotypedata.iloc[:,0].tolist()

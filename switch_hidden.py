@@ -1,229 +1,244 @@
-from random import uniform
+import random
+import math
 import numpy as np
 import pandas as pd
 import itertools
-import random
-import math
 
-from mcmc import *
+def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
+	z = random.uniform(0,1)
+	if (np.nansum(np.concatenate((state.hidden0[x], state.hiddenf[x]))) > 0):
+		if len(np.where(np.concatenate((state.hidden0[x], state.hiddenf[x])) == 1)[0]) > 1:
+			chosen = np.random.choice(np.where(np.concatenate((state.hidden0[x], state.hiddenf[x])) == 1)[0]) + 1
+		else:
+			chosen = np.where(np.concatenate((state.hidden0[x], state.hiddenf[x])) == 1)[0][0] + 1
 
-def switch_hidden(x, hidden0, hiddenf, classification, nloci, maxMOI, recoded0, recodedf, frequencies_RR, qq, dvect, correction_distance_matrix, alleles_definitions_RR, alleles0, allelesf, MOI0, MOIf, mindistance, alldistance, allrecrf, recr0, recrf, recr_repeats0, recr_repeatsf):
-    z = random.uniform(0,1)
+		if (state.classification[x] == 0): # REINFECTION
+			if chosen <= (nloci * maxMOI):
+				chosenlocus = math.ceil(chosen/maxMOI)
+				old = state.recoded0[x][chosen - 1].astype(np.int64)
+				new = np.random.choice(np.arange(state.frequencies_RR[0][chosenlocus - 1])) + 1
+				oldalleles = state.recoded0[x, np.intersect1d(np.arange(((chosenlocus - 1) * maxMOI), chosenlocus * maxMOI), np.where(state.hidden0[x] == 1)[0])]
+				newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR[2][chosenlocus - 1], 1))[0]
+				# newallele_length = np.mean([alleles_definitions_RR[chosenlocus]["0"][new], alleles_definitions_RR[chosenlocus]["1"][new]]) + np.random.normal(0, state.frequencies_RR[2][chosenlocus], 1)
+				repeatedold = state.qq
+				repeatednew = state.qq
 
-    if np.nansum(np.concatenate((hidden0[x], hiddenf[x]))) > 0: #if hidden alleles exist TODO: replicate na.rm
-        if len(np.where(np.concatenate((hidden0[x], hiddenf[x])) == 1)[0]) > 1:
-            chosen = np.random.choice(np.where(np.concatenate((hidden0[x], hiddenf[x])) == 1)[0])
-        else:
-            chosen = np.where(np.concatenate((hidden0[x], hiddenf[x])) == 1)
+				if sum(oldalleles == old) >= 1:
+					repeatedold = 1
+				if sum(oldalleles == new) >= 1:
+					repeatednew = 1
 
-        if classification[x] == 0: #reinfection
-            print("if")
-            if chosen <= nloci * maxMOI: #day0 hidden allele
-                chosenlocus = math.ceil(chosen / maxMOI) - 1 # need to check with R code to align index correctly 
-                old = recoded0[x][chosen].astype(np.int64)
-                new = np.random.choice(np.arange(0, frequencies_RR[0][chosenlocus])).astype(np.int64)
-                oldalleles = recoded0[x, np.intersect1d(np.arange((chosenlocus - 1) * maxMOI + 1, chosenlocus * maxMOI), np.where(hidden0[x] == 1))] #TODO: Double check this line, this was a rough one
-                repeatedold = qq
-                repeatednew = qq
-                if sum(oldalleles == old) >= 1: #if old allele is a repeat, don't penalize with missing probability
-                    repeatedold = 1
-                if sum(oldalleles == new) >= 1: #if new allele is a repeat, don't penalize with missing probability
-                    repeatednew = 1
+				numerator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][new - 1].astype(np.int64)]) * repeatednew
+				denominator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][old].astype(np.int64)]) * repeatednew
+				if denominator != 0:
+					alpha = numerator / denominator
+				else:
+					alpha = 0
 
-                ## Fixed equation:
-                alpha = (sum((frequencies_RR[1][chosenlocus][0:frequencies_RR[0][chosenlocus]]) * (dvect[(correction_distance_matrix[chosenlocus][:,new] + 1).astype(np.int64)])) * repeatednew) / (sum((frequencies_RR[1][chosenlocus][0:frequencies_RR[0][chosenlocus]]) * (dvect[(correction_distance_matrix[chosenlocus][:,old] + 1).astype(np.int64)])) * repeatedold) #TODO: double check this line as well
-                if z < alpha:
-                    recoded0[x][chosen] = new
-                    newallele_length = np.mean([alleles_definitions_RR[chosenlocus]["0"][new], alleles_definitions_RR[chosenlocus]["1"][new]]) + np.random.normal(0, frequencies_RR[2][chosenlocus], 1)
-                    alleles0[x][chosen] = newallele_length
+				if z < alpha:
+					state.recoded0[x][chosen - 1] = new - 1
+					newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR[2][chosenlocus - 1], 1))[0]
+					state.alleles0[x][chosen - 1] = newallele_length
 
-                    #TODO: Below code had if block commented out. Double check scoping is correct. Also check closest recrud and alldistance[][][]
-                    inputVectors = list(itertools.product(np.arange(MOIf[x]), np.arange(MOI0[x])))
-                    allpossiblerecrud = pd.DataFrame(inputVectors)
-                    order = [1, 0] # setting column's order
-                    allpossiblerecrud = allpossiblerecrud[[allpossiblerecrud.columns[i] for i in order]]
+					inputVectors = list(itertools.product(np.arange(state.MOIf[x]), np.arange(state.MOI0[x])))
+					allpossiblerecrud = pd.DataFrame(inputVectors)
+					order = [1, 0] # setting column's order
+					allpossiblerecrud = allpossiblerecrud[[allpossiblerecrud.columns[i] for i in order]]
+					allpossiblerecrud.columns = [0, 1]
+					closestrecrud = np.argmin(list(map(lambda y: abs(state.alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][y]]), np.arange(0, allpossiblerecrud.shape[0]))))
+					state.mindistance[x][chosenlocus - 1] = abs(state.alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][closestrecrud]] - state.allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][closestrecrud]])
+					state.alldistance[x][chosenlocus - 1][0:allpossiblerecrud.shape[0]] = list(map(lambda y: abs(state.alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][y]]), np.arange(0, allpossiblerecrud.shape[0])))
+					state.allrecrf[x][chosenlocus - 1][0:allpossiblerecrud.shape[0]] = state.recodedf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1]]
+					state.recr0[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][closestrecrud]
+					state.recrf[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][closestrecrud]
 
-                    #### We need to check this part for correct values
-                    closetrecrud = np.min(np.where(map(lambda y: abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]), np.arange(0, allpossiblerecrud.shape[0]))))
-                    mindistance[x][chosenlocus] = abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[closetrecrud][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[closetrecrud][1]])
+			else:
+				chosen = chosen - nloci * maxMOI
+				chosenlocus = math.ceil(chosen/maxMOI)
+				old = state.recoded0[x][chosen - 1].astype(np.int64)
+				new = np.random.choice(np.arange(state.frequencies_RR[0][chosenlocus - 1])) + 1
+				oldalleles = state.recoded0[x, np.intersect1d(np.arange(((chosenlocus - 1) * maxMOI), chosenlocus * maxMOI), np.where(state.hidden0[x] == 1)[0])]
+				# newallele_length = np.mean([alleles_definitions_RR[chosenlocus]["0"][new], alleles_definitions_RR[chosenlocus]["1"][new]]) + np.random.normal(0, state.frequencies_RR[2][chosenlocus], 1)
+				repeatedold = state.qq
+				repeatednew = state.qq
 
-                    k =  map(lambda y: abs(alleles0[x][maxMOI * (chosenlocus) + allpossiblerecrud[1][y]] - allelesf[x][maxMOI * (chosenlocus) + allpossiblerecrud[0][y]]) , np.arange(0, allpossiblerecrud.shape[0]))
-                    num = 0
-                    for i in k:
-                        alldistance[x][chosenlocus][num] = i
-                        num += 1
+				if sum(oldalleles == old) >= 1:
+					repeatedold = 1
+				if sum(oldalleles == new) >= 1:
+					repeatednew = 1
 
-                    allrecrf[x][chosenlocus][: allpossiblerecrud.shape[0]] = recodedf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[0]]
+				numerator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][new - 1].astype(np.int64)]) * repeatednew
+				denominator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][old].astype(np.int64)]) * repeatednew
+				alpha = numerator / denominator
 
-                    recr0[x][chosenlocus] = maxMOI * (chosenlocus) + allpossiblerecrud[closetrecrud][0]
-                    recrf[x][chosenlocus] = maxMOI * (chosenlocus) + allpossiblerecrud[closetrecrud][1]
-                    range = slice((maxMOI * (chosenlocus - 1)), (maxMOI * chosenlocus) - 1, 1)
-                    recr_repeats0[x][chosenlocus] = sum(recoded0[x][range] == recoded0[x][int(recr0[x][chosenlocus])])
-                    recr_repeatsf[x][chosenlocus] = sum(recodedf[x][range] == recodedf[x][int(recrf[x][chosenlocus])])
-            #TODO: Refactor below into function
-            #TODO: Check with Matt to check what to do with commented blocks in r code
+				if z < alpha:
+					state.recodedf[x][chosen - 1] = new - 1
+					newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR[2][chosenlocus - 1], 1))[0]
+					state.alleles0[x][chosen - 1] = newallele_length
 
-            else: #day f hidden allele
-                chosen = chosen - nloci * maxMOI
-                chosenlocus = math.ceil(chosen / maxMOI) - 1 # need to check with R code to align index correctly 
-                old = recoded0[x][chosen].astype(np.int64)
-                new = np.random.choice(np.arange(0, frequencies_RR[0][chosenlocus])).astype(np.int64)
-                oldalleles = recoded0[x, np.intersect1d(np.arange((chosenlocus - 1) * maxMOI + 1, chosenlocus * maxMOI), np.where(hidden0[x] == 1))] #TODO: Double check this line, this was a rough one
-                repeatedold = qq
-                repeatednew = qq
-                if sum(oldalleles == old) >= 1: #if old allele is a repeat, don't penalize with missing probability
-                    repeatedold = 1
-                if sum(oldalleles == new) >= 1: #if new allele is a repeat, don't penalize with missing probability
-                    repeatednew = 1
+					inputVectors = list(itertools.product(np.arange(state.MOIf[x]), np.arange(state.MOI0[x])))
+					allpossiblerecrud = pd.DataFrame(inputVectors)
+					order = [1, 0] # setting column's order
+					allpossiblerecrud = allpossiblerecrud[[allpossiblerecrud.columns[i] for i in order]]
+					allpossiblerecrud.columns = [0, 1]
+					closestrecrud = np.argmin(list(map(lambda y: abs(state.alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][y]]), np.arange(0, allpossiblerecrud.shape[0]))))
+					state.mindistance[x][chosenlocus - 1] = abs(state.alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][closestrecrud]] - state.allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][closestrecrud]])
+					state.alldistance[x][chosenlocus - 1][0:allpossiblerecrud.shape[0]] = list(map(lambda y: abs(state.alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][y]]), np.arange(0, allpossiblerecrud.shape[0])))
+					state.allrecrf[x][chosenlocus - 1][0:allpossiblerecrud.shape[0]] = state.recodedf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1]]
+					state.recr0[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][closestrecrud]
+					state.recrf[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][closestrecrud]
 
-                ## Fixed equation:
-                alpha = (sum((frequencies_RR[1][chosenlocus][0:frequencies_RR[0][chosenlocus]]) * (dvect[(correction_distance_matrix[chosenlocus][:,new] + 1).astype(np.int64)])) * repeatednew) / (sum((frequencies_RR[1][chosenlocus][0:frequencies_RR[0][chosenlocus]]) * (dvect[(correction_distance_matrix[chosenlocus][:,old] + 1).astype(np.int64)])) * repeatedold) #TODO: double check this line as well
-                if z < alpha:
-                    recoded0[x][chosen] = new
-                    newallele_length = np.mean([alleles_definitions_RR[chosenlocus]["0"][new], alleles_definitions_RR[chosenlocus]["1"][new]]) + np.random.normal(0, frequencies_RR[2][chosenlocus], 1)
-                    alleles0[x][chosen] = newallele_length
+		else:
+			if chosen <= (nloci * maxMOI):
+				chosenlocus = math.ceil(chosen/maxMOI)
+				old = state.recoded0[x][chosen - 1].astype(np.int64)
+				new = np.random.choice(np.arange(state.frequencies_RR[0][chosenlocus - 1])) + 1
+				oldalleles = state.recoded0[x, np.intersect1d(np.arange(((chosenlocus - 1) * maxMOI), chosenlocus * maxMOI), np.where(state.hidden0[x] == 1)[0])]
+				newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR[2][chosenlocus - 1], 1))[0]
+				repeatedold = state.qq
+				repeatednew = state.qq
 
-                    #TODO: Below code had if block commented out. Double check scoping is correct. Also check closest recrud and alldistance[][][]
-                    inputVectors = list(itertools.product(np.arange(MOIf[x]), np.arange(MOI0[x])))
-                    allpossiblerecrud = pd.DataFrame(inputVectors)
-                    order = [1, 0] # setting column's order
-                    allpossiblerecrud = allpossiblerecrud[[allpossiblerecrud.columns[i] for i in order]]
+				if sum(oldalleles == old) >= 1:
+					repeatedold = 1
+				if sum(oldalleles == new) >= 1:
+					repeatednew = 1
 
-                    #### We need to check this part for correct values
-                    closetrecrud = np.min(np.where(map(lambda y: abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]), np.arange(0, allpossiblerecrud.shape[0]))))
-                    mindistance[x][chosenlocus] = abs(alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[closetrecrud][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[closetrecrud][1]])
+				inputVectors = list(itertools.product(np.arange(state.MOIf[x]), np.arange(state.MOI0[x])))
+				allpossiblerecrud = pd.DataFrame(inputVectors)
+				order = [1, 0] # setting column's order
+				allpossiblerecrud = allpossiblerecrud[[allpossiblerecrud.columns[i] for i in order]]
+				allpossiblerecrud.columns = [0, 1]
 
-                    k =  map(lambda y: abs(alleles0[x][maxMOI * (chosenlocus) + allpossiblerecrud[1][y]] - allelesf[x][maxMOI * (chosenlocus) + allpossiblerecrud[0][y]]) , np.arange(0, allpossiblerecrud.shape[0]))
-                    num = 0
-                    for i in k:
-                        alldistance[x][chosenlocus][num] = i
-                        num += 1
+				tempalleles = state.alleles0[x][maxMOI * (chosenlocus - 1): maxMOI * (chosenlocus - 1) + maxMOI]
+				tempalleles[chosen - (chosenlocus - 1) * maxMOI - 1] = newallele_length
+				temprecoded = state.recoded0[x][maxMOI * (chosenlocus - 1): maxMOI * (chosenlocus - 1) + maxMOI]
+				temprecoded[chosen - (chosenlocus - 1) * maxMOI - 1] = new - 1
 
-                    allrecrf[x][chosenlocus][: allpossiblerecrud.shape[0]] = recodedf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[0]]
+				newclosestrecrud = np.argmin(list(map(lambda y: abs(tempalleles[allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][y]]), np.arange(0, allpossiblerecrud.shape[0]))))
+				newmindistance = abs(tempalleles[allpossiblerecrud[0][newclosestrecrud]] - state.allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][newclosestrecrud]])
+				newalldistance = list(map(lambda y: abs(tempalleles[allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][y]]), np.arange(0, allpossiblerecrud.shape[0])))
+				newallrecrf = state.recodedf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1]]
 
-                    recr0[x][chosenlocus] = maxMOI * (chosenlocus) + allpossiblerecrud[closetrecrud][0]
-                    recrf[x][chosenlocus] = maxMOI * (chosenlocus) + allpossiblerecrud[closetrecrud][1]
-                    range = slice((maxMOI * (chosenlocus - 1)), (maxMOI * chosenlocus) - 1, 1)
-                    recr_repeats0[x][chosenlocus] = sum(recoded0[x][range] == recoded0[x][int(recr0[x][chosenlocus])])
-                    recr_repeatsf[x][chosenlocus] = sum(recodedf[x][range] == recodedf[x][int(recrf[x][chosenlocus])])
-        else: #recrudescence
-            print("else")
-            if chosen <= nloci * maxMOI: #day 0 hidden allele
-                print(f"chosen: {chosen}")
-                chosenlocus = math.ceil(chosen / maxMOI) - 1 # need to check with R code to align index correctly 
-                print(f"chosenlocus: {chosenlocus}")
-                old = recoded0[x][chosen].astype(np.int64)
-                print(f"old: {old}")
-                new = np.random.choice(np.arange(0, frequencies_RR[0][chosenlocus])).astype(np.int64)
-                print(f"new: {new}")
-
-                # print("alleles_definitions_RR[chosenlocus][0][new]")
-                # print(alleles_definitions_RR[chosenlocus]["0"][new])
-                # print(alleles_definitions_RR[chosenlocus]["1"][new])
-
-                newallele_length = np.mean([alleles_definitions_RR[chosenlocus]["0"][new], alleles_definitions_RR[chosenlocus]["1"][new]]) + np.random.normal(0, frequencies_RR[2][chosenlocus], 1)
+				newrecr0 = maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][newclosestrecrud]
+				newrecrf = maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][newclosestrecrud]
 
 
-                oldalleles = recoded0[x, np.intersect1d(np.arange((chosenlocus - 1) * maxMOI + 1, chosenlocus * maxMOI), np.where(hidden0[x] == 1))] #TODO: Double check this line, this was a rough one
-                repeatedold = qq
-                repeatednew = qq
-                if sum(oldalleles == old) >= 1: #if old allele is a repeat, don't penalize with missing probability
-                    repeatedold = 1
-                if sum(oldalleles == new) >= 1: #if new allele is a repeat, don't penalize with missing probability
-                    repeatednew = 1
+				## likelihoodnew
+				likelihoodnew_numerator = state.dvect[np.round(newalldistance).astype(np.int64)]
+				likelihoodnew_demominator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus-1][newallrecrf[0].astype(np.int64)].astype(np.int64)])
+				likelihoodnew = np.nanmean(likelihoodnew_numerator / likelihoodnew_demominator) * repeatednew
 
-                inputVectors = list(itertools.product(np.arange(MOIf[x]), np.arange(MOI0[x])))
-                allpossiblerecrud = pd.DataFrame(inputVectors)
-                order = [1, 0] # setting column's order
-                allpossiblerecrud = allpossiblerecrud[[allpossiblerecrud.columns[i] for i in order]]
 
-                ### PLACE TO START DEBUGGING
-                tempalleles = alleles0[x][maxMOI * (chosenlocus - 1) + 1 : maxMOI]
-                tempalleles[chosen - (chosenlocus - 1) * maxMOI] = newallelelength
-                temprecoded = recoded0[x][maxMOI * (chosenlocus - 1) + 1 : maxMOI]
-                temprecoded[chosen - (chosenlocus - 1) * maxMOI] = new
+				## likelihoodold
+				temp = np.round(state.alldistance[x][chosenlocus - 1])
+				temp = temp[np.logical_not(np.isnan(temp))].astype(np.int64)
+				likelihoodold_numerator = state.dvect[temp]
 
-                newclosestrecrud = np.min(np.where(map(lambda y: abs(tempalleles[allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]), np.arange(0, pd.shape(allpossiblerecrud)[0]))))
-                newmindistance = abs(tempalleles[allpossiblerecrud[newclosestrecrud][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][1]])
-                newalldistance = map(lambda y: abs(tempalleles[allpossiblerecrud[y][0]] - allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][1]]) , np.arange(0, pd.shape(allpossiblerecrud)[0]))
-                newallrecrf = recodedf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[:,1]]
+				### NEED TO REVISIT
+				temp_allrecrf = []
+				for i in range(maxMOI * maxMOI):
+					item = state.allrecrf[x][chosenlocus-1][i]
+					if not np.isnan(item):
+						temp_allrecrf.append(item)
+				temp_allrecrf = np.asarray(temp_allrecrf).astype(np.int64)
 
-                newrecr0 = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][0]
-                newrecrf = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][1]
-                newrecr_repeats0 = np.nansum(temprecoded == temprecoded[allpossiblerecrud[newclosestrecrud][0]])
-                newrecr_repeatsf = sum(recodedf[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * (chosenlocus))] == recodedf[x][newrecrf])
+				temp = state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][temp_allrecrf].astype(np.int64)]
+				likelihoodold_denominator = []
+				for i in temp:
+					likelihoodold_denominator.append(sum(i))
 
-                likelihoodnew = np.nanmean(dvect[round(newalldistance) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,newallrecrf[z]] + 1]) , np.arange(0, len(newallrecrf)))) * repeatednew
-                likelihoodold = np.nanmean(dvect[round(alldistance[x][chosenlocus]) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,allrecrf[x][chosenlocus][z]] + 1], np.arange(0, maxMOI * maxMOI)))) * repeatedold
+				likelihoodold_denominator = np.asarray(likelihoodold_denominator)
 
-                if likelihoodnew == likelihoodold:
-                    # if both num and denominator are equal (for case when both are 0..., otherwise 0/0 gives NaN)
-                    alpha = 1
-                else:
-                    alpha = likelihoodnew / likelihoodold
+				likelihoodold = np.nanmean(likelihoodold_numerator / likelihoodold_denominator) * repeatedold
 
-                if z < alpha:
-                    #TODO: Refactor below into function
-                    recoded0[x][choosen] = new
-                    alleles0[x][choosen] = newallelelength
-                    mindistance[x][chosenlocus] = newmindistance
-                    alldistance[x][chosenlocus][:pd.shape(allpossiblerecrud)[0]] = newalldistance
-                    allrecrf[x][chosenlocus][:pd.shape(allpossiblerecrud)[0]] = newallrecrf
-                    recr0[x][chosenlocus] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][0]
-                    recrf[x][chosenlocus] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][1]
-                    recr_repeats0[x][chosenlocus] = sum(recoded0[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * chosenlocus)] == recoded0[x][recr0[x][chosenlocus]])
-                    recr_repeatsf[x][chosenlocus] = sum(recodedf[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * chosenlocus)] == recodedf[x][recr0[x][chosenlocus]])
+				if likelihoodnew == likelihoodold:
+					alpha = 1
+				else:
+					if not likelihoodold == 0:
+						alpha = likelihoodnew / likelihoodold
+					else:
+						alpha = 0
 
-            else: #day f hidden allele
-                chosen = chosen - nloci * maxMOI
-                chosenlocus = math.ceil(chosen / maxMOI)
-                old = recodedf[x][chosen]
-                new = np.random.choice(np.arange(0,frequencies_RR[0][chosenlocus]), 1, False)
-                newallele_length = np.mean(alleles_definitions_RR[chosenlocus][new]) + np.random.normal(0, frequencies_RR[3][chosenlocus], 1)
-                oldalleles = recodedf[x, np.arange((chosenlocus - 1) * maxMOI + 1, chosenlocus * maxMOI).intersect(np.where(x == 1, hidden0[x]))]
-                repeatedold = qq
-                repeatednew = qq
-                if sum(oldalleles == old) >= 1: #if old allele is a repeat, don't penalize with missing probability
-                    repeatedold = 1
-                if sum(oldalleles == new) >= 1: #if new allele is a repeat, don't penalize with missing probability
-                    repeatednew = 1
-                inputVectors = list(itertools.product(np.arange(MOI0[x], np.arange(MOIf[x]))))
-                allpossiblerecrud = pd.DateFrame(inputVectors)
-                tempalleles = allelesf[x][maxMOI * (chosenlocus - 1) + 1 : maxMOI]
-                tempalleles[chosen - (chosenlocus - 1) * maxMOI] = newallelelength
-                temprecoded = recodedf[x][maxMOI * (chosenlocus - 1) + 1 : maxMOI]
-                temprecoded[chosen - (chosenlocus - 1) * maxMOI] = new
+				if z < alpha:
+					state.recoded0[x][chosen - 1] = new - 1
+					state.alleles0[x][chosen - 1] = newallele_length
+					state.mindistance[x][chosenlocus - 1] = newmindistance
+					state.alldistance[x][chosenlocus - 1][0:allpossiblerecrud.shape[0]] = newalldistance
+					state.allrecrf[x][chosenlocus - 1][0:allpossiblerecrud.shape[0]] = newallrecrf
+					state.recr0[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][newclosestrecrud]
+					state.recrf[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][newclosestrecrud]
+			else:
+				chosen = chosen - nloci * maxMOI
+				chosenlocus = math.ceil(chosen/maxMOI)
+				old = state.recoded0[x][chosen - 1].astype(np.int64)
+				new = np.random.choice(np.arange(state.frequencies_RR[0][chosenlocus - 1])) + 1
+				newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR[2][chosenlocus - 1], 1))[0]
+				oldalleles = state.recodedf[x, np.intersect1d(np.arange(((chosenlocus - 1) * maxMOI), chosenlocus * maxMOI), np.where(state.hidden0[x] == 1)[0])]
+				repeatedold = state.qq
+				repeatednew = state.qq
 
-                newclosestrecrud = np.min(np.where(map(lambda y: abs(tempalleles[allpossiblerecrud[y][1]] - alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[y][0]]), np.arange(0, pd.shape(allpossiblerecrud)[0]))))
-                newmindistance = abs(tempalleles[allpossiblerecrud[newclosestrecrud][1]] - alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][0]])
-                newalldistance = map(lambda y: abs(tempalleles[allpossiblerecrud[y][1]] - alleles0[x][maxMOI * (chosenLocus - 1) + allpossiblerecrud[y][0]]) , np.arange(0, pd.shape(allpossiblerecrud)[0]))
-                newallrecrf = temprecoded[allpossiblerecrud][:,1]
+				if sum(oldalleles == old) >= 1:
+					repeatedold = 1
+				if sum(oldalleles == new) >= 1:
+					repeatednew = 1
 
-                #calculate new multiple-comparisons coefficient
-                newrecr0 = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][0]
-                newrecrf = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][1]
-                newrecr_repeats0 = sum(recoded0[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * (chosenlocus))] == recoded0[x][newrecrf])
-                newrecr_repeatsf = np.nansum(temprecoded == temprecoded[allpossiblerecrud[newclosestrecrud][0]]) #TODO: check na.rm
+				inputVectors = list(itertools.product(np.arange(state.MOIf[x]), np.arange(state.MOI0[x])))
+				allpossiblerecrud = pd.DataFrame(inputVectors)
+				order = [1, 0] # setting column's order
+				allpossiblerecrud = allpossiblerecrud[[allpossiblerecrud.columns[i] for i in order]]
+				allpossiblerecrud.columns = [0, 1]
 
-                #TODO: Find python equivalent of na.rm
-                likelihoodnew = np.nanmean(dvect[round(newalldistance) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,newallrecrf[z]] + 1]) , np.arange(0, len(newallrecrf)))) * repeatednew
-                likelihoodold = np.nanmean(dvect[round(alldistance[x][chosenlocus]) + 1] / map(lambda z: sum(frequencies_RR[1][chosenlocus][:frequencies_RR[0][chosenlocus]] * dvect[correction_distace_matrix[chosenlocus][:,allrecrf[x][chosenlocus][z]] + 1], np.arange(0, maxMOI * maxMOI)))) * repeatedold
+				tempalleles = state.allelesf[x][maxMOI * (chosenlocus - 1): maxMOI * (chosenlocus - 1) + maxMOI]
+				tempalleles[chosen - (chosenlocus - 1) * maxMOI - 1] = newallele_length
+				temprecoded = state.recodedf[x][maxMOI * (chosenlocus - 1): maxMOI * (chosenlocus - 1) + maxMOI]
+				temprecoded[chosen - (chosenlocus - 1) * maxMOI - 1] = new - 1
 
-                #TODO: Add debugging if deemed necessary
+				newclosestrecrud = np.argmin(list(map(lambda y: abs(tempalleles[allpossiblerecrud[1][y]] - state.alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][y]]), np.arange(0, allpossiblerecrud.shape[0]))))
+				newmindistance = abs(tempalleles[allpossiblerecrud[1][newclosestrecrud]] - state.alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][newclosestrecrud]])
+				newalldistance = list(map(lambda y: abs(tempalleles[allpossiblerecrud[1][y]] - state.alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][y]]), np.arange(0, allpossiblerecrud.shape[0])))
+				newallrecrf = temprecoded[allpossiblerecrud[1]]
 
-                if likelihoodnew == likelihoodold:
-                    # if both num and denominator are equal (for case when both are 0..., otherwise 0/0 gives NaN)
-                    alpha = 1
-                else:
-                    alpha = likelihoodnew / likelihoodold
+				newrecr0 = maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][newclosestrecrud]
+				newrecrf = maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][newclosestrecrud]
 
-                if z > alpha: #switch made
-                    recodedf[x][choosen] = new
-                    allelesf[x][choosen] = newallelelength
-                    mindistance[x][chosenlocus] = newmindistance
-                    alldistance[x][chosenlocus][:pd.shape(allpossiblerecrud)[0]] = newalldistance
-                    allrecrf[x][chosenlocus][:pd.shape(allpossiblerecrud)[0]] = newallrecrf
-                    recr0[x][chosenlocus] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][0]
-                    recrf[x][chosenlocus] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[newclosestrecrud][1]
-                    recr_repeats0[x][chosenlocus] = sum(recoded0[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * chosenlocus)] == recoded0[x][recr0[x][chosenlocus]])
-                    recr_repeatsf[x][chosenlocus] = sum(recodedf[x][(maxMOI * (chosenlocus - 1) + 1) : (maxMOI * chosenlocus)] == recodedf[x][recr0[x][chosenlocus]])
+				## likelihoodnew
+				likelihoodnew_numerator = state.dvect[np.round(newalldistance).astype(np.int64)]
+				likelihoodnew_demominator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus-1][newallrecrf[0].astype(np.int64)].astype(np.int64)])
+				likelihoodnew = np.nanmean(likelihoodnew_numerator / likelihoodnew_demominator) * repeatednew
+
+
+				## likelihoodold
+				temp = np.round(state.alldistance[x][chosenlocus - 1])
+				temp = temp[np.logical_not(np.isnan(temp))].astype(np.int64)
+				likelihoodold_numerator = state.dvect[temp]
+
+				### NEED TO REVISIT
+				temp_allrecrf = []
+				for i in range(maxMOI * maxMOI):
+					item = state.allrecrf[x][chosenlocus-1][i]
+					if not np.isnan(item):
+						temp_allrecrf.append(item)
+				temp_allrecrf = np.asarray(temp_allrecrf).astype(np.int64)
+				temp = state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][temp_allrecrf].astype(np.int64)]
+				likelihoodold_denominator = []
+				for i in temp:
+					likelihoodold_denominator.append(sum(i))
+				likelihoodold_denominator = np.asarray(likelihoodold_denominator)
+				likelihoodold = np.nanmean(likelihoodold_numerator / likelihoodold_denominator) * repeatedold
+
+				if likelihoodnew == likelihoodold:
+					alpha = 1
+				else:
+					if not likelihoodold == 0:
+						alpha = likelihoodnew / likelihoodold
+					else:
+						alpha = 0
+
+				if z < alpha:
+					state.recoded0[x][chosen - 1] = new - 1
+					state.allelesf[x][chosen - 1] = newallele_length
+					state.mindistance[x][chosenlocus - 1] = newmindistance
+					state.alldistance[x][chosenlocus - 1][0:allpossiblerecrud.shape[0]] = newalldistance
+					state.allrecrf[x][chosenlocus - 1][0:allpossiblerecrud.shape[0]] = newallrecrf
+					state.recr0[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][newclosestrecrud]
+					state.recrf[x][chosenlocus - 1] = maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][newclosestrecrud]
