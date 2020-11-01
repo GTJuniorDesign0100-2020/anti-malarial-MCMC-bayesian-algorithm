@@ -1,4 +1,4 @@
-import typing
+from typing import IO, List, Union
 
 import numpy as np
 import pandas as pd
@@ -17,31 +17,41 @@ class AlgorithmInstance:
 
     def __init__(
         self,
-        input_file_path: str,
-        locirepeats: typing.List[int],
+        input_file: Union[str, IO],
+        locirepeats: List[int],
         input_file_parser: DataFileParser=RecrudescenceFileParser):
         '''
         Parses the given malaria test data file and sets up the initial data
         structures needed to run the algorithm for each "arm"/site location in
         the file
 
-        :param input_file_path: The string path to the data file
+        :param input_file: The string path OR file object for the data file to
+        process
         :param locirepeats: TODO:
         :param input_file_parser: (optional) The parser specifying how to read/
         interpret the data
         '''
-        genotypedata_latefailures, additional_genotypedata = input_file_parser.parse_file(input_file_path)
+        genotypedata_latefailures, additional_genotypedata = input_file_parser.parse_file(input_file)
 
-        site_names = pd.unique(genotypedata_latefailures['Site'])
+        self._initialize_site_instances(genotypedata_latefailures, additional_genotypedata, locirepeats)
+
+
+    def _initialize_site_instances(self, genotypedata: pd.DataFrame, additional: pd.DataFrame, locirepeats: List[int]):
+        '''
+        Initializes the algorithm instances for each site in the processed
+        data file
+        :param locirepeats: TODO:
+        '''
+        site_names = pd.unique(genotypedata['Site'])
         self.algorithm_instances = []
         for site_name in site_names:
             # NOTE: "RR" stands for "recrudescence and/or reinfection"; it marks
             # datasets that deals specifically with day 0/day of failure info,
             # as opposed to background data
             site_genotypedata_RR = self._get_samples_from_site(
-                genotypedata_latefailures, site_name)
+                genotypedata, site_name)
             site_additional_neutral = self._get_samples_from_site(
-                additional_genotypedata, site_name)
+                additional, site_name)
 
             self._replace_sample_names(site_additional_neutral, 'Additional_')
 

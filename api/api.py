@@ -1,7 +1,13 @@
+import datetime
+import math
 import os
+import time
 
 from flask import Flask, request
 from flask_restful import Resource, Api
+import werkzeug
+
+from api.algorithm_instance import AlgorithmInstance
 
 
 # =============================================================================
@@ -12,7 +18,7 @@ app = Flask(__name__)
 
 MAX_FILE_SIZE_MB = 50
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE_MB*1024**2
-app.config['UPLOAD_EXTENSIONS'] = ['.csv']      # Valid filetypes
+app.config['UPLOAD_EXTENSIONS'] = ['.xlsx']      # Valid filetypes
 
 api = Api(app)
 
@@ -62,13 +68,42 @@ class RecrudescenceTest(Resource):
 
         file_extension = os.path.splitext(uploaded_file.filename)[-1].lower()
         if file_extension not in app.config['UPLOAD_EXTENSIONS']:
-            return error_response('Provided file is not a .csv', 415)
+            return error_response('Provided file is not a .xlsx', 415)
 
         if iterations < 0:
             return error_response(f'{iterations} is an invalid iteration count')
 
         # TODO: Actually process the file
-        return self.PLACEHOLDER_RESPONSE, 200
+        return self._get_test_results_json(uploaded_file, iterations)
+
+    def _get_test_results_json(
+        self,
+        uploaded_file: werkzeug.datastructures.FileStorage,
+        iterations: int,
+        locirepeats=[2,2,3,3,3,3,3]):
+        '''
+        Runs a recrudescence test on the given data and returns the test results
+        via JSON (plus the status code of the test). If an error occurs,
+        returns an error message and a 500 status code.
+        '''
+        run_start_datetime = datetime.datetime.utcnow()
+        start_time = time.time()
+
+        test_run = AlgorithmInstance(uploaded_file.stream, locirepeats)
+
+        # calculate burnin (number of runs to discard) and record interval (which n_th iterations should be recorded)
+        record_interval = math.ceil(iterations / 1000)
+        burnin = math.ceil(iterations * 0.25)
+
+        posterior_recrudescence_distribution_df, probability_of_recrudescence_df, run_posterior_dfs, run_summary_stat_dfs = test_run.run_algorithm(iterations, burnin, record_interval)
+
+        end_time = time.time()
+        json_response = {
+            'runDate': run_start_datetime.isoformat(),
+            'totalRunTime': int(end_time - start_time),
+            'samples': {}   # TODO: Add actual sample results
+        }
+        return json_response, 200
 
 
 # =============================================================================

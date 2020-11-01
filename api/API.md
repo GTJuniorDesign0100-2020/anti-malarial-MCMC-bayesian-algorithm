@@ -11,10 +11,10 @@ pip install flask
 pip install flask-restful
 ```
 
-Then, you can start the server just by running `api.py`:
+Then, you can start the server just by running `api.py` from the root folder (*not* the API folder):
 
 ```bash
-python api.py
+python -m api.api
 ```
 
 ...which should generate output like this:

@@ -1,3 +1,5 @@
+from typing import IO, Union
+
 import numpy as np
 import pandas as pd
 
@@ -16,21 +18,21 @@ class RecrudescenceFileParser(DataFileParser):
     '''
 
     @classmethod
-    def parse_file(cls, input_file_path: str):
+    def parse_file(cls, input_file: Union[str, IO]):
         '''
         Attempts to parse the given malaria test data file and returns data
         structures usable by the MCMC algorithm; if this fails, throws an
         exception describing what went wrong (and where, if the file itself
         was formatted incorrectly)
 
-        :param input_file_path: The string path to the Excel data file to
-        attempt parsing
+        :param input_file: The string path OR file object for the Excel data
+        file to attempt parsing
         :return: Tuple of (genotypedata_latefailures, additional_genotypedata),
         with the former being the data for day 0/day of failure samples and the
         latter being background samples
         # TODO: Add proper exceptions/error handling
         '''
-        raw_file_info = pd.ExcelFile(input_file_path)
+        raw_file_info = pd.ExcelFile(input_file)
         genotypedata_latefailures = cls._get_genotype_late_failures(raw_file_info)
         additional_genotypedata = cls._get_additional_genotype_data(raw_file_info)
 
