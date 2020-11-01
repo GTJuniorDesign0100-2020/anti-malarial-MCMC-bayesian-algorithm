@@ -21,7 +21,7 @@ class Settings extends React.Component {
 
   render() {
     return (
-      <Popup trigger={<button className="settings"> Settings</button>} position="bottom right">
+      <Popup trigger={<button className="settings" style={{display:'flex', justifyContent:'center'}}>Settings</button>} position="bottom right">
         <div className="settingsData">This is filler content for the settings tab!
         <br/><br/>Username: FakeName@FakeISP.FakeDomain<br/><br/>Password: ********
         <br/><br/><div align="center" padding="10"><button>Save</button></div></div>
@@ -76,6 +76,7 @@ class RunButton extends React.Component {
     handleChangeFile(event) {
         console.log(`Got CSV file ${event.target.files[0].name}`);
         this.setState({csvFile: event.target.files[0]});
+        alert('Got CSV file');
     }
 
     handleChangeIters(event) {
@@ -133,11 +134,13 @@ class Logout extends React.Component {
 
   render() {
     return (
-      <Popup trigger={<button className="logout"> Log Out</button>} position="bottom right">
+      <div className="logOut">
+      <Popup trigger={<button className="logout" style={{display:'flex', justifyContent:'right'}}>Log Out</button>} position="bottom right">
         <div className="logoutData">This is filler content for the Logout Button!
-        <br/><br/><br/><br/>
+
         <br/><br/><div align="center" padding="10"></div></div>
       </Popup>
+      </div>
     );
   }
 }
@@ -150,7 +153,7 @@ class Board extends React.Component {
           help: Array(5).fill(null),
       };
       this.state.help[0] = "Help";
-      this.state.help[2] = "Settings";
+      this.state.help[2] = "Help";
       this.state.help[3] = "Run Test";
       this.state.help[4] = "Logout";
   }
@@ -231,23 +234,43 @@ class Board extends React.Component {
 
   render() {
     const status = 'Welcome!';
-    const helpText = 'How to use application:'
+    const helpText = '  How to use application:'
 
     return (
-      <div>
-        <div className="status">{status}</div>
-        <div className="helpText">{helpText}</div>
-        <br></br>
-        <div className="row">
-          {this.renderSettings(2)}
-          {this.renderLogout(4)}
-          {this.renderHelp(0)}
-          {this.renderHelpData(1)}
-        </div>
-        <div className="row">
-          {this.renderTestRun(3)}
-        </div>
-      </div>
+      <table>
+        <tr>
+          <td>
+            <div className='status'>{status}</div>
+          </td>
+          <td colspan='3' align='right'>
+            {this.renderSettings(0)}
+          </td>
+        </tr>
+        <tr>
+          <td colspan='4'>
+            {this.renderLogout(3)}
+          </td>
+        </tr>
+        <tr>
+          <td padding='10'>
+            {helpText}
+          </td>
+          <td>
+            {this.renderHelp(2)}
+          </td>
+          <td>
+            {this.renderHelpData(1)}
+          </td>
+          <td>
+          </td>
+        </tr>
+        <tr><td><br/></td></tr>
+        <tr>
+          <td>
+            {this.renderTestRun(4)}
+          </td>
+        </tr>
+      </table>
     );
   }
 }
@@ -258,10 +281,6 @@ class MainScreen extends React.Component {
       <div className="mainscreen">
         <div className="main-board">
           <Board />
-        </div>
-        <div className="main-info">
-          <div></div>
-          <ol></ol>
         </div>
       </div>
     );
