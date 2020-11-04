@@ -34,7 +34,11 @@ MANIFEST
 
 # Installer logs
 pip-log.txt
-pip-delete-this-directory.txt
+pip-deleteithis-directory.txt
+
+# Profiler logs
+*.cprof
+*.prof
 
 # Unit test / coverage reports
 htmlcov/

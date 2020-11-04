@@ -1,16 +1,13 @@
 import numpy as np
-import run_all_arms;
-import mcmc;
 
 
-def findposteriorfrequencies(x, tempdata, maxMOI, frequencies_RR):
-    # data = tempdata[:, 1:maxMOI+(x)*maxMOI]
+def findposteriorfrequencies(x: int, tempdata: np.ndarray, maxMOI: int, frequencies_RR, rand: np.random.RandomState):
     data = tempdata[:,np.arange(1, maxMOI+1) + (x * maxMOI) - 1]
     nalleles = frequencies_RR[0][x]
 
     freq_prior_alpha = [1] * nalleles
 
-    # hard coded table() function from R 
+    # hard coded table() function from R
     dictionary = [[i, 0] for i in range(1, nalleles + 1)]
     data_1d_array = data.flatten()
     data_1d_array = data_1d_array[data_1d_array != 0]
@@ -28,7 +25,4 @@ def findposteriorfrequencies(x, tempdata, maxMOI, frequencies_RR):
 
     freq_posterior_alpha = freq_prior_alpha + table
     freq_posterior_alpha = freq_posterior_alpha.tolist()
-    frequencies_RR[1][x, 0:nalleles] = np.random.mtrand.dirichlet(freq_posterior_alpha, 1)
-
-
-	
+    frequencies_RR[1][x, 0:nalleles] = rand.dirichlet(freq_posterior_alpha, 1)
