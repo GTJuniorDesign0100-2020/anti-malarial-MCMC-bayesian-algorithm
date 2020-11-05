@@ -344,12 +344,12 @@ class AlgorithmSiteInstance:
 
         q_posterior_alpha = (
             q_prior_alpha
-            + np.nansum(state.hidden0 == HiddenAlleleType.OBSERVED.value)
-            + np.nansum(state.hiddenf == HiddenAlleleType.OBSERVED.value))
-        q_posterior_beta = (
-            q_prior_beta
             + np.nansum(state.hidden0 == HiddenAlleleType.MISSING.value)
             + np.nansum(state.hiddenf == HiddenAlleleType.MISSING.value))
+        q_posterior_beta = (
+            q_prior_beta
+            + np.nansum(state.hidden0 == HiddenAlleleType.OBSERVED.value)
+            + np.nansum(state.hiddenf == HiddenAlleleType.OBSERVED.value))
 
         # Edge case if there are no missing/observed alleles, to avoid div by 0
         if q_posterior_alpha == 0:
