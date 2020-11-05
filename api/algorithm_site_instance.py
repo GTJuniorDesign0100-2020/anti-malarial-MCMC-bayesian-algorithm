@@ -315,13 +315,14 @@ class AlgorithmSiteInstance:
         '''
         z = rand.uniform(size=num_ids)
         new_classifications = np.copy(state.classification)
-        if likelihood_ratios.all() != 0:
-            new_classifications[np.logical_and(
-                state.classification == SampleType.REINFECTION.value,
-                z < likelihood_ratios)] = SampleType.RECRUDESCENCE.value
-            new_classifications[np.logical_and(
-                state.classification == SampleType.RECRUDESCENCE.value,
-                z < 1.0 / likelihood_ratios)] = SampleType.REINFECTION.value
+        new_classifications[np.logical_and(
+            state.classification == SampleType.REINFECTION.value,
+            z < likelihood_ratios)] = SampleType.RECRUDESCENCE.value
+        # Add slight offset so likelihood ratios don't give div by 0 error
+        new_likelihood_ratios = likelihood_ratios + 1e-9
+        new_classifications[np.logical_and(
+            state.classification == SampleType.RECRUDESCENCE.value,
+            z < 1.0 / new_likelihood_ratios)] = SampleType.REINFECTION.value
         state.classification = new_classifications
         return state.classification
 
