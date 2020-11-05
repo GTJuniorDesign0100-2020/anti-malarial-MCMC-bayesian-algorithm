@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import IO, List, Union
 
 import numpy as np
@@ -20,7 +21,8 @@ class AlgorithmResults:
         classifications given to each sample
         saved_parameters_all - Holds the hidden parameter values of each site as
         the algorithm ran
-        ids_all - Lists the IDs of each sample in the dataset
+        ids_all - Lists the IDs of each sample in the entire dataset
+        site_sample_ids - Lists the IDs of each sample in a given site
         run_posterior_dfs - For each site, holds the computed posterior
         distributions (held in pandas dataframes)
         run_summary_stats - For each site, holds the computed summary statistics
@@ -29,6 +31,7 @@ class AlgorithmResults:
         self.saved_classification_all = pd.DataFrame()
         self.saved_parameters_all = pd.DataFrame()
         self.sample_ids = np.array([])
+        self.site_sample_ids = OrderedDict()
         self.run_posterior_dfs = {}
         self.run_summary_stat_dfs = {}
 
@@ -43,6 +46,7 @@ class AlgorithmResults:
             pd.DataFrame(site_results.parameters), ignore_index=True)
         self.sample_ids = np.append(self.sample_ids, site_results.ids)
 
+        self.site_sample_ids[site_name] = site_results.ids
         self.run_posterior_dfs[site_name] = site_results.posterior_df
         self.run_summary_stat_dfs[site_name] = site_results.summary_stats_df
 
