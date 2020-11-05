@@ -3,7 +3,7 @@ from typing import IO, List, Union
 import numpy as np
 import pandas as pd
 
-from api.algorithm_site_instance import AlgorithmSiteInstance
+from api.algorithm_site_instance import AlgorithmSiteInstance, SavedState
 from api.data_file_parser import DataFileParser
 from api.recrudescence_file_parser import RecrudescenceFileParser
 
@@ -105,7 +105,7 @@ class AlgorithmInstance:
         run_summary_stat_dfs = {}
 
         for site_name, algo_instance in self.algorithm_instances:
-            saved_classification, saved_params, ids, posterior_df, summary_stats_df = algo_instance.run_algorithm(
+            site_result = algo_instance.run_algorithm(
                 site_name,
                 nruns,
                 burnin,
@@ -115,13 +115,13 @@ class AlgorithmInstance:
             # save site results
             # TODO: Determine output array is correct shape
             saved_classification_all = saved_classification_all.append(
-                pd.DataFrame(saved_classification), ignore_index=True)
+                pd.DataFrame(site_result.classification), ignore_index=True)
             saved_parameters_all = saved_parameters_all.append(
-                pd.DataFrame(saved_params), ignore_index=True)
-            ids_all = np.append(ids_all, ids)
+                pd.DataFrame(site_result.parameters), ignore_index=True)
+            ids_all = np.append(ids_all, site_result.ids)
 
-            run_posterior_dfs[site_name] = posterior_df
-            run_summary_stat_dfs[site_name] = summary_stats_df
+            run_posterior_dfs[site_name] = site_result.posterior_df
+            run_summary_stat_dfs[site_name] = site_result.summary_stats_df
 
         # TODO: Have a more defined return structure?
         posterior_recrudescence_distribution_df, probability_of_recrudescence_df = self._get_summary_stats(saved_classification_all, saved_parameters_all, ids_all)
