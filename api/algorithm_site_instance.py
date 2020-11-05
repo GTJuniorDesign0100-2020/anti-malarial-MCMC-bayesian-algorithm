@@ -12,12 +12,15 @@ from api.switch_hidden import switch_hidden
 
 
 class SavedState:
-    def __init__(self, num_records, classification, alleles0, allelesf, parameters):
+    def __init__(self, num_records, ids, classification, alleles0, allelesf, parameters):
         self.num_records = num_records
+        self.ids = ids
         self.classification = classification
         self.alleles0 = alleles0
         self.allelesf = allelesf
         self.parameters = parameters
+        self.posterior_df = None
+        self.summary_stats_df = None
 
     def update_saved_state(
         self,
@@ -44,6 +47,73 @@ class SavedState:
         self.parameters[2 + num_loci : (2 + 2 * num_loci), record_index] = np.sum(
             state.frequencies_RR[1][:num_loci, :] ** 2
         )
+
+    def post_process_saved_state(self, locinames: np.ndarray, num_ids: int, max_MOI: int):
+        '''
+        TODO: Verify correctness here
+        Remove NaN columns from the saved state arrays, then calculate summary
+        statistics for the algorithm run
+        '''
+        self.parameters = self.parameters[
+            :, ~np.isnan(np.sum(self.parameters, axis=0))]
+        self.classification = self.classification[
+            :, ~np.isnan(np.sum(self.classification, axis=0))]
+
+        self.posterior_df, self.summary_stats_df = self.get_summary_stats(locinames, num_ids, max_MOI)
+
+    def get_summary_stats(self, locinames: np.ndarray, num_ids: int, max_MOI: int):
+        '''
+        Returns dataframes containing the summary statistics of the algorithm
+        run
+        :return: A tuple of (posterior_df, summary_stats_df)
+        '''
+        num_loci = locinames.size
+        # TODO: What does this mean?
+        # Find the mode of the hidden alleles on the first/last day
+        modealleles = np.zeros((2 * num_ids, max_MOI * num_loci))
+        for i in range(num_ids):
+            for j in range(num_loci):
+                modealleles[2 * i, j * max_MOI: (j + 1) * max_MOI] = sp_stats.mode(
+                    self.alleles0[i, j * max_MOI: (j + 1) * max_MOI, :], axis=1
+                )[0].ravel()
+
+                modealleles[2 * i + 1, j * max_MOI: (j + 1) * max_MOI] = sp_stats.mode(
+                    self.allelesf[i, j * max_MOI: (j + 1) * max_MOI, :], axis=1
+                )[0].ravel()
+
+        # TODO: Combined what? Why is this doubled?
+        temp_combined = np.repeat(np.mean(self.classification, axis=1)[:num_ids], 2)
+        # Reshape into a single column
+        temp_combined = temp_combined.reshape(2 * num_ids, 1)
+        posterior_matrix = np.concatenate((temp_combined, modealleles), axis=1)
+        posterior_matrix_columns = [
+            [f"{locus}_{i+1}" for i in range(max_MOI)] for locus in locinames
+        ]
+        posterior_matrix_columns = np.array(posterior_matrix_columns).flatten().tolist()
+        posterior_matrix_columns.insert(0, "Prob Rec")
+        posterior_df = pd.DataFrame(posterior_matrix, columns=posterior_matrix_columns)
+
+        # TODO: Understand what's being printed here? Separate out into its own
+        # function?
+        summary_statisticsmatrix = np.concatenate((
+                np.mean(self.parameters, axis=1).reshape(-1, 1),
+                np.quantile(self.parameters, (0.25, 0.75), axis=1).T),
+            axis=1)
+        summary_statisticsmatrix = np.concatenate((
+                summary_statisticsmatrix,
+                np.append(
+                    np.quantile(self.parameters[2 + num_loci:, :], (0.25, 0.75)),
+                    np.mean(self.parameters[2 + num_loci:, :]),
+                ).reshape(1, -1)))
+        summary_statisticsmatrix = np.array([
+                f"{summary_statisticsmatrix[i,0]:.2f} ({summary_statisticsmatrix[i,1]:.2f}, {summary_statisticsmatrix[i,2]:.2f})"
+                for i in range(summary_statisticsmatrix.shape[0])
+            ])
+        summary_statistics_df = pd.DataFrame(
+            summary_statisticsmatrix,
+            index=["q", "d", *locinames.tolist(), *locinames.tolist(), "Mean diversity"])
+
+        return posterior_df, summary_statistics_df
 
 
 class AlgorithmSiteInstance:
@@ -93,7 +163,7 @@ class AlgorithmSiteInstance:
         nruns: int=1000,
         burnin: int=100,
         record_interval: int=10,
-        seed: int=None):
+        seed: int=None) -> SavedState:
         '''
         Runs the actual algorithm on this site's data and returns the results
         TODO: Expand on this
@@ -108,8 +178,8 @@ class AlgorithmSiteInstance:
         "record_interval" iterations
         :param seed: (optional) The seed to use for random numbers when running
         (defaults to completely random)
-        :return: TODO: Currently returns the saved classifications, parameter
-        matrix, and ids from this run (determine if more/less should be returned?)
+        :return: Returns the saved state (including the summary statistics) of
+        the algorithm run
         '''
         self.state.randomize_initial_assignments(
             self.ids.size,
@@ -122,7 +192,7 @@ class AlgorithmSiteInstance:
             nruns,
             burnin,
             record_interval,
-            self.ids.size,
+            self.ids,
             self.locinames.size,
             self.max_MOI)
 
@@ -139,23 +209,12 @@ class AlgorithmSiteInstance:
                 i, burnin, record_interval)
             print(f'MCMC Iteration {i + 1}')
 
-        # TODO: Add in summary stats
-        self._post_process_saved_state(self.saved_state)
-        posterior_df, summary_stats_df = self.get_summary_stats(
-            self.saved_state,
+        self.saved_state.post_process_saved_state(
             self.locinames,
             self.ids.size,
             self.max_MOI)
 
-        # TODO: Encapsulate this in a "returned algorithm data" object? Or just
-        # use the saved state for that?
-        return (
-            self.saved_state.classification,
-            self.saved_state.parameters,
-            self.ids,
-            posterior_df,
-            summary_stats_df
-        )
+        return self.saved_state
 
     @classmethod
     def _get_max_MOI(cls, genotypedata_RR: pd.DataFrame) -> int:
@@ -192,7 +251,7 @@ class AlgorithmSiteInstance:
         nruns: int,
         burnin: int,
         record_interval: int,
-        num_ids: int,
+        ids: np.ndarray,
         num_loci: int,
         max_MOI: int) -> SavedState:
         '''
@@ -200,11 +259,12 @@ class AlgorithmSiteInstance:
         Return a newly initialized SavedState object for a new algorithm run
         '''
         num_records = int((nruns - burnin) / record_interval)
-        alleles_shape = (num_ids, max_MOI * num_loci, num_records)
+        alleles_shape = (ids.size, max_MOI * num_loci, num_records)
         return SavedState(
             num_records=num_records,
+            ids=ids,
             classification=recrudescence_utils.nan_array(
-                (num_ids, num_records)),
+                (ids.size, num_records)),
             alleles0=recrudescence_utils.nan_array(alleles_shape),
             allelesf=recrudescence_utils.nan_array(alleles_shape),
             parameters=recrudescence_utils.nan_array(
@@ -315,13 +375,14 @@ class AlgorithmSiteInstance:
         '''
         z = rand.uniform(size=num_ids)
         new_classifications = np.copy(state.classification)
-        if likelihood_ratios.all() != 0:
-            new_classifications[np.logical_and(
-                state.classification == SampleType.REINFECTION.value,
-                z < likelihood_ratios)] = SampleType.RECRUDESCENCE.value
-            new_classifications[np.logical_and(
-                state.classification == SampleType.RECRUDESCENCE.value,
-                z < 1.0 / likelihood_ratios)] = SampleType.REINFECTION.value
+        new_classifications[np.logical_and(
+            state.classification == SampleType.REINFECTION.value,
+            z < likelihood_ratios)] = SampleType.RECRUDESCENCE.value
+        # Add slight offset so likelihood ratios don't give div by 0 error
+        new_likelihood_ratios = likelihood_ratios + 1e-9
+        new_classifications[np.logical_and(
+            state.classification == SampleType.RECRUDESCENCE.value,
+            z < 1.0 / new_likelihood_ratios)] = SampleType.REINFECTION.value
         state.classification = new_classifications
         return state.classification
 
@@ -344,12 +405,12 @@ class AlgorithmSiteInstance:
 
         q_posterior_alpha = (
             q_prior_alpha
-            + np.nansum(state.hidden0 == HiddenAlleleType.OBSERVED.value)
-            + np.nansum(state.hiddenf == HiddenAlleleType.OBSERVED.value))
-        q_posterior_beta = (
-            q_prior_beta
             + np.nansum(state.hidden0 == HiddenAlleleType.MISSING.value)
             + np.nansum(state.hiddenf == HiddenAlleleType.MISSING.value))
+        q_posterior_beta = (
+            q_prior_beta
+            + np.nansum(state.hidden0 == HiddenAlleleType.OBSERVED.value)
+            + np.nansum(state.hiddenf == HiddenAlleleType.OBSERVED.value))
 
         # Edge case if there are no missing/observed alleles, to avoid div by 0
         if q_posterior_alpha == 0:
@@ -427,68 +488,3 @@ class AlgorithmSiteInstance:
                 max_MOI,
                 state.frequencies_RR,
                 rand)
-
-    @classmethod
-    def _post_process_saved_state(cls, saved_state: SavedState):
-        '''
-        TODO: Verify correctness here
-        Remove NaN columns from the saved state arrays
-        '''
-        saved_state.parameters = saved_state.parameters[
-            :, ~np.isnan(np.sum(saved_state.parameters, axis=0))]
-        saved_state.classification = saved_state.classification[
-            :, ~np.isnan(np.sum(saved_state.classification, axis=0))]
-
-    def get_summary_stats(self, saved_state: SavedState, locinames: np.ndarray, num_ids: int, max_MOI: int):
-        '''
-        Returns dataframes containing the summary statistics of the algorithm
-        run
-        :return: A tuple of (posterior_df, summary_stats_df)
-        '''
-        num_loci = locinames.size
-        # TODO: What does this mean?
-        # Find the mode of the hidden alleles on the first/last day
-        modealleles = np.zeros((2 * num_ids, max_MOI * num_loci))
-        for i in range(num_ids):
-            for j in range(num_loci):
-                modealleles[2 * i, j * max_MOI: (j + 1) * max_MOI] = sp_stats.mode(
-                    saved_state.alleles0[i, j * max_MOI: (j + 1) * max_MOI, :], axis=1
-                )[0].ravel()
-
-                modealleles[2 * i + 1, j * max_MOI: (j + 1) * max_MOI] = sp_stats.mode(
-                    saved_state.allelesf[i, j * max_MOI: (j + 1) * max_MOI, :], axis=1
-                )[0].ravel()
-
-        # TODO: Combined what? Why is this doubled?
-        temp_combined = np.repeat(np.mean(saved_state.classification, axis=1)[:num_ids], 2)
-        # Reshape into a single column
-        temp_combined = temp_combined.reshape(2 * num_ids, 1)
-        posterior_matrix = np.concatenate((temp_combined, modealleles), axis=1)
-        posterior_matrix_columns = [
-            [f"{locus}_{i+1}" for i in range(max_MOI)] for locus in locinames
-        ]
-        posterior_matrix_columns = np.array(posterior_matrix_columns).flatten().tolist()
-        posterior_matrix_columns.insert(0, "Prob Rec")
-        posterior_df = pd.DataFrame(posterior_matrix, columns=posterior_matrix_columns)
-
-        # TODO: Understand what's being printed here? Separate out into its own
-        # function?
-        summary_statisticsmatrix = np.concatenate((
-                np.mean(saved_state.parameters, axis=1).reshape(-1, 1),
-                np.quantile(saved_state.parameters, (0.25, 0.75), axis=1).T),
-            axis=1)
-        summary_statisticsmatrix = np.concatenate((
-                summary_statisticsmatrix,
-                np.append(
-                    np.quantile(saved_state.parameters[2 + num_loci:, :], (0.25, 0.75)),
-                    np.mean(saved_state.parameters[2 + num_loci:, :]),
-                ).reshape(1, -1)))
-        summary_statisticsmatrix = np.array([
-                f"{summary_statisticsmatrix[i,0]:.2f} ({summary_statisticsmatrix[i,1]:.2f}, {summary_statisticsmatrix[i,2]:.2f})"
-                for i in range(summary_statisticsmatrix.shape[0])
-            ])
-        summary_statistics_df = pd.DataFrame(
-            summary_statisticsmatrix,
-            index=["q", "d", *locinames.tolist(), *locinames.tolist(), "Mean diversity"])
-
-        return posterior_df, summary_statistics_df

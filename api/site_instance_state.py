@@ -13,10 +13,9 @@ class SampleType(enum.Enum):
 
 
 class HiddenAlleleType(enum.Enum):
-    # TODO: Verify I don't have these switched?
-    MISSING = 0
-    OBSERVED = 1
-    UNKNOWN = np.nan    # TODO: Confirm this is correct?
+    MISSING = 1
+    OBSERVED = 0
+    UNKNOWN = np.nan    # TODO: Confirm this is needed?
 
 
 class SiteInstanceState:
@@ -405,20 +404,22 @@ class SiteInstanceState:
         start = max_MOI * j
         end = max_MOI * (j + 1)
 
+        # Find all the non-zero length alleles (meaning we've observed them)
         num_alleles = np.count_nonzero(alleles[i, start:end])
         num_missing = MOIs[i] - num_alleles
 
         # TODO: Eliminate code duplication if possible?
         missing_alleles_indices = np.arange(start, end)[
-            np.where(alleles[i, start: start + MOIs[i]] == HiddenAlleleType.MISSING.value)
+            np.where(alleles[i, start: start + MOIs[i]] == 0)
         ]
         present_alleles_indices = np.arange(start, end)[
-            np.where(alleles[i, start: start + MOIs[i]] != HiddenAlleleType.MISSING.value)
+            np.where(alleles[i, start: start + MOIs[i]] != 0)
         ]
 
-        # Sample to randomly initialize the alleles/hidden variables
+        # Sample to randomly initialize the missing alleles/hidden variables
+        # (no need to sample for observed alleles w/ known lengths)
         if num_alleles > 0:
-            hidden[i, present_alleles_indices] = HiddenAlleleType.MISSING.value
+            hidden[i, present_alleles_indices] = HiddenAlleleType.OBSERVED.value
         if num_missing == 0:
             return
 
@@ -433,7 +434,7 @@ class SiteInstanceState:
         recoded[i, missing_alleles_indices] = new_hidden_alleles
         # calculate row means (mean allele lengths)
         alleles[i, missing_alleles_indices] = np.mean(alleles_definitions_RR[j], axis=1)[new_hidden_alleles]
-        hidden[i, missing_alleles_indices] = HiddenAlleleType.OBSERVED.value
+        hidden[i, missing_alleles_indices] = HiddenAlleleType.MISSING.value
 
     def _assign_closest_recrudescences(
         self,
@@ -493,11 +494,13 @@ class SiteInstanceState:
     @classmethod
     def _get_initial_qq(cls, hidden0: np.ndarray, hiddenf: np.ndarray):
         '''
-        TODO: What does qq stand for?
-        Initial estimate of q, the probability of an allele being missed
+        Initial estimate of q, the probability of an allele being "missing" in
+        the dataset (as opposed to observed directly)
 
-        :param hidden0: TODO:
-        :param hiddenf: TODO:
+        :param hidden0: An array listing whether each allele for a given sample/
+        locus has been directly observed or is missing/estimated on Day 0
+        :param hiddenf: Similar to hidden 0, but whether each allele has been
+        directly observed or is missing on the Day of Failure for a sample
         :return: A single number q, the mean of the known hidden variables
         '''
         return np.nanmean(np.concatenate([hidden0, hiddenf]))

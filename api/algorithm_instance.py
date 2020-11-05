@@ -3,9 +3,65 @@ from typing import IO, List, Union
 import numpy as np
 import pandas as pd
 
-from api.algorithm_site_instance import AlgorithmSiteInstance
+from api.algorithm_site_instance import AlgorithmSiteInstance, SavedState
 from api.data_file_parser import DataFileParser
 from api.recrudescence_file_parser import RecrudescenceFileParser
+
+
+class AlgorithmResults:
+    '''
+    Holds the final results of running the malaria recrudescence algorithm
+    '''
+
+    def __init__(self):
+        '''
+        Set up data structures the hold the results, as follows:
+        saved_classification_all - Holds the recrudescence/reinfection
+        classifications given to each sample
+        saved_parameters_all - Holds the hidden parameter values of each site as
+        the algorithm ran
+        ids_all - Lists the IDs of each sample in the dataset
+        run_posterior_dfs - For each site, holds the computed posterior
+        distributions (held in pandas dataframes)
+        run_summary_stats - For each site, holds the computed summary statistics
+        (in a pandas dataframe)
+        '''
+        self.saved_classification_all = pd.DataFrame()
+        self.saved_parameters_all = pd.DataFrame()
+        self.sample_ids = np.array([])
+        self.run_posterior_dfs = {}
+        self.run_summary_stat_dfs = {}
+
+    def update_results(self, site_results: SavedState, site_name: str):
+        '''
+        Add the site's results to the overall algorithm results
+        '''
+        # TODO: Determine output array is correct shape
+        self.saved_classification_all = self.saved_classification_all.append(
+            pd.DataFrame(site_results.classification), ignore_index=True)
+        self.saved_parameters_all = self.saved_parameters_all.append(
+            pd.DataFrame(site_results.parameters), ignore_index=True)
+        self.sample_ids = np.append(self.sample_ids, site_results.ids)
+
+        self.run_posterior_dfs[site_name] = site_results.posterior_df
+        self.run_summary_stat_dfs[site_name] = site_results.summary_stats_df
+
+    def get_summary_stats(self):
+        '''
+        Calculate the final recrudescence probabilities and distributions for
+        each sample in the dataset, across all sites
+        :return: A tuple of 2 pandas dataframes,
+        (posterior_recrudescence_distribution, probability_of_recrudescence)
+        '''
+        posterior_recrudescence_distribution = pd.concat([
+            pd.DataFrame(self.sample_ids), self.saved_classification_all])
+        posterior_recrudescence_distribution.rename(columns={
+            posterior_recrudescence_distribution.columns[0]: 'ID'
+        }, inplace=True)
+        # Get the mean of each row
+        probability_of_recrudescence = np.mean(self.saved_classification_all, axis=1)
+
+        return posterior_recrudescence_distribution, probability_of_recrudescence
 
 
 class AlgorithmInstance:
@@ -34,7 +90,6 @@ class AlgorithmInstance:
         genotypedata_latefailures, additional_genotypedata = input_file_parser.parse_file(input_file)
 
         self._initialize_site_instances(genotypedata_latefailures, additional_genotypedata, locirepeats)
-
 
     def _initialize_site_instances(self, genotypedata: pd.DataFrame, additional: pd.DataFrame, locirepeats: List[int]):
         '''
@@ -91,61 +146,22 @@ class AlgorithmInstance:
         samples_df['Sample ID'] = new_sample_names
         return samples_df
 
-    def run_algorithm(self, nruns: int=1000, burnin: int=100, record_interval: int=10, seed=None):
+    def run_algorithm(self, nruns: int=1000, burnin: int=100, record_interval: int=10, seed=None) -> AlgorithmResults:
         '''
         Runs the actual MCMC algorithm for each site, and returns the combined
         data for all of the sites
         TODO: Elaborate
         '''
-        # Set up data structures to hold results
-        saved_classification_all = pd.DataFrame()
-        saved_parameters_all = pd.DataFrame()
-        ids_all = np.array([])
-        run_posterior_dfs = {}
-        run_summary_stat_dfs = {}
+        overall_results = AlgorithmResults()
 
         for site_name, algo_instance in self.algorithm_instances:
-            saved_classification, saved_params, ids, posterior_df, summary_stats_df = algo_instance.run_algorithm(
+            site_result = algo_instance.run_algorithm(
                 site_name,
                 nruns,
                 burnin,
                 record_interval,
                 seed)
-
             # save site results
-            # TODO: Determine output array is correct shape
-            saved_classification_all = saved_classification_all.append(
-                pd.DataFrame(saved_classification), ignore_index=True)
-            saved_parameters_all = saved_parameters_all.append(
-                pd.DataFrame(saved_params), ignore_index=True)
-            ids_all = np.append(ids_all, ids)
+            overall_results.update_results(site_result, site_name)
 
-            run_posterior_dfs[site_name] = posterior_df
-            run_summary_stat_dfs[site_name] = summary_stats_df
-
-        # TODO: Have a more defined return structure?
-        posterior_recrudescence_distribution_df, probability_of_recrudescence_df = self._get_summary_stats(saved_classification_all, saved_parameters_all, ids_all)
-        return (
-            posterior_recrudescence_distribution_df,
-            probability_of_recrudescence_df,
-            run_posterior_dfs,
-            run_summary_stat_dfs,
-            ids_all
-        )
-
-    def _get_summary_stats(self, saved_classification, saved_parameters, ids):
-        '''
-        Calculate the final recrudescence probabilities and distributions for
-        each sample
-        TODO: Elaborate (why does taking overall stats for separate sites make
-        sense?)
-        '''
-        posterior_recrudescence_distribution = pd.concat([
-            pd.DataFrame(ids), saved_classification])
-        posterior_recrudescence_distribution.rename(columns={
-            posterior_recrudescence_distribution.columns[0]: 'ID'
-        }, inplace=True)
-        # Get the mean of each row
-        probability_of_recrudescence = np.mean(saved_classification, axis=1)
-
-        return posterior_recrudescence_distribution, probability_of_recrudescence
+        return overall_results

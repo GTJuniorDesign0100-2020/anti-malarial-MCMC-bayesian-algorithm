@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import werkzeug
 
-from api.algorithm_instance import AlgorithmInstance
+from api.algorithm_instance import AlgorithmInstance, AlgorithmResults
 
 
 # =============================================================================
@@ -103,13 +103,15 @@ class RecrudescenceTest(Resource):
         record_interval = math.ceil(iterations / 1000)
         burnin = math.ceil(iterations * 0.25)
 
-        posterior_recrudescence_distribution_df, probability_of_recrudescence_df, run_posterior_dfs, run_summary_stat_dfs, sample_ids = test_run.run_algorithm(iterations, burnin, record_interval)
+        results = test_run.run_algorithm(iterations, burnin, record_interval)
+
+        posterior_recrudescence_distribution_df, probability_of_recrudescence_df = results.get_summary_stats()
 
         end_time = time.time()
         json_response = {
             'runDate': run_start_datetime.isoformat(),
             'totalRunTime': int(end_time - start_time),
-            'samples': self._get_sample_information(sample_ids, probability_of_recrudescence_df)
+            'samples': self._get_sample_information(results.sample_ids, probability_of_recrudescence_df)
         }
         return json_response
 
