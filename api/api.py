@@ -67,7 +67,8 @@ class RecrudescenceTest(Resource):
             json_results = self._get_test_results_json(uploaded_file, iterations)
         except Exception as e:
             # TODO: Return more specific error message?
-            return error_response(f'A problem occurred while the server was processing this data: {e}', 500)
+            print(e)
+            return error_response('A problem occurred while the server was processing this data', 500)
 
         return json_results, 200
 
@@ -99,7 +100,7 @@ class RecrudescenceTest(Resource):
             'runDate': run_start_datetime.isoformat(),
             'totalRunTime': int(end_time - start_time),
             'site_samples': self._get_sample_information(results.site_sample_ids, probability_of_recrudescence_df),
-            'output_file_text': self._get_output_file_text(results)
+            'output_file_text': results.get_output_file_text()
         }
         return json_response
 
@@ -125,27 +126,6 @@ class RecrudescenceTest(Resource):
 
             samples[site_name] = site_samples
         return samples
-
-    def _get_output_file_text(self, results: AlgorithmResults):
-        '''
-        Gets the text of each output .csv file and stores it in a dictionary,
-        with the filename as the key
-        TODO: Near-duplicated with main.py?
-        '''
-        output_files = {}
-
-        posterior_recrudescence_distribution_df, probability_of_recrudescence_df = results.get_summary_stats()
-        for site_name, posterior_df in results.run_posterior_dfs.items():
-            filename = f'{site_name}_posterior.csv'
-            output_files[filename] = posterior_df.to_csv()
-        for site_name, summary_df in results.run_summary_stat_dfs.items():
-            filename = f'{site_name}_summary_statistics.csv'
-            output_files[filename] = summary_df.to_csv()
-
-        output_files['microsatellite_correction.csv'] = posterior_recrudescence_distribution_df.to_csv(index=False)
-        output_files['probability_of_recrudescence.csv'] = probability_of_recrudescence_df.to_csv(index=False)
-
-        return output_files
 
 
 # =============================================================================

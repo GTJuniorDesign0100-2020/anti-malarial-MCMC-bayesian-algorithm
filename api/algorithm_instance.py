@@ -67,6 +67,28 @@ class AlgorithmResults:
 
         return posterior_recrudescence_distribution, probability_of_recrudescence
 
+    def get_output_file_text(self) -> dict:
+        '''
+        Gets the text of each output .csv file and stores it in a dictionary,
+        with the filename as the key
+        :return: A dictionary with the filename of each .csv file as the key
+        and the content of the file as its value
+        '''
+        output_files = {}
+
+        posterior_recrudescence_distribution_df, probability_of_recrudescence_df = self.get_summary_stats()
+        for site_name, posterior_df in self.run_posterior_dfs.items():
+            filename = f'{site_name}_posterior.csv'
+            output_files[filename] = posterior_df.to_csv(line_terminator='\n')
+        for site_name, summary_df in self.run_summary_stat_dfs.items():
+            filename = f'{site_name}_summary_statistics.csv'
+            output_files[filename] = summary_df.to_csv(line_terminator='\n')
+
+        output_files['microsatellite_correction.csv'] = posterior_recrudescence_distribution_df.to_csv(index=False, line_terminator='\n')
+        output_files['probability_of_recrudescence.csv'] = probability_of_recrudescence_df.to_csv(index=False, line_terminator='\n')
+
+        return output_files
+
 
 class AlgorithmInstance:
     '''
