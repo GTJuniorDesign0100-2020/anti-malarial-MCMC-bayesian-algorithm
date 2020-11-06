@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import datetime
 import math
 import os
@@ -43,20 +44,6 @@ def too_large(e):
 
 
 class RecrudescenceTest(Resource):
-    def __init__(self):
-        # TODO: Remove!
-        self.PLACEHOLDER_RESPONSE = {
-            'runDate': '2020-09-25T18:14:44+00:00',
-            'totalRunTime': 1806,
-            'samples': {
-                'BQ17-269': {
-                    'isRecrudescence': False,
-                    'probability': 0.842,
-
-                }
-            }
-        }
-
     def post(self):
         '''
         Takes in a posted CSV data file, analyzes it to determine if each
@@ -80,6 +67,7 @@ class RecrudescenceTest(Resource):
             json_results = self._get_test_results_json(uploaded_file, iterations)
         except Exception as e:
             # TODO: Return more specific error message?
+            print(e)
             return error_response('A problem occurred while the server was processing this data', 500)
 
         return json_results, 200
@@ -111,26 +99,33 @@ class RecrudescenceTest(Resource):
         json_response = {
             'runDate': run_start_datetime.isoformat(),
             'totalRunTime': int(end_time - start_time),
-            'samples': self._get_sample_information(results.sample_ids, probability_of_recrudescence_df)
+            'site_samples': self._get_sample_information(results.site_sample_ids, probability_of_recrudescence_df),
+            'output_file_text': results.get_output_file_text()
         }
         return json_response
 
-    def _get_sample_information(self, sample_ids, probability_of_recrudescence_df: pd.DataFrame):
+    def _get_sample_information(self, site_sample_ids: OrderedDict, probability_of_recrudescence_df: pd.DataFrame):
         '''
-        Return a dictionary of the probability of each sample
-        TODO: Modify format to better reflect sample information?
+        Return a dictionary of the probability of each sample, split by site
+        :param sample_ids: A dictionary of site names with a list of sample IDs
+        for each site, in order of their appearance in the dataset
+        :param probability_of_recrudescence_df:
+        :return: A dictionary of site names, each of which has a sub-dictionary
+        containing the sites samples and
         '''
         samples = {}
-        for i, sample_id in enumerate(sample_ids):
-            recrud_prob = probability_of_recrudescence_df.iloc[i]
+        sample_index = 0
+        for site_name, ids in site_sample_ids.items():
+            site_samples = {}
+            for sample_id in ids:
+                sample_info = {}
+                recrud_prob = probability_of_recrudescence_df.iloc[sample_index]
+                sample_info['recrud_probability'] = recrud_prob
+                site_samples[sample_id] = sample_info
+                sample_index += 1
 
-            sample_info = {}
-            sample_info['isRecrudescence'] = False if recrud_prob <= 0.5 else True
-            sample_info['probability'] = recrud_prob
-
-            samples[sample_id] = sample_info
+            samples[site_name] = site_samples
         return samples
-
 
 
 # =============================================================================

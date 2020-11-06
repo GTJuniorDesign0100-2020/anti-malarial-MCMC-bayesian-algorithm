@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import IO, List, Union
 
 import numpy as np
@@ -20,7 +21,8 @@ class AlgorithmResults:
         classifications given to each sample
         saved_parameters_all - Holds the hidden parameter values of each site as
         the algorithm ran
-        ids_all - Lists the IDs of each sample in the dataset
+        ids_all - Lists the IDs of each sample in the entire dataset
+        site_sample_ids - Lists the IDs of each sample in a given site
         run_posterior_dfs - For each site, holds the computed posterior
         distributions (held in pandas dataframes)
         run_summary_stats - For each site, holds the computed summary statistics
@@ -29,6 +31,7 @@ class AlgorithmResults:
         self.saved_classification_all = pd.DataFrame()
         self.saved_parameters_all = pd.DataFrame()
         self.sample_ids = np.array([])
+        self.site_sample_ids = OrderedDict()
         self.run_posterior_dfs = {}
         self.run_summary_stat_dfs = {}
 
@@ -43,6 +46,7 @@ class AlgorithmResults:
             pd.DataFrame(site_results.parameters), ignore_index=True)
         self.sample_ids = np.append(self.sample_ids, site_results.ids)
 
+        self.site_sample_ids[site_name] = site_results.ids
         self.run_posterior_dfs[site_name] = site_results.posterior_df
         self.run_summary_stat_dfs[site_name] = site_results.summary_stats_df
 
@@ -62,6 +66,28 @@ class AlgorithmResults:
         probability_of_recrudescence = np.mean(self.saved_classification_all, axis=1)
 
         return posterior_recrudescence_distribution, probability_of_recrudescence
+
+    def get_output_file_text(self) -> dict:
+        '''
+        Gets the text of each output .csv file and stores it in a dictionary,
+        with the filename as the key
+        :return: A dictionary with the filename of each .csv file as the key
+        and the content of the file as its value
+        '''
+        output_files = {}
+
+        posterior_recrudescence_distribution_df, probability_of_recrudescence_df = self.get_summary_stats()
+        for site_name, posterior_df in self.run_posterior_dfs.items():
+            filename = f'{site_name}_posterior.csv'
+            output_files[filename] = posterior_df.to_csv(line_terminator='\n')
+        for site_name, summary_df in self.run_summary_stat_dfs.items():
+            filename = f'{site_name}_summary_statistics.csv'
+            output_files[filename] = summary_df.to_csv(line_terminator='\n')
+
+        output_files['microsatellite_correction.csv'] = posterior_recrudescence_distribution_df.to_csv(index=False, line_terminator='\n')
+        output_files['probability_of_recrudescence.csv'] = probability_of_recrudescence_df.to_csv(index=False, line_terminator='\n')
+
+        return output_files
 
 
 class AlgorithmInstance:
