@@ -6,7 +6,14 @@ import itertools
 
 def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 	z = random.uniform(0,1)
-	if (np.nansum(np.concatenate((state.hidden0[x], state.hiddenf[x]))) > 0):
+
+	# Section A: If number of inferred alleles > 0
+	# It will probably be more efficient to sum the two seperately, because concatenation
+	# could induce memory-related performance cost, if a new memory block is being created behind the scenes.
+	# inferred_allele_count = np.nansum(np.concatenate((state.hidden0[x], state.hiddenf[x])))
+	inferred_allele_count = np.nansum(state.hidden0) + np.nansum(state.hiddenf)
+	
+	if (inferred_allele_count > 0):
 		if len(np.where(np.concatenate((state.hidden0[x], state.hiddenf[x])) == 1)[0]) > 1:
 			chosen = np.random.choice(np.where(np.concatenate((state.hidden0[x], state.hiddenf[x])) == 1)[0]) + 1
 		else:
