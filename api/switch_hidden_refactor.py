@@ -12,12 +12,16 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 	# could induce memory-related performance cost, if a new memory block is being created behind the scenes.
 	# inferred_allele_count = np.nansum(np.concatenate((state.hidden0[x], state.hiddenf[x])))
 	inferred_allele_count = np.nansum(state.hidden0) + np.nansum(state.hiddenf)
-	
+
 	if (inferred_allele_count > 0):
-		if len(np.where(np.concatenate((state.hidden0[x], state.hiddenf[x])) == 1)[0]) > 1:
-			chosen = np.random.choice(np.where(np.concatenate((state.hidden0[x], state.hiddenf[x])) == 1)[0]) + 1
+		# removed redundant calculation
+		inferred_alleles = np.where(np.concatenate((state.hidden0[x], state.hiddenf[x])) == 1)[0]
+
+		if len(inferred_alleles) > 1:
+			chosen = np.random.choice(inferred_alleles) + 1
 		else:
-			chosen = np.where(np.concatenate((state.hidden0[x], state.hiddenf[x])) == 1)[0][0] + 1
+			# This may be problematic. Check to be sure.
+			chosen = inferred_alleles[0][0] + 1
 
 		if (state.classification[x] == 0): # REINFECTION
 			if chosen <= (nloci * maxMOI):
