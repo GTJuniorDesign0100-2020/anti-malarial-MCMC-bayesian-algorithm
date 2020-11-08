@@ -39,13 +39,13 @@ The root endpoint for all API requests for version 1.0 of the API is `/api/v1`
 
 ### RecrudescenceTest
 
-Given an input `.csv` file with [drug testing data in the proper format (TODO)](), return estimates of which patients specified in the file are reinfections or recrudescences.
+Given an input `.xlsx` file with [drug testing data in the proper format (TODO)](), return estimates of which patients specified in the file are reinfections or recrudescences.
 
-*Method(s):* `PUSH`
+*Method(s):* `POST`
 
 *URL Endpoint:* `/api/v1/recrudescences`
 
-#### PUSH
+#### POST
 
 **Input Parameters (URL):**
 
@@ -53,14 +53,22 @@ Given an input `.csv` file with [drug testing data in the proper format (TODO)](
 
 **Input Parameters (Data):**
 
--   `file` (.csv file, FormData): The file containing the testing data to be processed.
+-   `file` (.xlsx file, FormData): The file containing the testing data to be processed.
+
+**Input Parameters (URL):**
+
+-   (optional) `advanced` (boolean): Boolean indicating whether or not to return advanced stats. Defaults to False.
+
+**Input Parameters (URL):**
+
+-   (optional) `repeats` (list of integers): List of integers representing loci repeats.
 
 **Example Usage:**
 
 In cURL:
 
 ```bash
-curl -F "file=@example.csv" http://localhost:5000/api/v1/recrudescences?iterations=10
+curl -F "file=@example.xlsx" http://localhost:5000/api/v1/recrudescences?iterations=10
 ```
 
 In Javascript (via `fetch`):
@@ -97,4 +105,4 @@ fetch(`/api/v1/recrudescences?iterations=${NUM_ITERATIONS}`, {
 **Potential Errors:**
 -   `400` - No input file was provided, or an invalid number of iterations was given
 -   `413` - The provided file was too large to be processed
--   `415` - The provided file wasn't a `.csv` file
+-   `415` - The provided file wasn't a `.xlsx` file
