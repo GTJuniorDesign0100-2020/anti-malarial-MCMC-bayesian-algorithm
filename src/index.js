@@ -94,6 +94,8 @@ class RunButton extends React.Component {
                 <input type="file" name="CSVFile" onChange={this.handleChangeFile}/><br/><br/>
                 Convergence Precision +/-: <br/>
                 <input type="number" name="convPrecision"/><br/><br/>
+                Loci Repeats: <br/>
+                <input type="text" name="locirepeats"/><br/><br/>
                 Number of Chr Fragments: <br/>
                 <input type="number" name="numFrags"/><br/><br/>
                 Number of Iterations: <br/>
