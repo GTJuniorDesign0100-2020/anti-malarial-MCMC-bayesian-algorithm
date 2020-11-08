@@ -60,24 +60,34 @@ class RunButton extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            csvFile: '', numIters: 10000
+            csvFile: '', locirepeatsString: '', numIters: 10000
         };
 
         // bind functions to this class
-        this.handleChangeFile = this.handleChangeFile.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+        this.handleChangeFile = this.handleChangeFile.bind(this);
+        this.handleChangeLocirepeats = this.handleChangeLocirepeats.bind(this);
         this.handleChangeIters = this.handleChangeIters.bind(this);
     }
 
     handleSubmit(event) {
         event.preventDefault();
+        // Convert string into a list of locirepeats
+        let locirepeats = this.state.locirepeatsString.split(',')
+          .map(substring => parseInt(substring.trim(), 10))
+          .filter(substring => substring); // Eliminate empty/non-numerical strings
+        console.log(locirepeats);
+
         this.props.handleSubmit(this.state.csvFile, this.state.numIters);
     }
 
     handleChangeFile(event) {
-        console.log(`Got CSV file ${event.target.files[0].name}`);
+        console.log(`Got file ${event.target.files[0].name}`);
         this.setState({csvFile: event.target.files[0]});
-        alert('Got CSV file');
+    }
+
+    handleChangeLocirepeats(event) {
+        this.setState({locirepeatsString: event.target.value});
     }
 
     handleChangeIters(event) {
@@ -92,12 +102,8 @@ class RunButton extends React.Component {
             <label>
                 CSV File: <br/>
                 <input type="file" name="CSVFile" onChange={this.handleChangeFile}/><br/><br/>
-                Convergence Precision +/-: <br/>
-                <input type="number" name="convPrecision"/><br/><br/>
                 Loci Repeats: <br/>
-                <input type="text" name="locirepeats"/><br/><br/>
-                Number of Chr Fragments: <br/>
-                <input type="number" name="numFrags"/><br/><br/>
+                <input type="text" value={this.state.locirepeatsString} name="locirepeats" onChange={this.handleChangeLocirepeats}/><br/><br/>
                 Number of Iterations: <br/>
                 <input type="number" value={this.state.numIters} name="numIts" onChange={this.handleChangeIters}/><br/><br/>
             </label>
