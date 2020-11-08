@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import Popup from 'reactjs-popup';
+import LoadingBar from './components/LoadingBar';
 import './index.css';
 
 /*
@@ -281,6 +282,7 @@ class MainScreen extends React.Component {
       <div className="mainscreen">
         <div className="main-board">
           <Board />
+          <LoadingBar percentCompleted={0.12} secondsRunning={894} />
         </div>
       </div>
     );
