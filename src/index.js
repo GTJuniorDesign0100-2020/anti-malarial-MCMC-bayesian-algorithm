@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import Popup from 'reactjs-popup';
+import DemoLoadingBar from './components/DemoLoadingBar';
 import './index.css';
 
 /*
@@ -281,6 +282,7 @@ class MainScreen extends React.Component {
       <div className="mainscreen">
         <div className="main-board">
           <Board />
+          <DemoLoadingBar />
         </div>
       </div>
     );
