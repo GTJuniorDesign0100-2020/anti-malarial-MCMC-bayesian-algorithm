@@ -1,9 +1,9 @@
 /**
  * Make a request to the recrudescence API, and return the result if successful
  * as a promise
- * @inputfile The file data object to pass to the API for analysis
- * @locirepeats The integer list of locirepeats to pass to the API
- * @numIterations The number of iterations to run the algorithm for
+ * @param inputfile The file data object to pass to the API for analysis
+ * @param locirepeats The integer list of locirepeats to pass to the API
+ * @param numIterations The number of iterations to run the algorithm for
  */
 export function recrudescenceAPIRequest(inputFile, locirepeats, numIterations) {
   let formData = new FormData();
@@ -23,4 +23,14 @@ export function recrudescenceAPIRequest(inputFile, locirepeats, numIterations) {
       console.error(error);
     });
   });
+}
+
+/**
+ * Returns the estimated time the algorithm will take to complete for the file
+ * in seconds
+ * @param inputFileSize The size of the file in bytes
+ * @param numIterations The number of iterations the algorithm is set to run for
+ */
+export function estimateRunTime(inputFileSize, numIterations) {
+  return 2.0 + 70.0 * (numIterations / 1000.0) * (inputFileSize / 28500.0)
 }
