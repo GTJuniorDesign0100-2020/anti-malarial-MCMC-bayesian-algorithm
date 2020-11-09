@@ -28,9 +28,10 @@ export function recrudescenceAPIRequest(inputFile, locirepeats, numIterations) {
 /**
  * Returns the estimated time the algorithm will take to complete for the file
  * in seconds
- * @param inputFileSize The size of the file in bytes
+ * @param inputFile The file to be run by the algorithm
  * @param numIterations The number of iterations the algorithm is set to run for
  */
-export function estimateRunTime(inputFileSize, numIterations) {
+export function estimateRunTime(inputFile, numIterations) {
+  const inputFileSize = inputFile.size;
   return 2.0 + 70.0 * (numIterations / 1000.0) * (inputFileSize / 28500.0)
 }

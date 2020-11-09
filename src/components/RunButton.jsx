@@ -1,5 +1,6 @@
 import React from 'react';
 import Popup from 'reactjs-popup';
+import {estimateRunTime} from '../utils';
 
 export default class RunButton extends React.Component {
     constructor(props) {
@@ -43,18 +44,21 @@ export default class RunButton extends React.Component {
       <Popup trigger={<button className="testRun main-button">Run Test</button>} position="bottom left">
         <div className="testPop">
           <form onSubmit={this.handleSubmit}>
-            <label for="InputFile">Excel File:</label><br/>
+            <label htmlFor="InputFile">Excel File:</label><br/>
             <input type="file" name="InputFile" onChange={this.handleChangeFile}/><br/><br/>
 
-            <label for="locirepeats">Loci Repeats:</label><br/>
+            <label htmlFor="locirepeats">Loci Repeats:</label><br/>
             <input type="text" value={this.state.locirepeatsString} name="locirepeats" onChange={this.handleChangeLocirepeats}/><br/><br/>
 
-            <label for="numIts">Number of Iterations:</label><br/>
+            <label htmlFor="numIts">Number of Iterations:</label><br/>
             <input type="number" value={this.state.numIters} name="numIts" onChange={this.handleChangeIters}/>
 
             <hr/>
 
             <input type="submit" value="Run Test"/>
+            {this.state.inputFile &&
+              <span>(Estimated Time: {estimateRunTime(this.state.inputFile, this.state.numIters).toFixed(2)}s)</span>
+            }
           </form>
         </div>
       </Popup>
