@@ -5,7 +5,7 @@ export default class RunButton extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            csvFile: '', locirepeatsString: '', numIters: 10000
+            inputFile: '', locirepeatsString: '', numIters: 10000
         };
 
         // bind functions to this class
@@ -21,14 +21,13 @@ export default class RunButton extends React.Component {
         let locirepeats = this.state.locirepeatsString.split(',')
           .map(substring => parseInt(substring.trim(), 10))
           .filter(substring => substring); // Eliminate empty/non-numerical strings
-        console.log(locirepeats);
 
-        this.props.handleSubmit(this.state.csvFile, this.state.numIters);
+        this.props.handleSubmit(this.state.inputFile, locirepeats, this.state.numIters);
     }
 
     handleChangeFile(event) {
         console.log(`Got file ${event.target.files[0].name}`);
-        this.setState({csvFile: event.target.files[0]});
+        this.setState({inputFile: event.target.files[0]});
     }
 
     handleChangeLocirepeats(event) {
@@ -45,8 +44,8 @@ export default class RunButton extends React.Component {
       <div className="testPop">
         <form onSubmit={this.handleSubmit}>
             <label>
-                CSV File: <br/>
-                <input type="file" name="CSVFile" onChange={this.handleChangeFile}/><br/><br/>
+                Excel File: <br/>
+                <input type="file" name="InputFile" onChange={this.handleChangeFile}/><br/><br/>
                 Loci Repeats: <br/>
                 <input type="text" value={this.state.locirepeatsString} name="locirepeats" onChange={this.handleChangeLocirepeats}/><br/><br/>
                 Number of Iterations: <br/>
