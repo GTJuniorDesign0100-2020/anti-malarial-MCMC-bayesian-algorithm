@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from typing import List
 import datetime
 import math
 import os
@@ -46,14 +47,23 @@ def too_large(e):
 class RecrudescenceTest(Resource):
     def post(self):
         '''
-        Takes in a posted CSV data file, analyzes it to determine if each
+        Takes in a posted xlsx data file, analyzes it to determine if each
         case is a recrudescence/reinfection, and returns the calculated results
         '''
         uploaded_file = request.files.get('file')
-        iterations = request.args.get('iterations', default=10000, type=int)
+        iterations = request.args.get('iterations', default=50, type=int)
+        loci_repeats = request.args.getlist('locirepeat', type=int)
+        if not loci_repeats:
+            loci_repeats = [2,2,3,3,3,3,3]
+        #loci_repeats = [int(loci) for loci in loci_repeats]
+        advanced_stats = request.args.get('advancedstats', default=False, type=bool)
         # TODO: Find cleaner way of doing validation?
         if not (uploaded_file and uploaded_file.filename):
             return error_response('No input file provided')
+
+        #TODO: Further validation on this array. Problems crop up with certain int values.
+        if len(loci_repeats < 7):
+            return error_response('Insufficient length for loci repeats. Please have at leat 7 values.')
 
         file_extension = os.path.splitext(uploaded_file.filename)[-1].lower()
         if file_extension not in app.config['UPLOAD_EXTENSIONS']:
@@ -64,7 +74,7 @@ class RecrudescenceTest(Resource):
 
         json_results = {}
         try:
-            json_results = self._get_test_results_json(uploaded_file, iterations)
+            json_results = self._get_test_results_json(uploaded_file, iterations, loci_repeats, advanced_stats)
         except Exception as e:
             # TODO: Return more specific error message?
             print(e)
@@ -76,7 +86,9 @@ class RecrudescenceTest(Resource):
         self,
         uploaded_file: werkzeug.datastructures.FileStorage,
         iterations: int,
-        locirepeats=[2,2,3,3,3,3,3]):
+        locirepeats: List[int],
+        advancedstats: bool
+        ):
         '''
         Runs a recrudescence test on the given data and returns the test results
         via JSON (plus the status code of the test). If an error occurs,
