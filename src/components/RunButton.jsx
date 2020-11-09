@@ -40,19 +40,22 @@ export default class RunButton extends React.Component {
 
   render() {
     return (
-      <Popup trigger={<button className="testRun"> Run Test</button>} position="bottom left">
-      <div className="testPop">
-        <form onSubmit={this.handleSubmit}>
-            <label>
-                Excel File: <br/>
-                <input type="file" name="InputFile" onChange={this.handleChangeFile}/><br/><br/>
-                Loci Repeats: <br/>
-                <input type="text" value={this.state.locirepeatsString} name="locirepeats" onChange={this.handleChangeLocirepeats}/><br/><br/>
-                Number of Iterations: <br/>
-                <input type="number" value={this.state.numIters} name="numIts" onChange={this.handleChangeIters}/><br/><br/>
-            </label>
+      <Popup trigger={<button className="testRun">Run Test</button>} position="bottom left">
+        <div className="testPop">
+          <form onSubmit={this.handleSubmit}>
+            <label for="InputFile">Excel File:</label><br/>
+            <input type="file" name="InputFile" onChange={this.handleChangeFile}/><br/><br/>
+
+            <label for="locirepeats">Loci Repeats:</label><br/>
+            <input type="text" value={this.state.locirepeatsString} name="locirepeats" onChange={this.handleChangeLocirepeats}/><br/><br/>
+
+            <label for="numIts">Number of Iterations:</label><br/>
+            <input type="number" value={this.state.numIters} name="numIts" onChange={this.handleChangeIters}/>
+
+            <hr/>
+
             <input type="submit" value="Run Test"/>
-        </form>
+          </form>
         </div>
       </Popup>
     );
