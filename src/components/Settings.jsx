@@ -9,18 +9,12 @@ TODO: add functionality for password change (after creating user), make text abs
 to allow for language changes
 */
 
-export default class Settings extends React.Component {
-    constructor(props) {
-        super(props);
-    }
-
-  render() {
-    return (
-      <Popup trigger={<button className="settings" style={{display:'flex', justifyContent:'center'}}>Settings</button>} position="bottom right">
-        <div className="settingsData">This is filler content for the settings tab!
-        <br/><br/>Username: FakeName@FakeISP.FakeDomain<br/><br/>Password: ********
-        <br/><br/><div align="center" padding="10"><button>Save</button></div></div>
-      </Popup>
-    );
-  }
+export default function Settings(props) {
+  return (
+    <Popup trigger={<button className="settings" style={{display:'flex', justifyContent:'center'}}>Settings</button>} position="bottom right">
+      <div className="settingsData">This is filler content for the settings tab!
+      <br/><br/>Username: FakeName@FakeISP.FakeDomain<br/><br/>Password: ********
+      <br/><br/><div align="center" padding="10"><button>Save</button></div></div>
+    </Popup>
+  );
 }
