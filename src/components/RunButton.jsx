@@ -40,7 +40,7 @@ export default class RunButton extends React.Component {
 
   render() {
     return (
-      <Popup trigger={<button className="testRun">Run Test</button>} position="bottom left">
+      <Popup trigger={<button className="testRun main-button">Run Test</button>} position="bottom left">
         <div className="testPop">
           <form onSubmit={this.handleSubmit}>
             <label for="InputFile">Excel File:</label><br/>

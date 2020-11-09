@@ -9,10 +9,8 @@ class MainScreen extends React.Component {
   render() {
     return (
       <div className="mainscreen">
-        <div className="main-board">
           <Board />
           <DemoLoadingBar />
-        </div>
       </div>
     );
   }

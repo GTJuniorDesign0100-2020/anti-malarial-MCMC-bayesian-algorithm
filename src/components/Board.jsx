@@ -7,43 +7,32 @@ import Settings from './Settings';
 import {recrudescenceAPIRequest} from '../utils';
 
 export default function Board(props) {
+
+  const welcomeStyle = {
+    gridColumnStart: 1,
+    gridRowStart: 1
+  };
+  const helpTextStyle = {
+    gridColumnStart: 1,
+    gridRowStart: 3
+  };
+  const helpStyle = {
+    gridColumnStart: 2,
+    gridRowStart: 3
+  };
+
   return (
-    <table className="board">
-      <tr>
-        <td>
-          <div className='status'>Welcome!</div>
-        </td>
-        <td colspan='3' align='right'>
-          <Settings />
-        </td>
-      </tr>
-      <tr>
-        <td colspan='4'>
-          <Logout />
-        </td>
-      </tr>
-      <tr>
-        <td padding='10'>
-          How to use application:
-        </td>
-        <td>
-          <Help />
-        </td>
-        <td>
-        </td>
-        <td>
-        </td>
-      </tr>
-      <tr><td><br/></td></tr>
-      <tr>
-        <td>
-          <RunButton handleSubmit={(inputFile, locirepeats, numIters) => {
+    <div className="board">
+      <div className='status' style={welcomeStyle}>Welcome!</div>
+      <Settings />
+      <Logout />
+      <div style={helpTextStyle}>How to use application:</div>
+      <Help style={helpStyle} />
+      <RunButton handleSubmit={(inputFile, locirepeats, numIters) => {
               recrudescenceAPIRequest(inputFile, locirepeats, numIters)
                 .then(jsonData => console.log(jsonData));
             }}
           />
-        </td>
-      </tr>
-    </table>
+    </div>
   );
 }

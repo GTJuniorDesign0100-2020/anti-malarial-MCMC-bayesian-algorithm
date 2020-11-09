@@ -7,6 +7,13 @@ ol, ul {
   padding-left: 30px;
 }
 
+.board {
+  display: grid;
+  grid-template-columns: 10% auto 10%;
+  grid-template-rows: auto auto auto auto;
+  width: 100%
+}
+
 .row:after {
   clear: both;
   content: "";
@@ -20,51 +27,45 @@ ol, ul {
   font-size: 28px;
 }
 
-.help {
+.main-button {
   background: #CCC;
   border: 1px solid #999;
-  float: left;
   font-size: 24px;
   font-weight: bold;
   line-height: 34px;
   height: 34px;
+  padding: 0;
+}
+
+.help {
+  grid-row-start: 3;
+  grid-column-start: 2;
   margin-right: 10px;
   margin-left:10px;
   margin-top: -1px;
-  padding: 0;
   text-align: center;
   width: 100px;
 }
 
 .settings {
-  background: #CCC;
-  border: 1px solid #999;
+  grid-column-start: 3;
+  grid-row-start: 1;
+  justify-self: end;
   float: right;
-  font-size: 24px;
-  font-weight: bold;
-  line-height: 34px;
-  height: 34px;
   margin-left:5px;
   margin-right: -1px;
   margin-top: -1px;
-  padding: 0;
   text-align: right;
   align-content: right;
   width: 150px;
 }
 
 .testRun {
-  background: #CCC;
-  border: 1px solid #999;
-  float: left;
-  font-size: 24px;
-  font-weight: bold;
-  line-height: 34px;
-  height: 34px;
+  grid-column-start: 1;
+  grid-row-start: 4;
   margin-left:10px;
   margin-right: 10px;
   margin-top: 20px;
-  padding: 0;
   text-align: center;
   width: 150px;
   align-self:left;
@@ -103,7 +104,10 @@ ol, ul {
 }
 
 .logOut {
-    float: right;
+  grid-column-start: 3;
+  grid-row-start: 2;
+  justify-self: end;
+  float: right;
 }
 
 .kbd-navigation .square:focus {
@@ -112,7 +116,7 @@ ol, ul {
 
 .mainscreen {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
 }
 
 .main-info {
