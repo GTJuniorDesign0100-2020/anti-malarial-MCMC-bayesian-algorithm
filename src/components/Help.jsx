@@ -11,16 +11,27 @@ to allow for language changes.
 export default class Help extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            value: '?', clicked: false,
-        };
+        this.state = { help: null };
+
+        this.handleHelpClick = this.handleHelpClick.bind(this);
+    }
+
+    handleHelpClick() {
+      let helpElement = null
+      if (!this.state.help) {
+        helpElement = <span className="helpData">"This will be a full help document eventually! Enjoy this placeholder!"</span>;
+      }
+      this.setState({help: helpElement});
     }
 
   render() {
     return (
-      <button className="help" onClick={() => this.props.onClick()}>
-        {this.props.value}
-      </button>
+      <div>
+        <button className="help" onClick={() => this.handleHelpClick()}>
+          Help
+        </button>
+        {this.state.help}
+      </div>
     );
   }
 }

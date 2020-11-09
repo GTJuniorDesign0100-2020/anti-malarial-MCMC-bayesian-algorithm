@@ -12,9 +12,6 @@ to allow for language changes
 export default class Settings extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            value: 'Settings', clicked: false,
-        };
     }
 
   render() {
