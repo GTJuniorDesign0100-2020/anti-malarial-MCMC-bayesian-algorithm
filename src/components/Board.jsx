@@ -49,8 +49,8 @@ export default class Board extends React.Component {
           }
         }});
       }, errorJSON => {
-        console.error(errorJSON);
         // Update w/ algorithm failure message
+        // TODO: Eliminate duplication w/ above
         this.setState({tableData: {
           ...this.state.tableData,
           [runKey]: {

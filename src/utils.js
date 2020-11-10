@@ -22,6 +22,9 @@ export function recrudescenceAPIRequest(inputFile, locirepeats, numIterations) {
         } else {
           reject(jsonData);
         }
+      }, error => {
+        // Use same JSON response format as the server
+        reject({message: 'Failed to contact API server'});
       });
     });
   });
