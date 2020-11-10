@@ -29,8 +29,7 @@ export default class DynTable extends React.Component {
 
     renderTableData(data) {
         return Object.values(data).map((dataset, index) => {
-            const {date, inputFilename, loadingBar, results} = dataset;
-            console.log(dataset);
+            const {date, inputFilename, status, results} = dataset;
 
             const csvFileText = results.output_file_text;
             return (
@@ -38,7 +37,7 @@ export default class DynTable extends React.Component {
                     <td>{date.toLocaleDateString()}</td>
                     <td>{date.toLocaleTimeString()}</td>
                     <td>{inputFilename}</td>
-                    <td>{loadingBar}</td>
+                    <td>{status}</td>
                     <td>{this.getCSVFilesLinks(csvFileText)}</td>
                 </tr>
             )
