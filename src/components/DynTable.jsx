@@ -13,10 +13,11 @@ export default class DynTable extends React.Component {
                 <h1 align='center'>Results</h1>
                 <table id='results' align='center' border='2px' width='80%'>
                   <tr>
-                    <th width='25%'>Date</th>
-                    <th width='25%'>Time</th>
-                    <th width='25%'>Input File Name</th>
-                    <th width='25%'>Output</th>
+                    <th width='20%'>Date</th>
+                    <th width='20%'>Time</th>
+                    <th width='20%'>Input File Name</th>
+                    <th width='20%'>Status</th>
+                    <th width='20%'>Output</th>
                   </tr>
                     <tbody>
                         {this.renderTableData(this.props.data)}
@@ -27,14 +28,17 @@ export default class DynTable extends React.Component {
     }
 
     renderTableData(data) {
-        return data.map((dataset, index) => {
-            const [date, time, fileName, output] = dataset
+        console.log(data);
+        return Object.values(data).map((dataset, index) => {
+            const {date, inputFilename, loadingBar, results} = dataset;
+            console.log(dataset);
             return (
-                <tr key={date}>
-                    <td>{date}</td>
-                    <td>{time}</td>
-                    <td>{fileName}</td>
-                    <td>{output}</td>
+                <tr key={date.toISOString()}>
+                    <td>{date.toLocaleDateString()}</td>
+                    <td>{date.toLocaleTimeString()}</td>
+                    <td>{inputFilename}</td>
+                    <td>{loadingBar}</td>
+                    <td>TODO</td>
                 </tr>
             )
         })

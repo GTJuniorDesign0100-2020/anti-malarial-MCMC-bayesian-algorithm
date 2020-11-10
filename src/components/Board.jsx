@@ -13,7 +13,7 @@ export default class Board extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            tableData: []
+            tableData: {}
         }
     }
 
@@ -43,9 +43,29 @@ export default class Board extends React.Component {
       <div style={helpTextStyle}>How to use application:</div>
       <Help style={helpStyle} />
       <RunButton handleSubmit={(inputFile, locirepeats, numIters) => {
-              this.setState({tableData: [['11/9/2020', '21:45', inputFile.name, <DemoLoadingBar/>]]});
+              const runDatetime = new Date();
+              const runKey = runDatetime.toISOString();
+
+              this.setState({tableData: {...this.state.tableData,
+                [runKey]: {
+                  date: runDatetime,
+                  inputFilename: inputFile.name,
+                  loadingBar: <DemoLoadingBar/>,
+                  results: {}
+                }
+              }});
               recrudescenceAPIRequest(inputFile, locirepeats, numIters)
-                .then(jsonData => console.log(jsonData));
+                .then(jsonData => {
+                  console.log(jsonData);
+                  // Update w/ new state
+                  this.setState({tableData: {
+                    ...this.state.tableData,
+                    [runKey]: {
+                      ...this.state.tableData[runKey],
+                      results: jsonData
+                    }
+                  }});
+                });
             }}
           />
       <div style={tableStyle}>
