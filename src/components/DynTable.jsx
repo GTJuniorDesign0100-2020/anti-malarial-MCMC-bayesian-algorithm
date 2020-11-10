@@ -5,9 +5,6 @@ import DemoLoadingBar from './DemoLoadingBar';
 export default class DynTable extends React.Component {
     constructor(props) {
         super(props)
-        this.state = {
-            data: this.props.data
-        }
     }
 
     render() {
@@ -22,16 +19,16 @@ export default class DynTable extends React.Component {
                     <th width='25%'>Output</th>
                   </tr>
                     <tbody>
-                        {this.renderTableData()}
+                        {this.renderTableData(this.props.data)}
                     </tbody>
                 </table>
             </div>
         )
     }
 
-    renderTableData() {
-        return this.state.data.map((dataset, index) => {
-            const {date, time, fileName, output} = dataset
+    renderTableData(data) {
+        return data.map((dataset, index) => {
+            const [date, time, fileName, output] = dataset
             return (
                 <tr key={date}>
                     <td>{date}</td>
@@ -41,11 +38,5 @@ export default class DynTable extends React.Component {
                 </tr>
             )
         })
-    }
-
-    addRow(fileNameInput) {
-        var now = new Date();
-        this.state.data[this.state.rowCount] = {date: now.getDate(), time: now.getHour() + ':' + now.getMinutes(), fileName: fileNameInput, output: <DemoLoadingBar/>}
-        this.state.rowCount++
     }
 }

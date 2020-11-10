@@ -43,10 +43,9 @@ export default class Board extends React.Component {
       <div style={helpTextStyle}>How to use application:</div>
       <Help style={helpStyle} />
       <RunButton handleSubmit={(inputFile, locirepeats, numIters) => {
-              this.state.tableData = ['11/9/2020', '21:45', inputFile, <DemoLoadingBar/>];
+              this.setState({tableData: [['11/9/2020', '21:45', inputFile.name, <DemoLoadingBar/>]]});
               recrudescenceAPIRequest(inputFile, locirepeats, numIters)
                 .then(jsonData => console.log(jsonData));
-
             }}
           />
       <div style={tableStyle}>
