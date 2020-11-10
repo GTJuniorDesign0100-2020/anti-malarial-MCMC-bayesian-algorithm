@@ -4,8 +4,8 @@ import Help from './Help';
 import RunButton from './RunButton';
 import Settings from './Settings';
 import DynTable from './DynTable';
-import DemoLoadingBar from './DemoLoadingBar';
-import {recrudescenceAPIRequest} from '../utils';
+import PresetLoadingBar from './PresetLoadingBar';
+import {recrudescenceAPIRequest, estimateRunTime} from '../utils';
 
 export default class MainScreen extends React.Component {
 
@@ -21,13 +21,14 @@ export default class MainScreen extends React.Component {
   createNewAlgoRun(inputFile, locirepeats, numIters) {
     const runDatetime = new Date();
     const runKey = runDatetime.toISOString();
+    const estimatedTime = estimateRunTime(inputFile, numIters);
 
     // Add new run to state
     this.setState({tableData: {...this.state.tableData,
       [runKey]: {
         date: runDatetime,
         inputFilename: inputFile.name,
-        status: <DemoLoadingBar/>,
+        status: <PresetLoadingBar timeToComplete={estimatedTime}/>,
         results: {}
       }
     }});
