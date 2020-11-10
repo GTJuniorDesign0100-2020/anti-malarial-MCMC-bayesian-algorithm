@@ -28,19 +28,40 @@ export default class DynTable extends React.Component {
     }
 
     renderTableData(data) {
-        console.log(data);
         return Object.values(data).map((dataset, index) => {
             const {date, inputFilename, loadingBar, results} = dataset;
             console.log(dataset);
+
+            const csvFileText = results.output_file_text;
             return (
                 <tr key={date.toISOString()}>
                     <td>{date.toLocaleDateString()}</td>
                     <td>{date.toLocaleTimeString()}</td>
                     <td>{inputFilename}</td>
                     <td>{loadingBar}</td>
-                    <td>TODO</td>
+                    <td>{this.getCSVFilesLinks(csvFileText)}</td>
                 </tr>
             )
         })
     }
+
+    getCSVFilesLinks(csvFileText) {
+        if (!csvFileText) {
+            return '';
+        }
+
+        return (
+            <div>
+                {Object.keys(csvFileText).map(filename => {
+                    const csvText = `data:text/csv;charset=utf-8,${csvFileText[filename]}`;
+                    const csvUri = encodeURI(csvText);
+                    // TODO: Bundle this in a zip?
+                    const downloadLink = <p><a href={csvUri} download={filename}>{filename}</a></p>
+                    return downloadLink;
+                })}
+            </div>
+        );
+    }
+
+
 }
