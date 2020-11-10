@@ -4,6 +4,7 @@ import Help from './Help';
 import Logout from './Logout';
 import RunButton from './RunButton';
 import Settings from './Settings';
+import DynTable from './DynTable';
 import {recrudescenceAPIRequest} from '../utils';
 
 export default function Board(props) {
@@ -20,12 +21,15 @@ export default function Board(props) {
     gridColumnStart: 2,
     gridRowStart: 3
   };
+  const tableStyle = {
+      gridColumnStart: 2,
+      gridRowStart: 5
+  };
 
   return (
     <div className="board">
       <div className='status' style={welcomeStyle}>Welcome!</div>
       <Settings />
-      <Logout />
       <div style={helpTextStyle}>How to use application:</div>
       <Help style={helpStyle} />
       <RunButton handleSubmit={(inputFile, locirepeats, numIters) => {
@@ -33,6 +37,9 @@ export default function Board(props) {
                 .then(jsonData => console.log(jsonData));
             }}
           />
+      <div style={tableStyle}>
+        <DynTable />
+      </div>
     </div>
   );
 }
