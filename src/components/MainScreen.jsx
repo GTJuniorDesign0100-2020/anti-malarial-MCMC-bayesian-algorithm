@@ -16,6 +16,7 @@ export default class MainScreen extends React.Component {
     }
 
     this.createNewAlgoRun = this.createNewAlgoRun.bind(this);
+    this.updateRunValues = this.updateRunValues.bind(this);
   }
 
   createNewAlgoRun(inputFile, locirepeats, numIters) {
@@ -36,30 +37,27 @@ export default class MainScreen extends React.Component {
     // Run algorithm on API
     recrudescenceAPIRequest(inputFile, locirepeats, numIters)
       .then(jsonData => {
-        console.log(jsonData);
-
         // Update w/ algorithm results if successful
-        this.setState({tableData: {
-          ...this.state.tableData,
-          [runKey]: {
-            ...this.state.tableData[runKey],
-            results: jsonData,
-            // TODO: Use HTML instead of string?
-            status: `Completed (in ${jsonData.totalRunTime}s)`
-          }
-        }});
+        this.updateRunValues(runKey, {
+          results: jsonData,
+          // TODO: Use HTML instead of string?
+          status: `Completed (in ${jsonData.totalRunTime}s)`
+        });
       }, errorJSON => {
         // Update w/ algorithm failure message
-        // TODO: Eliminate duplication w/ above
-        this.setState({tableData: {
-          ...this.state.tableData,
-          [runKey]: {
-            ...this.state.tableData[runKey],
-            // TODO: Use HTML instead of string?
-            status: `ERROR: ${errorJSON.message}`
-          }
-        }});
+        // TODO: Use HTML instead of string?
+        this.updateRunValues(runKey, {status: `ERROR: ${errorJSON.message}`});
       });
+  }
+
+  updateRunValues(runKey, newRunValues) {
+    this.setState({tableData: {
+      ...this.state.tableData,
+      [runKey]: {
+        ...this.state.tableData[runKey],
+        ...newRunValues
+      }
+    }});
   }
 
   render() {
