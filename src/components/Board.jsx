@@ -35,6 +35,7 @@ export default function Board(props) {
       <RunButton handleSubmit={(inputFile, locirepeats, numIters) => {
               recrudescenceAPIRequest(inputFile, locirepeats, numIters)
                 .then(jsonData => console.log(jsonData));
+
             }}
           />
       <div style={tableStyle}>
