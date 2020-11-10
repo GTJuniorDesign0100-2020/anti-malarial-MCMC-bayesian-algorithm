@@ -5,10 +5,20 @@ import Logout from './Logout';
 import RunButton from './RunButton';
 import Settings from './Settings';
 import DynTable from './DynTable';
+import DemoLoadingBar from './DemoLoadingBar';
 import {recrudescenceAPIRequest} from '../utils';
 
-export default function Board(props) {
+export default class Board extends React.Component {
 
+    constructor(props) {
+        super(props);
+        this.state = {
+            tableData: []
+        }
+    }
+
+
+    render() {
   const welcomeStyle = {
     gridColumnStart: 1,
     gridRowStart: 1
@@ -33,14 +43,16 @@ export default function Board(props) {
       <div style={helpTextStyle}>How to use application:</div>
       <Help style={helpStyle} />
       <RunButton handleSubmit={(inputFile, locirepeats, numIters) => {
+              this.state.tableData = ['11/9/2020', '21:45', inputFile, <DemoLoadingBar/>];
               recrudescenceAPIRequest(inputFile, locirepeats, numIters)
                 .then(jsonData => console.log(jsonData));
 
             }}
           />
       <div style={tableStyle}>
-        <DynTable />
+        <DynTable data={this.state.tableData}/>
       </div>
     </div>
   );
+}
 }

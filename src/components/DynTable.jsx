@@ -6,7 +6,7 @@ export default class DynTable extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            data: [], rowCount: 0,
+            data: this.props.data
         }
     }
 
@@ -46,5 +46,6 @@ export default class DynTable extends React.Component {
     addRow(fileNameInput) {
         var now = new Date();
         this.state.data[this.state.rowCount] = {date: now.getDate(), time: now.getHour() + ':' + now.getMinutes(), fileName: fileNameInput, output: <DemoLoadingBar/>}
+        this.state.rowCount++
     }
 }
