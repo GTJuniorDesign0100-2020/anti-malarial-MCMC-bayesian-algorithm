@@ -1,19 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import Board from './components/Board';
-import DemoLoadingBar from './components/DemoLoadingBar';
+import MainScreen from './components/MainScreen';
 import './index.css';
-
-class MainScreen extends React.Component {
-  render() {
-    return (
-      <div className="mainscreen">
-          <Board />
-      </div>
-    );
-  }
-}
 
 ReactDOM.render(
   <MainScreen />,

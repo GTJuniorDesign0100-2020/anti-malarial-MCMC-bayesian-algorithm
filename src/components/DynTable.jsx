@@ -1,6 +1,4 @@
 import React from 'react';
-import LoadingBar from './LoadingBar';
-import DemoLoadingBar from './DemoLoadingBar';
 
 export default class DynTable extends React.Component {
     constructor(props) {
@@ -28,7 +26,7 @@ export default class DynTable extends React.Component {
     }
 
     renderTableData(data) {
-        return Object.values(data).map((dataset, index) => {
+        return Object.values(data).map((dataset) => {
             const {date, inputFilename, status, results} = dataset;
 
             const csvFileText = results.output_file_text;
@@ -50,17 +48,23 @@ export default class DynTable extends React.Component {
         }
 
         return (
+            // TODO: Bundle links/files in a zip?
             <div>
-                {Object.keys(csvFileText).map(filename => {
-                    const csvText = `data:text/csv;charset=utf-8,${csvFileText[filename]}`;
-                    const csvUri = encodeURI(csvText);
-                    // TODO: Bundle this in a zip?
-                    const downloadLink = <p><a href={csvUri} download={filename}>{filename}</a></p>
-                    return downloadLink;
-                })}
+                {Object.keys(csvFileText).map(filename =>
+                    <CSVDownloadLink
+                        csvFileName={filename}
+                        csvFileText={csvFileText[filename]}
+                    />
+                )}
             </div>
         );
     }
-
-
 }
+
+const CSVDownloadLink = ({csvFileName, csvFileText}) => {
+    const csvText = `data:text/csv;charset=utf-8,${csvFileText[csvFileName]}`;
+    const csvUri = encodeURI(csvText);
+    return (
+        <p><a href={csvUri} download={csvFileName}>{csvFileName}</a></p>
+    );
+};
