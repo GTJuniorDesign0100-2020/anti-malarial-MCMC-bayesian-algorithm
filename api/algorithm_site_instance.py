@@ -1,5 +1,6 @@
 from typing import List
 
+import bottleneck   # Highly optimized versions of slow numpy functions
 import numpy as np
 import pandas as pd
 import scipy.stats as sp_stats
@@ -319,15 +320,22 @@ class AlgorithmSiteInstance:
         # TODO: Finish vectorizing this
 
         for x in range(num_ids):
-            # id mean for what?
-            id_means = np.zeros(num_loci)
-            for y in range(num_loci):
-                id_means[y] = np.nanmean(
-                    cls._likelihood_inner_loop(state, max_MOI, x, y)
-                )
+            id_means = cls._likelihood_get_id_means(state, max_MOI, num_loci, x)
             if id_means.all() != 0:
                 likelihoodratio[x] = np.exp(np.sum(np.log(id_means)))
         return likelihoodratio
+
+    @classmethod
+    def _likelihood_get_id_means(cls, state, max_MOI, num_loci: int, x: int):
+        '''
+        TODO: What is id_means used for?
+        '''
+        id_means = np.zeros(num_loci)
+        for y in range(num_loci):
+            id_means[y] = bottleneck.nanmean(
+                cls._likelihood_inner_loop(state, max_MOI, x, y)
+            )
+        return id_means
 
     @classmethod
     def _likelihood_inner_loop(cls, state, max_MOI, x: int, y: int):
@@ -343,7 +351,7 @@ class AlgorithmSiteInstance:
         return (state.dvect[dvect_indices] /
             # Should get an array of max_MOI**2 sums
             np.sum(
-                # TODO: Make sure multiplications are down the right axis (I believe each element in the frequencies_RR 1D vector should multiply across 1 dvect row)
+                # Each element in the frequencies_RR 1D vector should multiply across 1 dvect row)
                 # Double-transpose to multiply across rows, not columns
                 (state.frequencies_RR[1][y, :int(state.frequencies_RR[0][y])]
                 * state.dvect[

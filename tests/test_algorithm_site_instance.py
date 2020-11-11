@@ -1,4 +1,5 @@
 from collections import namedtuple
+import cProfile
 import os
 import sys
 
@@ -98,6 +99,15 @@ def test_likelihood_ratio(mcmc_initial_state):
         mcmc_initial_state.max_MOI)
 
     np.testing.assert_array_almost_equal(likelihood_ratios, expected_likelihood_ratios, decimal=5)
+
+
+def test_likelihood_ratio_speed(mcmc_initial_state):
+    cProfile.runctx('''for i in range(1000):
+        AlgorithmSiteInstance._likelihood_ratios(
+        mcmc_initial_state.state,
+        mcmc_initial_state.num_ids,
+        mcmc_initial_state.num_loci,
+        mcmc_initial_state.max_MOI)''', globals(), locals(), 'new_likelihood.cprof')
 
 
 def test_updating_classifications(mcmc_initial_state):
