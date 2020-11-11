@@ -290,8 +290,7 @@ class AlgorithmSiteInstance:
         appropriately
         '''
         # propose new classification
-        likelihood_ratios = cls._likelihood_ratios(
-            state, num_ids, num_loci, max_MOI)
+        likelihood_ratios = cls._likelihood_ratios(state, num_ids, num_loci)
 
         cls._update_classifications(state, likelihood_ratios, num_ids, rand)
 
@@ -309,8 +308,7 @@ class AlgorithmSiteInstance:
         cls,
         state: SiteInstanceState,
         num_ids: int,
-        num_loci: int,
-        max_MOI: int):
+        num_loci: int):
         '''
         TODO: Explain what this does?
         Returns the likelihood ratio for each sample in the dataset, given our
@@ -320,25 +318,25 @@ class AlgorithmSiteInstance:
         # TODO: Finish vectorizing this
 
         for x in range(num_ids):
-            id_means = cls._likelihood_get_id_means(state, max_MOI, num_loci, x)
+            id_means = cls._likelihood_get_id_means(state, num_loci, x)
             if id_means.all() != 0:
                 likelihoodratio[x] = np.exp(np.sum(np.log(id_means)))
         return likelihoodratio
 
     @classmethod
-    def _likelihood_get_id_means(cls, state, max_MOI, num_loci: int, x: int):
+    def _likelihood_get_id_means(cls, state, num_loci: int, x: int):
         '''
         TODO: What is id_means used for?
         '''
         id_means = np.zeros(num_loci)
         for y in range(num_loci):
             id_means[y] = bottleneck.nanmean(
-                cls._likelihood_inner_loop(state, max_MOI, x, y)
+                cls._likelihood_inner_loop(state, x, y)
             )
         return id_means
 
     @classmethod
-    def _likelihood_inner_loop(cls, state, max_MOI, x: int, y: int):
+    def _likelihood_inner_loop(cls, state, x: int, y: int):
         '''
         TODO: What does this actually do?
         Returns a 1D vector of max_MOI**2 length
@@ -347,6 +345,8 @@ class AlgorithmSiteInstance:
             # Needed since converting NaN to int has undefined behavior
             return array[~np.isnan(array)]
 
+        # alldistance = ids, loci, max_moi**2
+        # dvect indices aren't predictable because of non-nan
         dvect_indices = np.round(non_nan(state.alldistance[x, y, :])).astype(int)
         return (state.dvect[dvect_indices] /
             # Should get an array of max_MOI**2 sums
@@ -355,9 +355,11 @@ class AlgorithmSiteInstance:
                 # Double-transpose to multiply across rows, not columns
                 (state.frequencies_RR[1][y, :int(state.frequencies_RR[0][y])]
                 * state.dvect[
+                    # Correction distance matrices are NOT all the same size
                     state.correction_distance_matrix[y][
                         :,
-                        non_nan(state.allrecrf[x, y, :max_MOI**2]).astype(int),
+                        # all_recrf = ids, loci, max_moi**2
+                        non_nan(state.allrecrf[x, y, :]).astype(int),
                     ].astype(int)
                 ].T).T,
                 axis=0

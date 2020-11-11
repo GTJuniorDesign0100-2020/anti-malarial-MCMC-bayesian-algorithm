@@ -70,7 +70,6 @@ def test_likelihood_ratio_inner_loop_initial(mcmc_initial_state):
 
     inner_values = AlgorithmSiteInstance._likelihood_inner_loop(
         mcmc_initial_state.state,
-        mcmc_initial_state.max_MOI,
         0,
         0)
 
@@ -82,7 +81,6 @@ def test_likelihood_ratio_inner_loop_middle(mcmc_initial_state):
 
     inner_values = AlgorithmSiteInstance._likelihood_inner_loop(
         mcmc_initial_state.state,
-        mcmc_initial_state.max_MOI,
         1,
         2)
 
@@ -95,8 +93,7 @@ def test_likelihood_ratio(mcmc_initial_state):
     likelihood_ratios = AlgorithmSiteInstance._likelihood_ratios(
         mcmc_initial_state.state,
         mcmc_initial_state.num_ids,
-        mcmc_initial_state.num_loci,
-        mcmc_initial_state.max_MOI)
+        mcmc_initial_state.num_loci)
 
     np.testing.assert_array_almost_equal(likelihood_ratios, expected_likelihood_ratios, decimal=5)
 
@@ -106,8 +103,7 @@ def test_likelihood_ratio_speed(mcmc_initial_state):
         AlgorithmSiteInstance._likelihood_ratios(
         mcmc_initial_state.state,
         mcmc_initial_state.num_ids,
-        mcmc_initial_state.num_loci,
-        mcmc_initial_state.max_MOI)''', globals(), locals(), 'new_likelihood.cprof')
+        mcmc_initial_state.num_loci)''', globals(), locals(), 'new_likelihood.cprof')
 
 
 def test_updating_classifications(mcmc_initial_state):
