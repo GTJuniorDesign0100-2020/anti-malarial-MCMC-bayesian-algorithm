@@ -314,14 +314,16 @@ class AlgorithmSiteInstance:
         Returns the likelihood ratio for each sample in the dataset, given our
         current state
         '''
-        likelihoodratio = np.zeros(num_ids)
+        likelihoodratios = np.zeros(num_ids)
         # TODO: Finish vectorizing this
 
+        id_means = np.zeros((num_ids, num_loci))
         for x in range(num_ids):
-            id_means = cls._likelihood_get_id_means(state, num_loci, x)
-            if id_means.all() != 0:
-                likelihoodratio[x] = np.exp(np.sum(np.log(id_means)))
-        return likelihoodratio
+            id_means[x] = cls._likelihood_get_id_means(state, num_loci, x)
+        # Replace 0 with smallest machine-representable float
+        id_means[id_means == 0] = np.finfo(float).eps
+        likelihoodratios = np.exp(np.sum(np.log(id_means), axis=1))
+        return likelihoodratios
 
     @classmethod
     def _likelihood_get_id_means(cls, state, num_loci: int, x: int):
