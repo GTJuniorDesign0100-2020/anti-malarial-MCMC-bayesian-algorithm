@@ -21,7 +21,7 @@ def main(argv):
 
         # run both scripts
         # EDIT FOR YOUR COMPUTER
-        retR = subprocess.call(["C:/Program Files/R/R-4.0.2/bin/Rscript.exe", "--vanilla", "C:/Users/Heather/Dropbox/School/Senior/Junior Design/BayesianMicrosatellite/main.R"])
+        retR = subprocess.call(["C:/Program Files/R/R-4.0.3/bin/Rscript.exe", "--vanilla", "C:/Users/donna/Heather/JD/BayesianMicrosatellite/main.r"])
         retP = subprocess.call(["python3", "anti-malarial-MCMC-bayesian-algorithm/main.py"])
 
         por_data_r.append(get_por('r'))
@@ -29,7 +29,7 @@ def main(argv):
 
         # mc_data_r.append(get_mc('r'))
         # mc_data_p.append(get_mc('p'))
-    #print(por_data_r)
+
     sum_r = np.array(por_data_r).T.tolist()
 
     r_conv = []
@@ -47,7 +47,7 @@ def main(argv):
     for j in range(len(p_conv)):
         diff.append(abs(p_conv[j]-r_conv[j]))
 
-    results_row = ["After " + str(i+1) + " iterations:"]
+    results_row = ["After " + str(i+1) + " iterations (of 1000 runs):"]
     results_writter.writerow(results_row)
     results_row = ["R code Converged Too:"] + r_conv
     results_writter.writerow(results_row)
@@ -133,4 +133,4 @@ def get_mc(t):
 
 
 if __name__=="__main__":
-	main(sys.argv[1:])
+main(sys.argv[1:])
