@@ -17,10 +17,15 @@ export function recrudescenceAPIRequest(inputFile, locirepeats, numIterations) {
     .then(response => {
       response.json().then(jsonData => {
         // Pass JSON API response to a callback function
-        resolve(jsonData);
+        if (response.status < 400) {
+          resolve(jsonData);
+        } else {
+          reject(jsonData);
+        }
+      }, error => {
+        // Use same JSON response format as the server
+        reject({message: 'Failed to contact API server'});
       });
-    }, error => {
-      console.error(error);
     });
   });
 }

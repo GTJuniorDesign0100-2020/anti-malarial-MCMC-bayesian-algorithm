@@ -19,7 +19,7 @@ export default class Help extends React.Component {
   handleHelpClick() {
     let helpElement = null
     if (!this.state.help) {
-      helpElement = <span className="helpData">"This will be a full help document eventually! Enjoy this placeholder!"</span>;
+      helpElement = <span className="helpData">If you need help with how to use the application, check out the <u>FAQ</u>!</span>;
     }
     this.setState({help: helpElement});
   }

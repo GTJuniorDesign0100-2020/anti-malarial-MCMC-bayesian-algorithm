@@ -7,7 +7,7 @@ ol, ul {
   padding-left: 30px;
 }
 
-.board {
+.main-screen {
   display: grid;
   grid-template-columns: 10% auto 10%;
   grid-template-rows: auto auto auto auto;
@@ -40,9 +40,6 @@ ol, ul {
 .help {
   grid-row-start: 3;
   grid-column-start: 2;
-  margin-right: 10px;
-  margin-left:10px;
-  margin-top: -1px;
   text-align: center;
   width: 100px;
 }
@@ -63,29 +60,26 @@ ol, ul {
 .testRun {
   grid-column-start: 1;
   grid-row-start: 4;
-  margin-left:10px;
-  margin-right: 10px;
   margin-top: 20px;
   text-align: center;
   width: 150px;
-  align-self:left;
 }
 
 .settingsData{
-    background: #CCC;
-    border: 1px solid #999;
-    font-size: 12px;
-    width: 300px;
-    padding:10px;
-    text-align: center;
+  background: #CCC;
+  border: 1px solid #999;
+  font-size: 12px;
+  width: 300px;
+  padding:10px;
+  text-align: center;
 }
 
 .testPop{
-    background: #CCC;
-    border: 1px solid #999;
-    font-size: 12px;
-    width: 300px;
-    padding:10px;
+  background: #CCC;
+  border: 1px solid #999;
+  font-size: 12px;
+  width: 300px;
+  padding:10px;
 }
 
 .helpData {
@@ -112,11 +106,6 @@ ol, ul {
 
 .kbd-navigation .square:focus {
   background: #ddd;
-}
-
-.mainscreen {
-  display: flex;
-  flex-direction: column;
 }
 
 .main-info {
