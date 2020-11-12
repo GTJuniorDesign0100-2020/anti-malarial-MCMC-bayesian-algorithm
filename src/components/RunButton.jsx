@@ -3,41 +3,40 @@ import Popup from 'reactjs-popup';
 import {estimateRunTime} from '../utils';
 
 export default class RunButton extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            inputFile: '', locirepeatsString: '', numIters: 10000
-        };
+  constructor(props) {
+    super(props);
+    this.state = {
+        inputFile: '', locirepeatsString: '', numIters: 10000
+    };
 
-        // bind functions to this class
-        this.handleSubmit = this.handleSubmit.bind(this);
-        this.handleChangeFile = this.handleChangeFile.bind(this);
-        this.handleChangeLocirepeats = this.handleChangeLocirepeats.bind(this);
-        this.handleChangeIters = this.handleChangeIters.bind(this);
-    }
+    // bind functions to this class
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleChangeFile = this.handleChangeFile.bind(this);
+    this.handleChangeLocirepeats = this.handleChangeLocirepeats.bind(this);
+    this.handleChangeIters = this.handleChangeIters.bind(this);
+  }
 
-    handleSubmit(event) {
-        event.preventDefault();
-        // Convert string into a list of locirepeats
-        let locirepeats = this.state.locirepeatsString.split(',')
-          .map(substring => parseInt(substring.trim(), 10))
-          .filter(substring => substring); // Eliminate empty/non-numerical strings
+  handleSubmit(event) {
+    event.preventDefault();
+    // Convert string into a list of locirepeats
+    let locirepeats = this.state.locirepeatsString.split(',')
+      .map(substring => parseInt(substring.trim(), 10))
+      .filter(substring => substring); // Eliminate empty/non-numerical strings
 
-        this.props.handleSubmit(this.state.inputFile, locirepeats, this.state.numIters);
-    }
+    this.props.handleSubmit(this.state.inputFile, locirepeats, this.state.numIters);
+  }
 
-    handleChangeFile(event) {
-        console.log(`Got file ${event.target.files[0].name}`);
-        this.setState({inputFile: event.target.files[0]});
-    }
+  handleChangeFile(event) {
+    this.setState({inputFile: event.target.files[0]});
+  }
 
-    handleChangeLocirepeats(event) {
-        this.setState({locirepeatsString: event.target.value});
-    }
+  handleChangeLocirepeats(event) {
+    this.setState({locirepeatsString: event.target.value});
+  }
 
-    handleChangeIters(event) {
-        this.setState({numIters: event.target.value});
-    }
+  handleChangeIters(event) {
+    this.setState({numIters: event.target.value});
+  }
 
   render() {
     const timeEstimationStyles = {
