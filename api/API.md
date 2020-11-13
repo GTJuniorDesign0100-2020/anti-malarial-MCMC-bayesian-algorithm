@@ -57,18 +57,14 @@ Given an input `.xlsx` file with [drug testing data in the proper format (TODO)]
 
 **Input Parameters (URL):**
 
--   (optional) `advancedstats` (boolean): Boolean indicating whether or not to return advanced stats. Defaults to False.
-
-**Input Parameters (URL):**
-
--   (optional) `locirepeat` (list of integers): List of integers representing loci repeats. Each loci repeat must be individually entered for the request. Please ensure at least seven values are entered.
+-   (optional) `locirepeat` (list of integers): List of integers representing loci repeats. Each loci repeat must be individually entered for the request. Please ensure the correct amount of values are entered.
 
 **Example Usage:**
 
 In cURL:
 
 ```bash
-curl -F "file=@example.xlsx" "http://localhost:5000/api/v1/recrudescences?iterations=10&locirepeat=2&locirepeat=2&locirepeat=3&advancedstats=True"
+curl -F "file=@example.xlsx" "http://localhost:5000/api/v1/recrudescences?iterations=10&locirepeat=2&locirepeat=2&locirepeat=3"
 ```
 If you are using curl and are entering multiple query parameters, ensure you use quotes around the request
 
