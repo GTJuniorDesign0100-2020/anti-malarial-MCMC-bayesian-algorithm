@@ -7,6 +7,8 @@ import time
 
 from flask import Flask, request
 from flask_restful import Resource, Api
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import numpy as np
 import pandas as pd
 import werkzeug
@@ -25,6 +27,9 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE_MB*1024**2
 app.config['UPLOAD_EXTENSIONS'] = ['.xlsx']      # Valid filetypes
 
 api = Api(app)
+
+limiter = Limiter(app, key_func=get_remote_address)
+limiter.init_app(app)
 
 # =============================================================================
 # Define actual functionality
@@ -45,6 +50,12 @@ def too_large(e):
 
 
 class RecrudescenceTest(Resource):
+
+    decorators = [
+     limiter.limit("1300/hour", error_message="Requests per hour limit exceeded"),
+     limiter.limit("60/minute", error_message="Requests per minute limit exceeded"),
+     limiter.limit("3/second", error_message="Requests per second limit exceeded")
+     ]
     def post(self):
         '''
         Takes in a posted xlsx data file, analyzes it to determine if each
@@ -62,8 +73,8 @@ class RecrudescenceTest(Resource):
             return error_response('No input file provided')
 
         #TODO: Further validation on this array. Problems crop up with certain int values.
-        if len(loci_repeats < 7):
-            return error_response('Insufficient length for loci repeats. Please have at leat 7 values.')
+        #if len(loci_repeats) < 7:
+        #    return error_response('Insufficient length for loci repeats. Please have at leat 7 values.')
 
         file_extension = os.path.splitext(uploaded_file.filename)[-1].lower()
         if file_extension not in app.config['UPLOAD_EXTENSIONS']:
