@@ -64,7 +64,7 @@ export default class DynTable extends React.Component {
 }
 
 const CSVDownloadLink = ({csvFileName, csvFileText}) => {
-  const csvText = `data:text/csv;charset=utf-8,${csvFileText[csvFileName]}`;
+  const csvText = `data:text/csv;charset=utf-8,${csvFileText}`;
   const csvUri = encodeURI(csvText);
   return (
     <p><a href={csvUri} download={csvFileName}>{csvFileName}</a></p>
