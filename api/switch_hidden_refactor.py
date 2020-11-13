@@ -4,7 +4,14 @@ import numpy as np
 import pandas as pd
 import itertools
 
+# Use this during a debug to save the state for a comparison later.
+from tests.test_switch_hidden import save_switch_state;
+
 def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
+	# Comment and uncomment as needed during debugging.
+	# It's not the best way to do this, but for now it works.
+	# save_switch_state(x, nloci, maxMOI, alleles_definitions_RR, state,filename="debug_switch_state")
+
 	z = random.uniform(0,1)
 
 	# Section A: If number of inferred alleles > 0
