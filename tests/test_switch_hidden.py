@@ -6,6 +6,9 @@ import pandas as pd
 import pickle
 import pytest
 
+import time
+from api.switch_hidden_refactor import switch_hidden_refactor
+
 '''
 Saves the state of arguments from a switch_hidden call.
 This allows a user to debug the final value between different
@@ -41,6 +44,9 @@ def test_runTime(filename="debug_switch_state"):
     alleles_definitions_RR = packaged_state[3]
     state = packaged_state[4]
 
+    start = time.time()
+    switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state)
+    end = time.time()
 
-
+    print("Total run time: " + str(end-start))
     return
