@@ -63,16 +63,17 @@ export default class DynTable extends React.Component {
           csvFileName={probability_filename}
           csvFileText={csvFileText[probability_filename]}
         />
-        <CSVZipDownloadLink
+        <ZipDownloadLink
           fileNames={extra_filenames}
           fileContentDict={csvFileText}
+          downloadName="advanced_stats"
         />
       </div>
     );
   }
 }
 
-const CSVZipDownloadLink = ({fileNames, fileContentDict}) => {
+const ZipDownloadLink = ({fileNames, fileContentDict, downloadName}) => {
   let zip = new JSZip();
   for (let filename of fileNames) {
     const csvText = fileContentDict[filename];
@@ -85,10 +86,10 @@ const CSVZipDownloadLink = ({fileNames, fileContentDict}) => {
       onClick={(evt) => {
         evt.preventDefault();
         zip.generateAsync({type: 'blob'}).then(
-          zipContent => saveAs(zipContent, 'advanced_stats.zip')
+          zipContent => saveAs(zipContent, `${downloadName}.zip`)
         );
       }}>
-        advanced_stats.zip
+        {downloadName}.zip
     </a></p>
   );
 };
