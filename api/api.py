@@ -107,7 +107,10 @@ class RecrudescenceTest(Resource):
         record_interval = math.ceil(iterations / 1000)
         burnin = math.ceil(iterations * 0.25)
 
-        results = test_run.run_algorithm(iterations, burnin, record_interval)
+        try:
+            results = test_run.run_algorithm(iterations, burnin, record_interval)
+        except ValueError:
+            return error_response('Loci repeats has an insufficient number of entries', 400)
 
         posterior_recrudescence_distribution_df, probability_of_recrudescence_df = results.get_summary_stats()
 

@@ -120,6 +120,8 @@ class AlgorithmSiteInstance:
     '''
     Handles running the MCMC malaria recrudescence algorithm for a single
     "arm"/site's data
+
+    Throws ValueError for malformatted locirepeats
     '''
 
     def __init__(
@@ -142,6 +144,9 @@ class AlgorithmSiteInstance:
         # NOTE: pd.unique used instead of np.unique to preserve ordering
         self.ids = recrudescence_utils.get_sample_ids(genotypedata_RR, 'Day 0')
         self.locinames = pd.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
+
+        if len(self.locinames) > len(locirepeats):
+            raise ValueError("Loci repeats has an insufficient number of entries")
 
         # TODO: Should this be here or on the state?
         self.alleles_definitions_RR = self._get_allele_definitions(
