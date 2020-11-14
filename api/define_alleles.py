@@ -5,7 +5,6 @@ import math
 def define_alleles(genotypedata: pd.DataFrame, locirepeats: np.ndarray, maxk: np.ndarray):
 	'''
 	Generate definitions of alleles (i.e. binning)
-
 	:param genotypedata:
 			type: pandas dataframe
 			description: genetic data, where first column (name 'Sample ID') has the id of the sample, and rest of columns have the format nameoflocus_X, where X is the xth allele detected
@@ -19,12 +18,24 @@ def define_alleles(genotypedata: pd.DataFrame, locirepeats: np.ndarray, maxk: np
 			type: list that contains dataframe
 			description: list of length number of loci, each entry is a number of alleles by 2 matrix (1st column = lower bound, 2nd column = upper bound)
 	'''
-
-	# retrieve IDs from the Genotypedata
-	ids = genotypedata.iloc[:,0].tolist()
-
+	
 	# retrieve the names of locus without duplicates
 	# the list will contain the names with the order that was in the genotypedata (left to right)
+	# retrieve length of the list of locus names
+	locinames = _getLocinames(genotypedata)
+	nloci = len(locinames)
+
+	# first section
+	alleles = _getAlleles(genotypedata, nloci, locirepeats, locinames)
+
+	# second section
+	# compress the alleles
+	# and take maxk most frequent alleles
+	compressed_alleles = _compress(alleles, nloci, maxk)
+
+	return compressed_alleles
+
+def _getLocinames(genotypedata: pd.DataFrame):
 	col_names = list(genotypedata.columns.values)[1:]
 	prev_pos = None
 	locinames = {}
@@ -43,52 +54,22 @@ def define_alleles(genotypedata: pd.DataFrame, locirepeats: np.ndarray, maxk: np
 			lociname_end_index += 1
 			if (lociname_end_index == len(col_names)-1):
 				locinames[lociname_index] = (prev_pos, lociname_end_index)
+	return locinames
 
-	# retrieve length of ids and  length of the list of locus names
-	nids = len(ids)
-	nloci = len(locinames)
-
-	# first section
+def _getAlleles(genotypedata: pd.DataFrame, nloci: int, locirepeats: np.ndarray, locinames: dict) -> list:
 	alleles = []
 	n = 0
 	for j in range(nloci):
 		# retrieve raw alleles (each index contains every raw alleles data with the same locinames)
 		# ex. all data with X313 prefix lociname in index 0
 		loci_name_prefix, last_index = locinames.get(j)
-		raw_alleles = []
 
-		while (n <= last_index):
-			raw_alleles += genotypedata.iloc[:, n+1].tolist()
-			n += 1
-		raw_alleles = [loci for loci in raw_alleles if str(loci) != 'nan']
+		raw_alleles, n = _getRawAlleles(genotypedata, n, last_index)
 
 		if (max(raw_alleles) - min(raw_alleles)) < locirepeats[j]:
 			# find break values(lower and upper)
-			lower_break_value = []
-			upper_break_value = []
-			counts_column = []
-
-			lower_list = []
-			upper_list = []
-
-			for allele in raw_alleles:
-				lower_list.append(allele - locirepeats[j]/2)
-				upper_list.append(allele + locirepeats[j]/2)
-
-			# search for the min from the lower_list and upper_list and add to break lists.
-			lower_break_value.append(min(lower_list))
-			upper_break_value.append(max(upper_list))
-			counts_column.append(len(lower_list))
-
-			# prepare columns of lower_bound, upper_bound, and count
-			allele_low = pd.DataFrame(lower_break_value)
-			allele_high = pd.DataFrame(upper_break_value)
-			allele_count = pd.DataFrame(counts)
-
-			# put allele columns together to make dataframe
-			allele_df = pd.concat([allele_low, allele_high, allele_count], axis=1)
-			allele_df.columns = ['lower_break_value', 'upper_break_value', 'counts']
-			alleles.append(allele_df)
+			lower_break_value, upper_break_value, counts_column = _findBreakValues(raw_alleles, locirepeats, j)
+			alleles = _prepareDataframes(alleles, lower_break_value, upper_break_value, counts)
 		else:
 			# making breaks (not sure if we need this)
 			min_num = math.floor(min(raw_alleles)) - 0.5
@@ -100,7 +81,6 @@ def define_alleles(genotypedata: pd.DataFrame, locirepeats: np.ndarray, maxk: np
 
 			breaks_min = math.floor(min(breaks))
 			breaks_max = math.floor(max(breaks))
-
 
 			# allele values
 			allele_values = np.array(np.round((np.array(breaks[1:]) + np.array(breaks[0:-1])) / 2))
@@ -171,23 +151,50 @@ def define_alleles(genotypedata: pd.DataFrame, locirepeats: np.ndarray, maxk: np
 						sum += 1
 				counts.append(sum)
 
+			alleles = _prepareDataframes(alleles, lower_break_value, upper_break_value, counts)
+	return alleles
 
-			# prepare columns of lower_bound, upper_bound, and count
-			allele_low = pd.DataFrame(lower_break_value)
-			allele_high = pd.DataFrame(upper_break_value)
-			allele_count = pd.DataFrame(counts)
+def _findBreakValues(raw_alleles: list, locirepeats: np.ndarray, j: int):
+	lower_break_value = []
+	upper_break_value = []
+	counts_column = []
 
-			# put allele columns together to make dataframe
-			allele_df = pd.concat([allele_low, allele_high, allele_count], axis=1)
-			allele_df.columns = ['lower_break_value', 'upper_break_value', 'counts']
-			alleles.append(allele_df)
+	lower_list = []
+	upper_list = []
 
-	# second section
-	# compress
-	# take maxk most frequent alleles
+	for allele in raw_alleles:
+		lower_list.append(allele - locirepeats[j]/2)
+		upper_list.append(allele + locirepeats[j]/2)
+
+	# search for the min from the lower_list and upper_list and add to break lists.
+	lower_break_value.append(min(lower_list))
+	upper_break_value.append(max(upper_list))
+	counts_column.append(len(lower_list))
+	return lower_break_value, upper_break_value, counts_column
+
+def _getRawAlleles(genotypedata: pd.DataFrame, n: int, last_index: int):
+	raw_alleles = []
+	while (n <= last_index):
+		raw_alleles += genotypedata.iloc[:, n+1].tolist()
+		n += 1
+	raw_alleles = [loci for loci in raw_alleles if str(loci) != 'nan']
+	return raw_alleles, n
+
+def _prepareDataframes(alleles: list, lower_break_value: list, upper_break_value: list, counts: list):
+	# prepare columns of lower_bound, upper_bound, and count
+	allele_low = pd.DataFrame(lower_break_value)
+	allele_high = pd.DataFrame(upper_break_value)
+	allele_count = pd.DataFrame(counts)
+
+	# put allele columns together to make dataframe
+	allele_df = pd.concat([allele_low, allele_high, allele_count], axis=1)
+	allele_df.columns = ['lower_break_value', 'upper_break_value', 'counts']
+	alleles.append(allele_df)
+	return alleles
+
+def _compress(alleles: list, nloci: int, maxk: int) -> list:
 	alleles2 = []
 	for i in range(nloci):
-
 		sortedindex = []
 		current_count = alleles[i]['counts'].tolist()
 
@@ -208,5 +215,4 @@ def define_alleles(genotypedata: pd.DataFrame, locirepeats: np.ndarray, maxk: np
 		alleles2_df['0'] = new_lower_break_value
 		alleles2_df['1'] = new_upper_break_value
 		alleles2.append(alleles2_df)
-
 	return alleles2

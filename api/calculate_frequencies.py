@@ -28,11 +28,51 @@ import statistics
 """
 def calculate_frequencies3(genotypedata, alleles_definitions):
 
-	# retrieve IDs from the Genotypedata
-	ids = genotypedata.iloc[:,0].tolist()
-
 	# retrieve the names of locus without duplicates
 	# the list will contain the names with the order that was in the genotypedata (left to right)
+	# retrieve length of the list of locus names
+	locinames = _getLocinames(genotypedata)
+	nloci = len(locinames)
+
+	frequencies = []
+	variability = []
+
+	n = 0
+	for j in range(nloci):
+		# retrieve raw alleles (each index contains every raw alleles data with the same locinames)
+		# ex. all data with X313 prefix lociname in index 0
+		loci_name_prefix, last_index = locinames.get(j)
+		raw_alleles, n = _getRawAlleles(genotypedata, n, last_index)
+
+		# lower = list of lower bound values
+		# high = list of upper bound values
+		low = alleles_definitions[j]["0"]
+		high = alleles_definitions[j]["1"]
+
+		# length of the lower bound and upper bound list
+		nrows = len(alleles_definitions[j])
+
+		sum_list, meanSD = _get_sumList(nrows, raw_alleles, low, high)
+
+		frequencies.append(sum_list)
+		variability.append(meanSD)
+		frequencies[j] = frequencies[j] / len(raw_alleles)
+
+	# switch freq_length and variability list to numpy array
+	freq_length = np.asarray([len(frequencies[j]) for j in range(len(frequencies))])
+	variability = np.asarray(variability)
+
+	ncol = max(freq_length)
+
+	# create matrix with frequency values from frequencies list
+	freqmatrix = _create_frequencyMatrix(nloci, ncol, frequencies)
+
+	# final result
+	ret = _pack_result(freq_length, freqmatrix, variability)
+
+	return ret
+
+def _getLocinames(genotypedata: pd.DataFrame):
 	col_names = list(genotypedata.columns.values)[1:]
 	prev_pos = None
 	locinames = {}
@@ -51,72 +91,46 @@ def calculate_frequencies3(genotypedata, alleles_definitions):
 			lociname_end_index += 1
 			if (lociname_end_index == len(col_names)-1):
 				locinames[lociname_index] = (prev_pos, lociname_end_index)
+	return locinames
 
-	# retrieve length of ids and  length of the list of locus names
-	nids = len(ids)
-	nloci = len(locinames)
+def _getRawAlleles(genotypedata: pd.DataFrame, n: int, last_index: int):
+	raw_alleles = []
+	while (n <= last_index):
+		raw_alleles += genotypedata.iloc[:, n+1].tolist()
+		n += 1
+	raw_alleles = [loci for loci in raw_alleles if str(loci) != 'nan']
+	return raw_alleles, n
 
+def _get_sumList(nrows: int, raw_alleles: list, low: pd.core.series.Series, high: pd.core.series.Series):
+	sum_list = [] # needed for storing frequency values
+	sd_list = [] # standard deviation
+	for i in range(nrows):
+		tf_table = []
+		sum = 0
+		for allele in raw_alleles:
+			eval = allele > low[i] and allele <= high[i]
+			tf_table.append(eval)
+			if eval:
+				sum += 1
+		sum_list.append(sum)
 
-	frequencies = []
-	variability = []
+		true_items = []
+		for eval_i in range(len(tf_table)):
+			if tf_table[eval_i]:
+				true_items.append(raw_alleles[eval_i])
 
-	n = 0
-	for j in range(nloci):
+		if len(true_items) > 1:
+			sd_list.append(statistics.stdev(true_items))
+	sum_list = np.array(sum_list)
 
-		# retrieve raw alleles (each index contains every raw alleles data with the same locinames)
-		# ex. all data with X313 prefix lociname in index 0
-		loci_name_prefix, last_index = locinames.get(j)
-		raw_alleles = []
-		while (n <= last_index):
-			raw_alleles += genotypedata.iloc[:, n+1].tolist()
-			n += 1
-		raw_alleles = [loci for loci in raw_alleles if str(loci) != 'nan']
+	# mean of standard deviation
+	meanSD = 0
+	if (len(sd_list) > 0):
+		meanSD = np.mean(sd_list)
 
+	return sum_list, meanSD
 
-		# lower = list of lower bound values
-		# high = list of upper bound values
-		low = alleles_definitions[j]["0"]
-		high = alleles_definitions[j]["1"]
-
-		# length of the lower bound and upper bound list
-		nrows = len(alleles_definitions[j])
-
-		sum_list = [] # needed for storing frequency values
-		sd_list = [] # standard deviation
-		for i in range(nrows):
-			tf_table = []
-			sum = 0
-			for allele in raw_alleles:
-				eval = allele > low[i] and allele <= high[i]
-				tf_table.append(eval)
-				if eval:
-					sum += 1
-			sum_list.append(sum)
-
-			true_items = []
-			for eval_i in range(len(tf_table)):
-				if tf_table[eval_i]:
-					true_items.append(raw_alleles[eval_i])
-
-			if len(true_items) > 1:
-				sd_list.append(statistics.stdev(true_items))
-		sum_list = np.array(sum_list)
-		frequencies.append(sum_list)
-
-		# mean of standard deviation
-		meanSD = 0
-		if (len(sd_list) > 0):
-			meanSD = np.mean(sd_list)
-
-		variability.append(meanSD)
-		frequencies[j] = frequencies[j] / len(raw_alleles)
-
-	# switch freq_length and variability list to numpy array
-	freq_length = np.asarray([len(frequencies[j]) for j in range(len(frequencies))])
-	variability = np.asarray(variability)
-
-	ncol = max(freq_length)
-
+def _create_frequencyMatrix(nloci: int, ncol: np.int64, frequencies: list):
 	# initialize frequency matrix with zeros
 	freqmatrix = np.zeros([nloci, ncol])
 
@@ -124,10 +138,9 @@ def calculate_frequencies3(genotypedata, alleles_definitions):
 	for j in range(nloci):
 		for i in range(len(frequencies[j])):
 			freqmatrix[j][i] = frequencies[j][i]
+	return freqmatrix
 
-	# ret = list
-	# add freq_length, frequency matrix, and variability
-	# ret needed to be list type to add each numpy array and matrix
+def _pack_result(freq_length: np.ndarray, freqmatrix: np.ndarray, variability: np.ndarray):
 	ret = []
 	ret.append(freq_length)
 	ret.append(freqmatrix)
