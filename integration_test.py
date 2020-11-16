@@ -21,27 +21,25 @@ def main(argv):
 
         # run both scripts
         # EDIT FOR YOUR COMPUTER
-        retR = subprocess.call(["C:/Program Files/R/R-4.0.3/bin/Rscript.exe", "--vanilla", "C:/Users/donna/Heather/JD/BayesianMicrosatellite/main.r"])
+        retR = subprocess.call(["C:/Program Files/R/R-4.0.3/bin/Rscript.exe", "--vanilla", "C:/Users/Heather/JD/BayesianMicrosatellite/main.r"])
         retP = subprocess.call(["python3", "anti-malarial-MCMC-bayesian-algorithm/main.py"])
 
         por_data_r.append(get_por('r'))
         por_data_p.append(get_por('p'))
 
-        # mc_data_r.append(get_mc('r'))
-        # mc_data_p.append(get_mc('p'))
+
+    sum_p = np.array(por_data_p).T.tolist()
+    p_conv = []
+    for x in range(len(sum_p[1])):
+        if x != 0:
+            fl = [float(el) for el in sum_p[1][x]]
+            p_conv.append(sum(fl)/(len(sum_p[1])-1))
 
     sum_r = np.array(por_data_r).T.tolist()
-
     r_conv = []
     for x in sum_r[0]:
         fl = [float(el) for el in x]
         r_conv.append(sum(fl)/len(x))
-
-    sum_p = np.array(por_data_p).T.tolist()
-    p_conv = []
-    for x in sum_p[0]:
-        fl = [float(el) for el in x]
-        p_conv.append(sum(fl)/len(x))
 
     diff = []
     for j in range(len(p_conv)):
@@ -70,12 +68,14 @@ def main(argv):
     results_writter.writerow([])
 
 
+
+
 def get_por(t):
     #open output files
-    if t == 'r':
+    if t == 'p':
         prob_file = open('anti-malarial-MCMC-bayesian-algorithm/probability_of_recrudescence.csv', 'r')
 
-    if t == 'p':
+    if t == 'r':
         prob_file = open('probability_of_recrudescence.csv', 'r')
 
     prob_reader = csv.reader(prob_file)
@@ -133,4 +133,4 @@ def get_mc(t):
 
 
 if __name__=="__main__":
-main(sys.argv[1:])
+    main(sys.argv[1:])
