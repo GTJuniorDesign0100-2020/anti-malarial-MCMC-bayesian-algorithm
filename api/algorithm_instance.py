@@ -14,7 +14,7 @@ class AlgorithmResults:
     Holds the final results of running the malaria recrudescence algorithm
     '''
 
-    def __init__(self):
+    def __init__(self, site_names):
         '''
         Set up data structures the hold the results, as follows:
         saved_classification_all - Holds the recrudescence/reinfection
@@ -28,27 +28,26 @@ class AlgorithmResults:
         run_summary_stats - For each site, holds the computed summary statistics
         (in a pandas dataframe)
         '''
-        self.saved_classification_all = pd.DataFrame()
-        self.saved_parameters_all = pd.DataFrame()
+        self.saved_classification_all = {}
+        self.saved_parameters_all = {}
         self.sample_ids = np.array([])
-        self.site_sample_ids = OrderedDict()
+        self.site_sample_ids = {}
         self.run_posterior_dfs = {}
         self.run_summary_stat_dfs = {}
+        self.site_names = site_names
 
     def update_results(self, site_results: SavedState, site_name: str):
         '''
         Add the site's results to the overall algorithm results
         '''
         # TODO: Determine output array is correct shape
-        self.saved_classification_all = self.saved_classification_all.append(
-            pd.DataFrame(site_results.classification), ignore_index=True)
-        self.saved_parameters_all = self.saved_parameters_all.append(
-            pd.DataFrame(site_results.parameters), ignore_index=True)
+        self.saved_classification_all[site_name] = pd.DataFrame(site_results.classification)
+        self.saved_parameters_all[site_name] = pd.DataFrame(site_results.parameters)
         self.sample_ids = np.append(self.sample_ids, site_results.ids)
 
-        self.site_sample_ids[site_name] = site_results.ids
-        self.run_posterior_dfs[site_name] = site_results.posterior_df
-        self.run_summary_stat_dfs[site_name] = site_results.summary_stats_df
+        self.site_sample_ids[site_name] =  site_results.ids
+        self.run_posterior_dfs[site_name] = pd.DataFrame(site_results.posterior_df)
+        self.run_summary_stat_dfs[site_name] = pd.DataFrame(site_results.summary_stats_df)
 
     def get_summary_stats(self):
         '''
@@ -57,13 +56,24 @@ class AlgorithmResults:
         :return: A tuple of 2 pandas dataframes,
         (posterior_recrudescence_distribution, probability_of_recrudescence)
         '''
-        posterior_recrudescence_distribution = pd.concat([
-            pd.DataFrame(self.sample_ids), self.saved_classification_all])
-        posterior_recrudescence_distribution.rename(columns={
-            posterior_recrudescence_distribution.columns[0]: 'ID'
-        }, inplace=True)
+        posterior_recrudescence_distribution = pd.DataFrame()
+        ids = pd.DataFrame()
+        for site in self.site_names:
+            posterior_recrudescence_distribution = posterior_recrudescence_distribution.append(self.saved_classification_all[site])
+            ids = ids.append(pd.DataFrame(self.site_sample_ids[site]))
+
+        data = posterior_recrudescence_distribution.copy()
+        new_col = []
+        for col in posterior_recrudescence_distribution.columns:
+            if type(col) is int:
+                new_col.append("V" + str(col))
+            else:
+                new_col.append(col)
+        posterior_recrudescence_distribution.columns = new_col
+        posterior_recrudescence_distribution.insert(0, "Sample ID", ids, True)
         # Get the mean of each row
-        probability_of_recrudescence = np.mean(self.saved_classification_all, axis=1)
+        probability_of_recrudescence = pd.DataFrame(np.mean(data, axis=1), columns = ["Recrudescence Probability"])
+        probability_of_recrudescence.insert(0, "Sample ID", ids, True)
 
         return posterior_recrudescence_distribution, probability_of_recrudescence
 
@@ -75,15 +85,55 @@ class AlgorithmResults:
         and the content of the file as its value
         '''
         output_files = {}
+        extended_ids = {key: [] for key in self.site_sample_ids.keys()}
+        for site in self.site_sample_ids:
+            for id in self.site_sample_ids[site]:
+                extended_ids[site].append(str(id) + " Day 0")
+                extended_ids[site].append(str(id) + " Day Failure")
 
-        posterior_recrudescence_distribution_df, probability_of_recrudescence_df = self.get_summary_stats()
         for site_name, posterior_df in self.run_posterior_dfs.items():
             filename = f'{site_name}_posterior.csv'
-            output_files[filename] = posterior_df.to_csv(line_terminator='\n')
-        for site_name, summary_df in self.run_summary_stat_dfs.items():
-            filename = f'{site_name}_summary_statistics.csv'
-            output_files[filename] = summary_df.to_csv(line_terminator='\n')
+            posterior_df.insert(0, "Sample ID", extended_ids[site_name], True)
+            output_files[filename] = posterior_df.to_csv(index=False, line_terminator='\n')
 
+        desc = []
+        loci = []
+        for site_name, summary_df in self.run_summary_stat_dfs.items():
+            if not desc:
+                loci = summary_df.index.values[2:-1]
+                num_loci = int(len(loci)/2)
+                desc.append("Probability of Missing Allele")
+                desc.append("Error Rate")
+                for i in range(num_loci):
+                    desc.append("Frequency of most Common Allele")
+                for i in range(num_loci):
+                    desc.append("Simpson's Diversity Index")
+                desc.append("Average Simpson's Index")
+            filename = f'{site_name}_summary_statistics.csv'
+            summary_df.insert(0, "Description", desc, True)
+            locus_names = list(summary_df.index.values[0:-1])
+            locus_names.append(" ")
+            summary_df.insert(1, "Locus Name", locus_names, True)
+            summary_df.columns = ["Description", "Locus Name", "Mean with Interquartile range (25%, 75%)"]
+            output_files[filename] = summary_df.to_csv(index=False, line_terminator='\n')
+        for site_name, param_df in self.saved_parameters_all.items():
+            filename = f'{site_name}_state_parameters.csv'
+            if (len(desc) % 2 != 0):
+                desc = desc[0:-1]
+            param_df.insert(0, "Description", desc, True)
+            loci1 = ['q', 'd']
+            res = [y for x in [loci1, loci] for y in x]
+            param_df.insert(1, "Locus Name", res, True)
+            new_col = []
+            for col in param_df.columns:
+                if type(col) is int:
+                    new_col.append("V" + str(col))
+                else:
+                    new_col.append(col)
+            param_df.columns = new_col
+            output_files[filename] = param_df.to_csv(index=False, line_terminator='\n')
+
+        posterior_recrudescence_distribution_df, probability_of_recrudescence_df = self.get_summary_stats()
         output_files['microsatellite_correction.csv'] = posterior_recrudescence_distribution_df.to_csv(index=False, line_terminator='\n')
         output_files['probability_of_recrudescence.csv'] = probability_of_recrudescence_df.to_csv(index=False, line_terminator='\n')
 
@@ -123,9 +173,9 @@ class AlgorithmInstance:
         data file
         :param locirepeats: TODO:
         '''
-        site_names = pd.unique(genotypedata['Site'])
+        self.site_names = pd.unique(genotypedata['Site'])
         self.algorithm_instances = []
-        for site_name in site_names:
+        for site_name in self.site_names:
             # NOTE: "RR" stands for "recrudescence and/or reinfection"; it marks
             # datasets that deals specifically with day 0/day of failure info,
             # as opposed to background data
@@ -178,7 +228,7 @@ class AlgorithmInstance:
         data for all of the sites
         TODO: Elaborate
         '''
-        overall_results = AlgorithmResults()
+        overall_results = AlgorithmResults(self.site_names)
 
         for site_name, algo_instance in self.algorithm_instances:
             site_result = algo_instance.run_algorithm(
