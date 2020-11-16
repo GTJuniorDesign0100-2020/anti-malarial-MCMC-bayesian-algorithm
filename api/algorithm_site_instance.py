@@ -11,6 +11,11 @@ from api.site_instance_state import SiteInstanceState, SampleType, HiddenAlleleT
 from api.switch_hidden import switch_hidden
 
 
+class LociRepeatError(Exception):
+    """Raised when locirepeats variable is malformatted"""
+    pass
+
+
 class SavedState:
     def __init__(self, num_records, ids, classification, alleles0, allelesf, parameters):
         self.num_records = num_records
@@ -146,7 +151,7 @@ class AlgorithmSiteInstance:
         self.locinames = pd.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
 
         if len(self.locinames) > len(locirepeats):
-            raise ValueError("Loci repeats has an insufficient number of entries")
+            raise LociRepeatError("Locirepeats variable has an insufficient number of entries")
 
         # TODO: Should this be here or on the state?
         self.alleles_definitions_RR = self._get_allele_definitions(

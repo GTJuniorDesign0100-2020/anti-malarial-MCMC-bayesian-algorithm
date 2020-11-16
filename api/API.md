@@ -9,6 +9,7 @@ To run the code locally, install the following `pip` packages:
 ```bash
 pip install flask
 pip install flask-restful
+pip install flask_limiter
 ```
 
 Then, you can start the server just by running `api.py` from the root folder (*not* the API folder):
@@ -51,13 +52,11 @@ Given an input `.xlsx` file with [drug testing data in the proper format (TODO)]
 
 -   (optional) `iterations` (integer): The number of iterations to run the algorithm for on the data; higher values are more accurate but take longer to complete. Defaults to 10000.
 
+-    `locirepeat` (list of integers): a vector of length <number of loci> with the type of each locus (dinucleotide, trinucleotide, etc. repeats)
+
 **Input Parameters (Data):**
 
 -   `file` (.xlsx file, FormData): The file containing the testing data to be processed.
-
-**Input Parameters (URL):**
-
--   (optional) `locirepeat` (list of integers): List of integers representing loci repeats. Each loci repeat must be individually entered for the request. Please ensure the correct amount of values are entered.
 
 **Example Usage:**
 
@@ -66,7 +65,6 @@ In cURL:
 ```bash
 curl -F "file=@example.xlsx" "http://localhost:5000/api/v1/recrudescences?iterations=10&locirepeat=2&locirepeat=2&locirepeat=3"
 ```
-If you are using curl and are entering multiple query parameters, ensure you use quotes around the request
 
 In Javascript (via `fetch`):
 

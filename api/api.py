@@ -14,6 +14,7 @@ import pandas as pd
 import werkzeug
 
 from api.algorithm_instance import AlgorithmInstance, AlgorithmResults
+from api.algorithm_site_instance import LociRepeatError
 
 
 # =============================================================================
@@ -62,10 +63,10 @@ class RecrudescenceTest(Resource):
         case is a recrudescence/reinfection, and returns the calculated results
         '''
         uploaded_file = request.files.get('file')
-        iterations = request.args.get('iterations', default=50, type=int)
+        iterations = request.args.get('iterations', default=10000, type=int)
         loci_repeats = request.args.getlist('locirepeat', type=int)
         if not loci_repeats:
-            loci_repeats = [2,2,3,3,3,3,3]
+            return error_response('Mandatory paramater locirepeats not included')
         # TODO: Find cleaner way of doing validation?
         if not (uploaded_file and uploaded_file.filename):
             return error_response('No input file provided')
@@ -109,7 +110,7 @@ class RecrudescenceTest(Resource):
 
         try:
             results = test_run.run_algorithm(iterations, burnin, record_interval)
-        except ValueError:
+        except LociRepeatError:
             return error_response('Loci repeats has an insufficient number of entries', 400)
 
         posterior_recrudescence_distribution_df, probability_of_recrudescence_df = results.get_summary_stats()
