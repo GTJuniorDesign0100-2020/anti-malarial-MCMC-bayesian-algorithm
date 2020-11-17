@@ -24,13 +24,20 @@ export default function SortableTable({
     return sortConfig.key === name ? sortConfig.direction : undefined;
   };
 
-  console.log(sortedItems);
-  console.log(sortedItems
-    ? sortedItems.map(item => itemToTableRowFunc(item))
-    : undefined);
+  const styles = {
+    align: 'center',
+    margin: '0 auto',
+    width: '80%'
+  };
+
+  const buttonStyles = {
+    width: '100%',
+    height: '100%',
+    fontWeight: 'bold'
+  }
 
   return (
-    <table>
+    <table style={styles}>
       <thead>
         <tr>
           {
@@ -38,6 +45,7 @@ export default function SortableTable({
               return (
                 <th key={columnName}>
                   <button
+                    style={buttonStyles}
                     type="button"
                     onClick={() => requestSort(columnSortKeys[i])}
                     className={getClassNamesFor(columnSortKeys[i])}

@@ -10,20 +10,6 @@ export default class DynTable extends React.Component {
     return (
       <div>
         <h1 align='center'>Results</h1>
-        <table id='results' align='center' border='2px' width='80%'>
-          <thead>
-            <tr>
-              <th width='20%'>Date</th>
-              <th width='20%'>Time</th>
-              <th width='20%'>Input File Name</th>
-              <th width='20%'>Status</th>
-              <th width='20%'>Output</th>
-            </tr>
-          </thead>
-            <tbody>
-              {this.renderTableData(this.props.data)}
-            </tbody>
-        </table>
 
         <SortableTable
           columnNames={['Date', 'Time', 'Input File Name', 'Status', 'Output']}
@@ -33,12 +19,6 @@ export default class DynTable extends React.Component {
         />
       </div>
     )
-  }
-
-  renderTableData(data) {
-    return Object.values(data).map((dataset) => {
-      return this.renderResultRow(dataset);
-    });
   }
 
   renderResultRow(resultData) {
