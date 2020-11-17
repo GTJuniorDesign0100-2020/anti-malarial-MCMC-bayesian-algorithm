@@ -134,3 +134,14 @@ th > button {
 th > button:focus {
   outline: none;
 }
+/* Styles for sorting buttons */
+th > button.ascending::after {
+  content: "▲";
+  display: inline;
+  margin-left: 1em;
+}
+th > button.descending::after {
+  content: "▼";
+  display: inline;
+  margin-left: 1em;
+}

@@ -14,7 +14,10 @@ export default class DynTable extends React.Component {
         <SortableTable
           columnNames={['Date', 'Time', 'Input File Name', 'Status', 'Output']}
           columnSortKeys={['date', 'date', 'inputFilename', 'status', '']}
-          items={Object.values(this.props.data)}
+          items={
+            // Reverse so newest results appear at the top
+            Object.values(this.props.data).reverse()
+          }
           itemToTableRowFunc={this.renderResultRow}
         />
       </div>
