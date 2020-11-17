@@ -21,11 +21,14 @@ def main(argv):
 
         # run both scripts
         # EDIT FOR YOUR COMPUTER
-        retR = subprocess.call(["C:/Program Files/R/R-4.0.3/bin/Rscript.exe", "--vanilla", "C:/Users/Heather/JD/BayesianMicrosatellite/main.r"])
+        #retR = subprocess.call(["C:/Program Files/R/R-4.0.3/bin/Rscript.exe", "--vanilla", "C:/Users/Heather/JD/BayesianMicrosatellite/main.r"])
         retP = subprocess.call(["python3", "anti-malarial-MCMC-bayesian-algorithm/main.py"])
 
         por_data_r.append(get_por('r'))
         por_data_p.append(get_por('p'))
+
+        mc_data_r.append(get_mc('r'))
+        mc_data_p.append(get_mc('p'))
 
 
     sum_p = np.array(por_data_p).T.tolist()
@@ -37,15 +40,20 @@ def main(argv):
 
     sum_r = np.array(por_data_r).T.tolist()
     r_conv = []
-    for x in sum_r[0]:
-        fl = [float(el) for el in x]
-        r_conv.append(sum(fl)/len(x))
+    fl = []
+    for x in range(len(sum_r[1])):
+        if x != 0:
+            fl = [float(el) for el in sum_r[1][x]]
+            r_conv.append(sum(fl)/(len(sum_r[1])-1))
+
+#    print(p_conv)
+#    print(r_conv)
 
     diff = []
     for j in range(len(p_conv)):
         diff.append(abs(p_conv[j]-r_conv[j]))
 
-    results_row = ["After " + str(i+1) + " iterations (of 1000 runs):"]
+    results_row = ["Probability of Recrudescence Results: After " + str(i+1) + " iterations (of 1000 runs):"]
     results_writter.writerow(results_row)
     results_row = ["R code Converged Too:"] + r_conv
     results_writter.writerow(results_row)
@@ -66,6 +74,32 @@ def main(argv):
     row2 = res.values()
     results_writter.writerow(row2)
     results_writter.writerow([])
+
+    res = {'Num Samples':0, 'Num Itterations': 0, 'Total Compairisons':0, 'Similarities':0, 'Differences':0, 'Percent Correct':0}
+    p = np.array(mc_data_p).T.tolist()
+    r = np.array(mc_data_r).T.tolist()
+    res['Num Itterations'] = len(r)
+    res['Num Samples'] = len(p[0])
+    num_samp = res['Num Samples'] - 1
+    for index in range(len(p)):
+        if index != 0 and index != len(p)-1:
+            r_values = r[index + 1][1:]
+            p_values = p[index + 1][1:]
+            r_values = [float(x[0]) for x in r_values]
+            p_values = [float(x[0]) for x in p_values]
+            for k in range(len(r_values)):
+                res['Total Compairisons'] += 1
+                if r_values[k] == p_values[k]:
+                    res['Similarities'] += 1
+                else:
+                    res['Differences'] += 1
+    results_row = ["Microsatellite Correction Results: After " + str(i+1) + " iterations (of 1000 runs):"]
+    res['Percent Correct'] = res['Similarities']/res['Total Compairisons']
+    row1 = res.keys()
+    results_writter.writerow(results_row)
+    results_writter.writerow(row1)
+    row2 = res.values()
+    results_writter.writerow(row2)
 
 
 
@@ -93,43 +127,6 @@ def get_mc(t):
     micro_reader = csv.reader(micro_file)
     return list(micro_reader)
 
-
-    # calculate stats for microsatellite correction
-    """
-    index = 0
-    res = {'Num Samples':0, 'Num Itterations': 0, 'Total Compairisons':0, 'Similarities':0, 'Differences':0, 'Percent Correct':0}
-    results_row = []
-    lis = list(p_micro_reader)
-    for row in r_micro_reader:
-        if index == 0:
-            results_row = ['Microsatellite Correction Results: test run ' + str(i), 'Num Similar', 'Num Differnt']
-        else:
-            num_ittr = len(row) - 1
-            res['Num Itterations'] = num_ittr
-            rowp = lis[index + 39]
-            correct = 0
-            incorrect = 0
-            for ittr in range(num_ittr):
-                r_out = bool(row[ittr + 1])
-                p_out = bool(rowp[ittr])
-                if r_out == p_out:
-                    correct += 1
-                    res['Similarities'] += 1
-                else:
-                    incorrect += 1
-                    res['Differences'] += 1
-            results_row = [str(lis[index][0]), str(correct), str(incorrect)]
-        index = index + 1
-        results_writter.writerow(results_row)
-    res = {'Num Samples':0, 'Num Itterations': 0, 'Total Compairisons':0, 'Similarities':0, 'Differences':0, 'Percent Correct':0}
-    res['Num Samples'] = index
-    res['Total Compairisons'] = index*res['Num Itterations']
-    res['Percent Correct'] = res['Similarities']/res['Total Compairisons']
-    row1 = res.keys()
-    results_writter.writerow(row1)
-    row2 = res.values()
-    results_writter.writerow(row2)
-    """
 
 
 if __name__=="__main__":
