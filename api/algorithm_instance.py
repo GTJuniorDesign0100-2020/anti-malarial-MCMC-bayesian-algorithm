@@ -1,5 +1,6 @@
-from collections import OrderedDict
-from typing import IO, List, Union
+from collections import OrderedDict, namedtuple
+import multiprocessing
+from typing import IO, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -7,6 +8,9 @@ import pandas as pd
 from api.algorithm_site_instance import AlgorithmSiteInstance, SavedState
 from api.data_file_parser import DataFileParser
 from api.recrudescence_file_parser import RecrudescenceFileParser
+
+
+RunInputArgs = namedtuple('RunInputArgs', 'nruns burnin record_interval seed')
 
 
 class AlgorithmResults:
@@ -140,6 +144,7 @@ class AlgorithmResults:
         return output_files
 
 
+
 class AlgorithmInstance:
     '''
     Handles setting up and running an instance of the MCMC recrudescence
@@ -230,14 +235,36 @@ class AlgorithmInstance:
         '''
         overall_results = AlgorithmResults(self.site_names)
 
-        for site_name, algo_instance in self.algorithm_instances:
-            site_result = algo_instance.run_algorithm(
-                site_name,
-                nruns,
-                burnin,
-                record_interval,
-                seed)
-            # save site results
-            overall_results.update_results(site_result, site_name)
+        num_sites = len(self.algorithm_instances)
+        with multiprocessing.Pool(processes=num_sites) as pool:
+            run_inputs = [RunInputArgs(nruns, burnin, record_interval, seed)] * num_sites
+            all_site_arguments = zip(self.algorithm_instances, run_inputs)
+            site_results = pool.starmap(
+                self._run_site_algorithm,
+                all_site_arguments)
+
+            for site_name, site_result in site_results:
+                # save site results
+                overall_results.update_results(site_result, site_name)
 
         return overall_results
+
+    @classmethod
+    def _run_site_algorithm(cls,
+        site_instance: Tuple[str, AlgorithmSiteInstance],
+        run_inputs: RunInputArgs) -> Tuple[str, SavedState]:
+        '''
+        Runs the algorithm for a single site instance, and returns the
+        algorithm results along with the site name
+        :param site_instance: The site to start running the algorithm for
+        :run_inputs: The input arguments to the algorithm run
+        :return: A tuple containing the site name and site algorithm results
+        '''
+        site_name, algo_instance = site_instance
+        site_result = algo_instance.run_algorithm(
+            site_name,
+            run_inputs.nruns,
+            run_inputs.burnin,
+            run_inputs.record_interval,
+            run_inputs.seed)
+        return site_name, site_result
