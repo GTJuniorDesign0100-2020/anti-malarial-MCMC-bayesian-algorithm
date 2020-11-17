@@ -1,4 +1,5 @@
 import React from 'react';
+import SortableTable from './SortableTable';
 
 export default class DynTable extends React.Component {
   constructor(props) {
@@ -23,44 +24,56 @@ export default class DynTable extends React.Component {
               {this.renderTableData(this.props.data)}
             </tbody>
         </table>
+
+        <SortableTable
+          columnNames={['Date', 'Time', 'Input File Name', 'Status', 'Output']}
+          columnSortKeys={['date', 'date', 'inputFilename', 'status', '']}
+          items={Object.values(this.props.data)}
+          itemToTableRowFunc={this.renderResultRow}
+        />
       </div>
     )
   }
 
   renderTableData(data) {
     return Object.values(data).map((dataset) => {
-      const {date, inputFilename, status, results} = dataset;
-      const csvFileText = results.output_file_text;
-      return (
-        <tr key={date.toISOString()}>
-          <td>{date.toLocaleDateString()}</td>
-          <td>{date.toLocaleTimeString()}</td>
-          <td>{inputFilename}</td>
-          <td>{status}</td>
-          <td>{this.getCSVFilesLinks(csvFileText)}</td>
-        </tr>
-      )
-    })
+      return this.renderResultRow(dataset);
+    });
   }
 
-  getCSVFilesLinks(csvFileText) {
-    if (!csvFileText) {
-      return '';
-    }
-
+  renderResultRow(resultData) {
+    const {date, inputFilename, status, results} = resultData;
+    const csvFileText = results.output_file_text;
     return (
-      // TODO: Bundle links/files in a zip?
-      <div>
-        {Object.keys(csvFileText).map(filename =>
-          <CSVDownloadLink
-            key={filename}
-            csvFileName={filename}
-            csvFileText={csvFileText[filename]}
-          />
-        )}
-      </div>
+      <tr key={date.toISOString()}>
+        <td>{date.toLocaleDateString()}</td>
+        <td>{date.toLocaleTimeString()}</td>
+        <td>{inputFilename}</td>
+        <td>{status}</td>
+        <td>{getCSVFilesLinks(csvFileText)}</td>
+      </tr>
     );
   }
+
+}
+
+function getCSVFilesLinks(csvFileText) {
+  if (!csvFileText) {
+    return '';
+  }
+
+  return (
+    // TODO: Bundle links/files in a zip?
+    <div>
+      {Object.keys(csvFileText).map(filename =>
+        <CSVDownloadLink
+          key={filename}
+          csvFileName={filename}
+          csvFileText={csvFileText[filename]}
+        />
+      )}
+    </div>
+  );
 }
 
 const CSVDownloadLink = ({csvFileName, csvFileText}) => {
