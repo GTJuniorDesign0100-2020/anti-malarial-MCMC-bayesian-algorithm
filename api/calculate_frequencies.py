@@ -3,35 +3,38 @@ import numpy as np
 import math
 import statistics
 
-""" calculate frequencies of alleles
-	inputs (parameters):
-		- genotypedata:
-			type: pandas dataframe
-			description: genetic data, where first column (name 'Sample ID') has the id of the sample,
-						 and rest of columns have the format nameoflocus_X, where X is the xth allele detected
-		- alleles_definitions:
-			type: list that contains dataframe
-			description: list of length number of loci
-						 each entry is a number of alleles by 2 matrix (1st column = lower bound, 2nd column = upper bound)
+import api.recrudescence_utils as recrudescence_utils
 
-	output:
-		type: list that that contains the following:
-			- index[0]
-				type: numpy array
-				description: the length of each list of frequencies
-			- index[1]
-				type: numpy matrix
-				description: the matrix (number of locinames by number of alleles) that contains the frequency values
-			- index[2]
-				type: numpy array
-				description: mean SD of within allele length
-"""
 def calculate_frequencies3(genotypedata, alleles_definitions):
+	'''
+	Calculate frequencies of alleles
+	Using the input data table and alleles_definition 
+	which contains the lower and upper break values of the allele data,
+	this method calculates the amount (frequency) and the variability of raw allele data 
+	in each lower and upper break values.
 
-	# retrieve the names of locus without duplicates
-	# the list will contain the names with the order that was in the genotypedata (left to right)
-	# retrieve length of the list of locus names
-	locinames = _getLocinames(genotypedata)
+	Returns a list that that contains the following:
+		- index[0]
+			type: numpy array
+			description: the length of each list of frequencies
+		- index[1]
+			type: numpy matrix
+			description: the matrix (number of locinames by number of alleles) that contains the frequency values
+		- index[2]
+			type: numpy array
+			description: mean SD of within allele length
+
+	:param genotypedata
+		type: pandas dataframe
+		description: genetic data, where first column (name 'Sample ID') has the id of the sample,
+			and rest of columns have the format nameoflocus_X, where X is the xth allele detected
+	:param alleles_definitions
+		type: list that contains dataframe
+		description: list of length number of loci
+			each entry is a number of alleles by 2 matrix (1st column = lower bound, 2nd column = upper bound)
+	'''
+
+	locinames = recrudescence_utils.get_locinames(genotypedata)
 	nloci = len(locinames)
 
 	frequencies = []
@@ -42,7 +45,7 @@ def calculate_frequencies3(genotypedata, alleles_definitions):
 		# retrieve raw alleles (each index contains every raw alleles data with the same locinames)
 		# ex. all data with X313 prefix lociname in index 0
 		loci_name_prefix, last_index = locinames.get(j)
-		raw_alleles, n = _getRawAlleles(genotypedata, n, last_index)
+		raw_alleles, n = recrudescence_utils.get_RawAlleles(genotypedata, n, last_index)
 
 		# lower = list of lower bound values
 		# high = list of upper bound values
@@ -69,50 +72,29 @@ def calculate_frequencies3(genotypedata, alleles_definitions):
 
 	# final result
 	ret = _pack_result(freq_length, freqmatrix, variability)
-
 	return ret
 
-def _getLocinames(genotypedata: pd.DataFrame):
-	col_names = list(genotypedata.columns.values)[1:]
-	prev_pos = None
-	locinames = {}
-	lociname_index = 0
-	lociname_end_index = 0
-	for name in col_names:
-		res = name.split("_")
-		if prev_pos == None:
-			prev_pos = res[0]
-		elif prev_pos != res[0]:
-			locinames[lociname_index] = (prev_pos, lociname_end_index)
-			prev_pos = res[0]
-			lociname_index += 1
-			lociname_end_index += 1
-		else:
-			lociname_end_index += 1
-			if (lociname_end_index == len(col_names)-1):
-				locinames[lociname_index] = (prev_pos, lociname_end_index)
-	return locinames
-
-def _getRawAlleles(genotypedata: pd.DataFrame, n: int, last_index: int):
-	raw_alleles = []
-	while (n <= last_index):
-		raw_alleles += genotypedata.iloc[:, n+1].tolist()
-		n += 1
-	raw_alleles = [loci for loci in raw_alleles if str(loci) != 'nan']
-	return raw_alleles, n
-
 def _get_sumList(nrows: int, raw_alleles: list, low: pd.core.series.Series, high: pd.core.series.Series):
+	'''
+	Returns a numpy array of the number of allele values that is between lower and upper bound values
+	Also returns a mean of standard deviation of that numpy array.
+
+	:param nrows: The number of rows of the alleles_definition
+	:param raw_alleles: The allele values retrieved from the input file
+	:param low: The list of the lower bound values from the alleles_definition
+	:param high: The list of the upper bound values from the alleles_definition
+	'''
 	sum_list = [] # needed for storing frequency values
 	sd_list = [] # standard deviation
 	for i in range(nrows):
 		tf_table = []
-		sum = 0
+		result_sum = 0
 		for allele in raw_alleles:
 			eval = allele > low[i] and allele <= high[i]
 			tf_table.append(eval)
 			if eval:
-				sum += 1
-		sum_list.append(sum)
+				result_sum += 1
+		sum_list.append(result_sum)
 
 		true_items = []
 		for eval_i in range(len(tf_table)):
@@ -131,6 +113,14 @@ def _get_sumList(nrows: int, raw_alleles: list, low: pd.core.series.Series, high
 	return sum_list, meanSD
 
 def _create_frequencyMatrix(nloci: int, ncol: np.int64, frequencies: list):
+	'''
+	Turn 1D frequencies list into 2D numpy matrix
+
+	:param nloci: The number of rows
+	:param ncol: The number of columns
+	:param frequencies: The 1D list that contains the frequency values
+	'''
+
 	# initialize frequency matrix with zeros
 	freqmatrix = np.zeros([nloci, ncol])
 
@@ -141,6 +131,10 @@ def _create_frequencyMatrix(nloci: int, ncol: np.int64, frequencies: list):
 	return freqmatrix
 
 def _pack_result(freq_length: np.ndarray, freqmatrix: np.ndarray, variability: np.ndarray):
+	'''
+	Returns a list that contains all frequency-related matrices and arrays
+	'''
+
 	ret = []
 	ret.append(freq_length)
 	ret.append(freqmatrix)
