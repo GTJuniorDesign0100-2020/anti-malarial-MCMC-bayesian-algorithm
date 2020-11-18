@@ -332,7 +332,7 @@ class AlgorithmSiteInstance:
         id_means = np.zeros((num_ids, num_loci))
         for y in range(num_loci):
             id_means[:, y] = bottleneck.nanmean(
-                cls._likelihood_inner_loop(state, y).reshape(num_ids, -1),
+                cls._likelihood_inner_loop(state, y),
                 axis=1
             )
         return id_means
