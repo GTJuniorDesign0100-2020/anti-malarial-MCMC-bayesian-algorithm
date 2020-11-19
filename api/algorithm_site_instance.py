@@ -9,7 +9,7 @@ from api.findposteriorfrequencies import findposteriorfrequencies
 import api.recrudescence_utils as recrudescence_utils
 from api.site_instance_state import SiteInstanceState, SampleType, HiddenAlleleType
 from api.switch_hidden import switch_hidden
-
+from api.calculate_frequencies import Frequencies
 
 class SavedState:
     def __init__(self, num_records, ids, classification, alleles0, allelesf, parameters):
@@ -43,9 +43,9 @@ class SavedState:
         num_loci = locinames.size
         self.parameters[0, record_index] = state.qq
         self.parameters[1, record_index] = state.dposterior
-        self.parameters[2 : (2 + num_loci), record_index] = state.frequencies_RR[1].max(axis=1)
+        self.parameters[2 : (2 + num_loci), record_index] = state.frequencies_RR.matrix.max(axis=1)
         self.parameters[2 + num_loci : (2 + 2 * num_loci), record_index] = np.sum(
-            state.frequencies_RR[1][:num_loci, :] ** 2
+            state.frequencies_RR.matrix[:num_loci, :] ** 2
         )
 
     def post_process_saved_state(self, locinames: np.ndarray, num_ids: int, max_MOI: int):
@@ -115,7 +115,6 @@ class SavedState:
 
         return posterior_df, summary_statistics_df
 
-
 class AlgorithmSiteInstance:
     '''
     Handles running the MCMC malaria recrudescence algorithm for a single
@@ -146,7 +145,7 @@ class AlgorithmSiteInstance:
         # TODO: Should this be here or on the state?
         self.alleles_definitions_RR = self._get_allele_definitions(
             genotypedata_RR, additional_neutral, self.locinames.size, locirepeats)
-
+        
         # Set up the initial state for the algorithm
         self.state = SiteInstanceState(
             self.ids,
@@ -156,7 +155,7 @@ class AlgorithmSiteInstance:
             additional_neutral,
             self.alleles_definitions_RR
         )
-
+        
     def run_algorithm(
         self,
         jobname: str,
@@ -345,7 +344,7 @@ class AlgorithmSiteInstance:
             np.sum(
                 # TODO: Make sure multiplications are down the right axis (I believe each element in the frequencies_RR 1D vector should multiply across 1 dvect row)
                 # Double-transpose to multiply across rows, not columns
-                (state.frequencies_RR[1][y, :int(state.frequencies_RR[0][y])]
+                (state.frequencies_RR.matrix[y, :int(state.frequencies_RR.lengths[y])]
                 * state.dvect[
                     state.correction_distance_matrix[y][
                         :,

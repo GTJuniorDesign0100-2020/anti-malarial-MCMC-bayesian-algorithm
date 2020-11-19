@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import itertools
 
+from api.calculate_frequencies import Frequencies
+
 def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 	z = random.uniform(0,1)
 	if (np.nansum(np.concatenate((state.hidden0[x], state.hiddenf[x]))) > 0):
@@ -16,9 +18,9 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 			if chosen <= (nloci * maxMOI):
 				chosenlocus = math.ceil(chosen/maxMOI)
 				old = state.recoded0[x][chosen - 1].astype(np.int64)
-				new = np.random.choice(np.arange(state.frequencies_RR[0][chosenlocus - 1])) + 1
+				new = np.random.choice(np.arange(state.frequencies_RR.lengths[chosenlocus - 1])) + 1
 				oldalleles = state.recoded0[x, np.intersect1d(np.arange(((chosenlocus - 1) * maxMOI), chosenlocus * maxMOI), np.where(state.hidden0[x] == 1)[0])]
-				newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR[2][chosenlocus - 1], 1))[0]
+				newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR.variability[chosenlocus - 1], 1))[0]
 				# newallele_length = np.mean([alleles_definitions_RR[chosenlocus]["0"][new], alleles_definitions_RR[chosenlocus]["1"][new]]) + np.random.normal(0, state.frequencies_RR[2][chosenlocus], 1)
 				repeatedold = state.qq
 				repeatednew = state.qq
@@ -28,8 +30,8 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 				if sum(oldalleles == new) >= 1:
 					repeatednew = 1
 
-				numerator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][new - 1].astype(np.int64)]) * repeatednew
-				denominator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][old].astype(np.int64)]) * repeatednew
+				numerator = sum(state.frequencies_RR.matrix[chosenlocus - 1][0:state.frequencies_RR.lengths[chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][new - 1].astype(np.int64)]) * repeatednew
+				denominator = sum(state.frequencies_RR.matrix[chosenlocus - 1][0:state.frequencies_RR.lengths[chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][old].astype(np.int64)]) * repeatednew
 				if denominator != 0:
 					alpha = numerator / denominator
 				else:
@@ -37,7 +39,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 
 				if z < alpha:
 					state.recoded0[x][chosen - 1] = new - 1
-					newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR[2][chosenlocus - 1], 1))[0]
+					newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR.variability[chosenlocus - 1], 1))[0]
 					state.alleles0[x][chosen - 1] = newallele_length
 
 					inputVectors = list(itertools.product(np.arange(state.MOIf[x]), np.arange(state.MOI0[x])))
@@ -56,7 +58,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 				chosen = chosen - nloci * maxMOI
 				chosenlocus = math.ceil(chosen/maxMOI)
 				old = state.recoded0[x][chosen - 1].astype(np.int64)
-				new = np.random.choice(np.arange(state.frequencies_RR[0][chosenlocus - 1])) + 1
+				new = np.random.choice(np.arange(state.frequencies_RR.lengths[chosenlocus - 1])) + 1
 				oldalleles = state.recoded0[x, np.intersect1d(np.arange(((chosenlocus - 1) * maxMOI), chosenlocus * maxMOI), np.where(state.hidden0[x] == 1)[0])]
 				# newallele_length = np.mean([alleles_definitions_RR[chosenlocus]["0"][new], alleles_definitions_RR[chosenlocus]["1"][new]]) + np.random.normal(0, state.frequencies_RR[2][chosenlocus], 1)
 				repeatedold = state.qq
@@ -67,13 +69,13 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 				if sum(oldalleles == new) >= 1:
 					repeatednew = 1
 
-				numerator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][new - 1].astype(np.int64)]) * repeatednew
-				denominator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][old].astype(np.int64)]) * repeatednew
+				numerator = sum(state.frequencies_RR.matrix[chosenlocus - 1][0:state.frequencies_RR.lengths[chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][new - 1].astype(np.int64)]) * repeatednew
+				denominator = sum(state.frequencies_RR.matrix[chosenlocus - 1][0:state.frequencies_RR.lengths[chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][old].astype(np.int64)]) * repeatednew
 				alpha = numerator / denominator
 
 				if z < alpha:
 					state.recodedf[x][chosen - 1] = new - 1
-					newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR[2][chosenlocus - 1], 1))[0]
+					newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR.variability[chosenlocus - 1], 1))[0]
 					state.alleles0[x][chosen - 1] = newallele_length
 
 					inputVectors = list(itertools.product(np.arange(state.MOIf[x]), np.arange(state.MOI0[x])))
@@ -92,9 +94,9 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 			if chosen <= (nloci * maxMOI):
 				chosenlocus = math.ceil(chosen/maxMOI)
 				old = state.recoded0[x][chosen - 1].astype(np.int64)
-				new = np.random.choice(np.arange(state.frequencies_RR[0][chosenlocus - 1])) + 1
+				new = np.random.choice(np.arange(state.frequencies_RR.lengths[chosenlocus - 1])) + 1
 				oldalleles = state.recoded0[x, np.intersect1d(np.arange(((chosenlocus - 1) * maxMOI), chosenlocus * maxMOI), np.where(state.hidden0[x] == 1)[0])]
-				newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR[2][chosenlocus - 1], 1))[0]
+				newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR.variability[chosenlocus - 1], 1))[0]
 				repeatedold = state.qq
 				repeatednew = state.qq
 
@@ -125,7 +127,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 
 				## likelihoodnew
 				likelihoodnew_numerator = state.dvect[np.round(newalldistance).astype(np.int64)]
-				likelihoodnew_demominator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus-1][newallrecrf[0].astype(np.int64)].astype(np.int64)])
+				likelihoodnew_demominator = sum(state.frequencies_RR.matrix[chosenlocus - 1][0:state.frequencies_RR.lengths[chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus-1][newallrecrf[0].astype(np.int64)].astype(np.int64)])
 				likelihoodnew = np.nanmean(likelihoodnew_numerator / likelihoodnew_demominator) * repeatednew
 
 
@@ -142,7 +144,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 						temp_allrecrf.append(item)
 				temp_allrecrf = np.asarray(temp_allrecrf).astype(np.int64)
 
-				temp = state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][temp_allrecrf].astype(np.int64)]
+				temp = state.frequencies_RR.matrix[chosenlocus - 1][0:state.frequencies_RR.lengths[chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][temp_allrecrf].astype(np.int64)]
 				likelihoodold_denominator = []
 				for i in temp:
 					likelihoodold_denominator.append(sum(i))
@@ -171,8 +173,8 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 				chosen = chosen - nloci * maxMOI
 				chosenlocus = math.ceil(chosen/maxMOI)
 				old = state.recoded0[x][chosen - 1].astype(np.int64)
-				new = np.random.choice(np.arange(state.frequencies_RR[0][chosenlocus - 1])) + 1
-				newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR[2][chosenlocus - 1], 1))[0]
+				new = np.random.choice(np.arange(state.frequencies_RR.lengths[chosenlocus - 1])) + 1
+				newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR.variability[chosenlocus - 1], 1))[0]
 				oldalleles = state.recodedf[x, np.intersect1d(np.arange(((chosenlocus - 1) * maxMOI), chosenlocus * maxMOI), np.where(state.hidden0[x] == 1)[0])]
 				repeatedold = state.qq
 				repeatednew = state.qq
@@ -203,7 +205,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 
 				## likelihoodnew
 				likelihoodnew_numerator = state.dvect[np.round(newalldistance).astype(np.int64)]
-				likelihoodnew_demominator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus-1][newallrecrf[0].astype(np.int64)].astype(np.int64)])
+				likelihoodnew_demominator = sum(state.frequencies_RR.matrix[chosenlocus - 1][0:state.frequencies_RR.lengths[chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus-1][newallrecrf[0].astype(np.int64)].astype(np.int64)])
 				likelihoodnew = np.nanmean(likelihoodnew_numerator / likelihoodnew_demominator) * repeatednew
 
 
@@ -219,7 +221,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 					if not np.isnan(item):
 						temp_allrecrf.append(item)
 				temp_allrecrf = np.asarray(temp_allrecrf).astype(np.int64)
-				temp = state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][temp_allrecrf].astype(np.int64)]
+				temp = state.frequencies_RR.matrix[chosenlocus - 1][0:state.frequencies_RR.lengths[chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][temp_allrecrf].astype(np.int64)]
 				likelihoodold_denominator = []
 				for i in temp:
 					likelihoodold_denominator.append(sum(i))

@@ -109,7 +109,6 @@ def _get_sumList(nrows: int, raw_alleles: list, low: pd.core.series.Series, high
 	meanSD = 0
 	if (len(sd_list) > 0):
 		meanSD = np.mean(sd_list)
-
 	return sum_list, meanSD
 
 def _create_frequencyMatrix(nloci: int, ncol: np.int64, frequencies: list):
@@ -130,13 +129,23 @@ def _create_frequencyMatrix(nloci: int, ncol: np.int64, frequencies: list):
 			freqmatrix[j][i] = frequencies[j][i]
 	return freqmatrix
 
-def _pack_result(freq_length: np.ndarray, freqmatrix: np.ndarray, variability: np.ndarray):
+def _pack_result(freq_lengths: np.ndarray, freqmatrix: np.ndarray, variability: np.ndarray):
 	'''
-	Returns a list that contains all frequency-related matrices and arrays
+	Returns a Frequency object that contains all frequency-related matrices and arrays
+	'''
+	frequency_result = Frequencies(freq_lengths, freqmatrix, variability)
+
+	return frequency_result
+
+
+class Frequencies:
+	'''
+	Holds the related results of calculated frequencies
 	'''
 
-	ret = []
-	ret.append(freq_length)
-	ret.append(freqmatrix)
-	ret.append(variability)
-	return ret
+	def __init__(self, freq_lengths: np.ndarray, freqmatrix: np.ndarray, variability: np.ndarray):
+		self.lengths = freq_lengths
+		self.matrix = freqmatrix
+		self.variability = variability
+
+

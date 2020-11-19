@@ -8,7 +8,7 @@ import numpy as np
 from api.algorithm_instance import AlgorithmInstance
 import api.recrudescence_utils as recrudescence_utils
 from api.recrudescence_file_parser import RecrudescenceFileParser
-from api.calculate_frequencies import calculate_frequencies3
+from api.calculate_frequencies import calculate_frequencies3, Frequencies
 
 # NOTE: Makes this reliant on AlgorithmInstance tests passing
 example_file = os.path.join(
@@ -215,11 +215,8 @@ def expected_Benguela_frequencies():
         ])
     index_2 = np.array([0.4821891, 0.14313027, 0.08446277, 0.24941966, 0.30618052, 0.25014729, 0.79079775])
 
-    expected_list.append(index_0)
-    expected_list.append(index_1)
-    expected_list.append(index_2)
-
-    return expected_list
+    expected_frequencies_RR = Frequencies(index_0, index_1, index_2)
+    return expected_frequencies_RR
 
 @pytest.fixture
 def expected_Lunda_Sul_frequencies():
@@ -258,11 +255,8 @@ def expected_Lunda_Sul_frequencies():
         ])
     index_2 = np.array([0.30069772, 0.32102995, 0.35015972, 0.13598753, 0.18125558, 0.23458575, 0.50453622])
 
-    expected_list.append(index_0)
-    expected_list.append(index_1)
-    expected_list.append(index_2)
-
-    return expected_list
+    expected_frequencies_RR = Frequencies(index_0, index_1, index_2)
+    return expected_frequencies_RR
 
 @pytest.fixture
 def expected_Zaire_frequencies():
@@ -308,37 +302,31 @@ def expected_Zaire_frequencies():
         ])
     index_2 = np.array([0.22105065, 0.22734084, 0.24295935, 0.2933828 , 0.35520227,0.11494194, 0.47930888])
 
-    expected_list.append(index_0)
-    expected_list.append(index_1)
-    expected_list.append(index_2)
-
-    return expected_list
+    expected_frequencies_RR = Frequencies(index_0, index_1, index_2)
+    return expected_frequencies_RR
 
 
-def test_Benguela__define_alleles_output_correct(expected_Benguela_frequencies, Benguela_define_alleles):
+def test_Benguela_calculate_frequencies_output_correct(expected_Benguela_frequencies, Benguela_define_alleles):
     result_list = calculate_frequencies3(
         pd.concat([genotypedata_RR_Benguela, additional_neutral_Benguela]), Benguela_define_alleles)
 
-    assert len(result_list) == len(expected_Benguela_frequencies)
+    np.testing.assert_array_almost_equal(expected_Benguela_frequencies.lengths, result_list.lengths, decimal=5)
+    np.testing.assert_array_almost_equal(expected_Benguela_frequencies.matrix, result_list.matrix, decimal=5)
+    np.testing.assert_array_almost_equal(expected_Benguela_frequencies.variability, result_list.variability, decimal=5)
 
-    for index in range(len(result_list)):
-        np.testing.assert_array_almost_equal(expected_Benguela_frequencies[index], result_list[index], decimal=5)
-
-def test_Lunda_Sul__define_alleles_output_correct(expected_Lunda_Sul_frequencies, Lunda_Sul_define_alleles):
+def test_Lunda_Sul_calculate_frequencies_output_correct(expected_Lunda_Sul_frequencies, Lunda_Sul_define_alleles):
     result_list = calculate_frequencies3(
         pd.concat([genotypedata_RR_Lunda_Sul, additional_neutral_Lunda_Sul]), Lunda_Sul_define_alleles)
 
-    assert len(result_list) == len(expected_Lunda_Sul_frequencies)
+    np.testing.assert_array_almost_equal(expected_Lunda_Sul_frequencies.lengths, result_list.lengths, decimal=5)
+    np.testing.assert_array_almost_equal(expected_Lunda_Sul_frequencies.matrix, result_list.matrix, decimal=5)
+    np.testing.assert_array_almost_equal(expected_Lunda_Sul_frequencies.variability, result_list.variability, decimal=5)
 
-    for index in range(len(result_list)):
-        np.testing.assert_array_almost_equal(expected_Lunda_Sul_frequencies[index], result_list[index], decimal=5)
-
-def test_Zaire_define_alleles_output_correct(expected_Zaire_frequencies, Zaire_define_alleles):
+def test_Zaire_calculate_frequencies_output_correct(expected_Zaire_frequencies, Zaire_define_alleles):
     result_list = calculate_frequencies3(
         pd.concat([genotypedata_RR_Zaire, additional_neutral_Zaire]), Zaire_define_alleles)
 
-    assert len(result_list) == len(expected_Zaire_frequencies)
-
-    for index in range(len(result_list)):
-        np.testing.assert_array_almost_equal(expected_Zaire_frequencies[index], result_list[index], decimal=5)
+    np.testing.assert_array_almost_equal(expected_Zaire_frequencies.lengths, result_list.lengths, decimal=5)
+    np.testing.assert_array_almost_equal(expected_Zaire_frequencies.matrix, result_list.matrix, decimal=5)
+    np.testing.assert_array_almost_equal(expected_Zaire_frequencies.variability, result_list.variability, decimal=5)
 
