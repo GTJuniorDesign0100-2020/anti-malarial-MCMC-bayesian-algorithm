@@ -1,5 +1,6 @@
 from typing import List
 
+import bottleneck   # Highly optimized versions of slow numpy functions
 import numpy as np
 import pandas as pd
 import scipy.stats as sp_stats
@@ -289,8 +290,7 @@ class AlgorithmSiteInstance:
         appropriately
         '''
         # propose new classification
-        likelihood_ratios = cls._likelihood_ratios(
-            state, num_ids, num_loci, max_MOI)
+        likelihood_ratios = cls._likelihood_ratios(state, num_ids, num_loci)
 
         cls._update_classifications(state, likelihood_ratios, num_ids, rand)
 
@@ -308,52 +308,68 @@ class AlgorithmSiteInstance:
         cls,
         state: SiteInstanceState,
         num_ids: int,
-        num_loci: int,
-        max_MOI: int):
+        num_loci: int):
         '''
         TODO: Explain what this does?
         Returns the likelihood ratio for each sample in the dataset, given our
         current state
         '''
-        likelihoodratio = np.zeros(num_ids)
-        # TODO: Finish vectorizing this
+        likelihoodratios = np.zeros(num_ids)
 
-        for x in range(num_ids):
-            # id mean for what?
-            id_means = np.zeros(num_loci)
-            for y in range(num_loci):
-                id_means[y] = np.nanmean(
-                    cls._likelihood_inner_loop(state, max_MOI, x, y)
-                )
-            if id_means.all() != 0:
-                likelihoodratio[x] = np.exp(np.sum(np.log(id_means)))
-        return likelihoodratio
+        id_means = cls._likelihood_get_id_means(state, num_ids, num_loci)
+
+        # Replace 0 with smallest machine-representable float
+        id_means[id_means == 0] = np.finfo(float).eps
+        likelihoodratios = np.exp(np.sum(np.log(id_means), axis=1))
+        return likelihoodratios
 
     @classmethod
-    def _likelihood_inner_loop(cls, state, max_MOI, x: int, y: int):
+    def _likelihood_get_id_means(cls, state, num_ids: int, num_loci: int):
+        '''
+        TODO: What is id_means used for?
+        '''
+        # TODO: Finish vectorizing this
+        id_means = np.zeros((num_ids, num_loci))
+        for y in range(num_loci):
+            id_means[:, y] = bottleneck.nanmean(
+                cls._likelihood_inner_loop(state, y),
+                axis=1
+            )
+        return id_means
+
+    @classmethod
+    def _likelihood_inner_loop(cls, state, locus: int):
         '''
         TODO: What does this actually do?
-        Returns a 1D vector of max_MOI**2 length
+        Returns a 2D array of num_ids * max_MOI**2 length
         '''
-        def non_nan(array: np.ndarray):
-            # Needed since converting NaN to int has undefined behavior
-            return array[~np.isnan(array)]
+        # NOTE: Assumes allrecrf and alldistance are NaN for the same samples/loci pairs (should always be true)
+        nan_indices = np.isnan(state.alldistance[:, locus, :])
 
-        dvect_indices = np.round(non_nan(state.alldistance[x, y, :])).astype(int)
-        return (state.dvect[dvect_indices] /
+        dvect_indices = np.round(state.alldistance[:, locus, :]).astype(int)
+        allrecrf_indices = state.allrecrf[:, locus, :].astype(int)
+        # Since int conversion is undefined for NaN, temporarily set to 0 and
+        # remove these indices' results later
+        dvect_indices[nan_indices] = 0
+        allrecrf_indices[nan_indices] = 0
+
+        result = (state.dvect[dvect_indices] /
             # Should get an array of max_MOI**2 sums
             np.sum(
-                # TODO: Make sure multiplications are down the right axis (I believe each element in the frequencies_RR 1D vector should multiply across 1 dvect row)
+                # Each element in the frequencies_RR 1D vector should multiply across 1 dvect row)
                 # Double-transpose to multiply across rows, not columns
-                (state.frequencies_RR[1][y, :int(state.frequencies_RR[0][y])]
+                (state.frequencies_RR[1][locus, :int(state.frequencies_RR[0][locus])]
                 * state.dvect[
-                    state.correction_distance_matrix[y][
-                        :,
-                        non_nan(state.allrecrf[x, y, :max_MOI**2]).astype(int),
+                    # TODO: Not sure how to vectorize for loci, since correction distance matrices aren't all the same size?
+                    state.correction_distance_matrix[locus][
+                        :, allrecrf_indices,
                     ].astype(int)
                 ].T).T,
                 axis=0
             ))
+        # Set entries that should've been NaN in the first place
+        result[nan_indices] = np.nan
+        return result
 
     @classmethod
     def _update_classifications(
