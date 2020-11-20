@@ -84,6 +84,7 @@ Georgia Tech Junior Design 2020 project; built in collaboration with Dr. Mateusz
 pip install numpy
 pip install pandas
 pip install scipy
+pip install bottleneck
 ```
 
 4.  (Optional) If you want to develop for this project, make sure to also install [pytest](https://docs.pytest.org/en/stable/getting-started.html) to run our unit tests and verify the code is working.
