@@ -81,8 +81,9 @@ class RecrudescenceTest(Resource):
         json_results = {}
         try:
             json_results = self._get_test_results_json(uploaded_file, iterations, loci_repeats)
-        except LociRepeatError:
-            return error_response('Loci repeats has an insufficient number of entries', 400)
+        except LociRepeatError as e:
+            print(e)
+            return error_response(str(e), 400)
         except Exception as e:
             # TODO: Return more specific error message?
             print(e)
@@ -98,8 +99,8 @@ class RecrudescenceTest(Resource):
         ):
         '''
         Runs a recrudescence test on the given data and returns the test results
-        via JSON (plus the status code of the test). If an error occurs,
-        returns an error message and a 500 status code.
+        via JSON (plus the status code of the test). If an error occurs, raises
+        an exception.
         '''
         run_start_datetime = datetime.datetime.utcnow()
         start_time = time.time()
@@ -112,8 +113,8 @@ class RecrudescenceTest(Resource):
 
         try:
             results = test_run.run_algorithm(iterations, burnin, record_interval)
-        except LociRepeatError:
-            raise LociRepeatError("Locirepeats variable has an insufficient number of entries")
+        except LociRepeatError as e:
+            raise e
 
         posterior_recrudescence_distribution_df, probability_of_recrudescence_df = results.get_summary_stats()
 

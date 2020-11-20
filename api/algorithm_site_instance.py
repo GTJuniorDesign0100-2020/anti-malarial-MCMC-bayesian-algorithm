@@ -151,7 +151,7 @@ class AlgorithmSiteInstance:
         self.locinames = pd.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
 
         if len(self.locinames) > len(locirepeats):
-            raise LociRepeatError("Locirepeats variable has an insufficient number of entries")
+            raise LociRepeatError(f'Locirepeats variable has an insufficient number of entries (got {len(locirepeats)}, expected {len(self.locinames)})')
 
         # TODO: Should this be here or on the state?
         self.alleles_definitions_RR = self._get_allele_definitions(
