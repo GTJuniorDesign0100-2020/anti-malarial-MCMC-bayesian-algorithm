@@ -12,6 +12,11 @@ from api.site_instance_state import SiteInstanceState, SampleType, HiddenAlleleT
 from api.switch_hidden import switch_hidden
 
 
+class LociRepeatError(Exception):
+    """Raised when locirepeats variable is malformatted"""
+    pass
+
+
 class SavedState:
     def __init__(self, num_records, ids, classification, alleles0, allelesf, parameters):
         self.num_records = num_records
@@ -121,6 +126,8 @@ class AlgorithmSiteInstance:
     '''
     Handles running the MCMC malaria recrudescence algorithm for a single
     "arm"/site's data
+
+    Throws ValueError for malformatted locirepeats
     '''
 
     def __init__(
@@ -143,6 +150,9 @@ class AlgorithmSiteInstance:
         # NOTE: pd.unique used instead of np.unique to preserve ordering
         self.ids = recrudescence_utils.get_sample_ids(genotypedata_RR, 'Day 0')
         self.locinames = pd.unique(genotypedata_RR.columns[1:].str.split("_").str[0])
+
+        if len(self.locinames) > len(locirepeats):
+            raise LociRepeatError("Locirepeats variable has an insufficient number of entries")
 
         # TODO: Should this be here or on the state?
         self.alleles_definitions_RR = self._get_allele_definitions(
