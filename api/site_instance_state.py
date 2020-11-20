@@ -4,19 +4,16 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from api.calculate_frequencies import calculate_frequencies3
-
+from api.calculate_frequencies import calculate_frequencies3, Frequencies
 
 class SampleType(enum.Enum):
     REINFECTION = 0
     RECRUDESCENCE = 1
 
-
 class HiddenAlleleType(enum.Enum):
     MISSING = 1
     OBSERVED = 0
     UNKNOWN = np.nan    # TODO: Confirm this is needed?
-
 
 class SiteInstanceState:
     '''
@@ -37,7 +34,6 @@ class SiteInstanceState:
         TODO: Elaborate, shorten argument list?
         '''
         self._create_empty_state(ids.size, locinames.size, maxMOI)
-
         self.MOI0, self.MOIf = self._calculate_sample_MOI(
             genotypedata_RR, ids, locinames)
         self._initialize_alleles(
@@ -47,7 +43,6 @@ class SiteInstanceState:
         self.dvect = self._get_initial_dvect(alleles_definitions_RR)
         self.qq = np.nan
         self.dposterior = 0.75  # TODO: What is this?
-
         # TODO: Unsure if these should be here, since they're read-only state?
         # estimate frequencies
         self.frequencies_RR = calculate_frequencies3(
@@ -55,7 +50,7 @@ class SiteInstanceState:
             alleles_definitions_RR)
         self.correction_distance_matrix = self._get_correction_distances(
             alleles_definitions_RR)
-
+        
     def _create_empty_state(self, num_ids: int, num_loci: int, max_MOI: int):
         '''
         Creates the initial empty data structures in the state to be populated
@@ -425,10 +420,10 @@ class SiteInstanceState:
 
         new_hidden_alleles = rand.choice(
             # Select from first row (count of how many probabilities they are)
-            np.arange(0, int(self.frequencies_RR[0][j])),
+            np.arange(0, int(self.frequencies_RR.lengths[j])),
             size=num_missing,
             replace=True,
-            p=self.frequencies_RR[1][j, 0: int(self.frequencies_RR[0][j])]
+            p=self.frequencies_RR.matrix[j, 0: int(self.frequencies_RR.lengths[j])]
         )
         # Choose random initial data for missing alleles
         recoded[i, missing_alleles_indices] = new_hidden_alleles

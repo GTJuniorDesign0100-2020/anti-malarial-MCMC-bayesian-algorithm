@@ -10,7 +10,7 @@ from api.findposteriorfrequencies import findposteriorfrequencies
 import api.recrudescence_utils as recrudescence_utils
 from api.site_instance_state import SiteInstanceState, SampleType, HiddenAlleleType
 from api.switch_hidden import switch_hidden
-
+from api.calculate_frequencies import Frequencies
 
 class LociRepeatError(Exception):
     """Raised when locirepeats variable is malformatted"""
@@ -49,9 +49,9 @@ class SavedState:
         num_loci = locinames.size
         self.parameters[0, record_index] = state.qq
         self.parameters[1, record_index] = state.dposterior
-        self.parameters[2 : (2 + num_loci), record_index] = state.frequencies_RR[1].max(axis=1)
+        self.parameters[2 : (2 + num_loci), record_index] = state.frequencies_RR.matrix.max(axis=1)
         self.parameters[2 + num_loci : (2 + 2 * num_loci), record_index] = np.sum(
-            state.frequencies_RR[1][:num_loci, :] ** 2
+            state.frequencies_RR.matrix[:num_loci, :] ** 2
         )
 
     def post_process_saved_state(self, locinames: np.ndarray, num_ids: int, max_MOI: int):
@@ -120,7 +120,6 @@ class SavedState:
             index=["q", "d", *locinames.tolist(), *locinames.tolist(), "Mean diversity"])
 
         return posterior_df, summary_statistics_df
-
 
 class AlgorithmSiteInstance:
     '''
@@ -368,7 +367,7 @@ class AlgorithmSiteInstance:
             np.sum(
                 # Each element in the frequencies_RR 1D vector should multiply across 1 dvect row)
                 # Double-transpose to multiply across rows, not columns
-                (state.frequencies_RR[1][locus, :int(state.frequencies_RR[0][locus])]
+                (state.frequencies_RR.matrix[locus, :int(state.frequencies_RR.lengths[locus])]
                 * state.dvect[
                     # TODO: Not sure how to vectorize for loci, since correction distance matrices aren't all the same size?
                     state.correction_distance_matrix[locus][

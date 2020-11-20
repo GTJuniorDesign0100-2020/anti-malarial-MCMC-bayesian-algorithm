@@ -1,9 +1,10 @@
 import numpy as np
 
+from api.calculate_frequencies import Frequencies
 
 def findposteriorfrequencies(x: int, tempdata: np.ndarray, maxMOI: int, frequencies_RR, rand: np.random.RandomState):
     data = tempdata[:,np.arange(1, maxMOI+1) + (x * maxMOI) - 1]
-    nalleles = frequencies_RR[0][x]
+    nalleles = frequencies_RR.lengths[x]
 
     freq_prior_alpha = [1] * nalleles
 
@@ -25,4 +26,4 @@ def findposteriorfrequencies(x: int, tempdata: np.ndarray, maxMOI: int, frequenc
 
     freq_posterior_alpha = freq_prior_alpha + table
     freq_posterior_alpha = freq_posterior_alpha.tolist()
-    frequencies_RR[1][x, 0:nalleles] = rand.dirichlet(freq_posterior_alpha, 1)
+    frequencies_RR.matrix[x, 0:nalleles] = rand.dirichlet(freq_posterior_alpha, 1)
