@@ -5,7 +5,7 @@ import pandas as pd
 import itertools
 
 # Use this during a debug to save the state for a comparison later.
-from tests.test_switch_hidden import save_switch_state;
+from tests.test_switch_hidden import save_switch_state
 
 def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 
@@ -33,7 +33,7 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 
 		reinfection = state.classification[x] == 0
 		# TODO: Rename this. what is valid_chosen?
-		valid_chosen = chosen <= (nloci * maxMOI);
+		valid_chosen = chosen <= (nloci * maxMOI)
 
 		if (not valid_chosen):
 			chosen = chosen - nloci * maxMOI
@@ -132,10 +132,6 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 				newalldistance = list(map(lambda y: abs(tempalleles[allpossiblerecrud[1][y]] - state.alleles0[x][
 					maxMOI * chosenlocus + allpossiblerecrud[0][y]]), np.arange(0, allpossiblerecrud.shape[0])))
 				newallrecrf = temprecoded[allpossiblerecrud[1]]
-
-			newrecr0 = maxMOI * chosenlocus + allpossiblerecrud[0][newclosestrecrud]
-			newrecrf = maxMOI * chosenlocus + allpossiblerecrud[1][newclosestrecrud]
-
 
 			## likelihoodnew
 			likelihoodnew_numerator = state.dvect[np.round(newalldistance).astype(np.int64)]
