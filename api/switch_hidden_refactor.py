@@ -76,9 +76,15 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 				order = [1, 0] # setting column's order
 				allpossiblerecrud = allpossiblerecrud[[allpossiblerecrud.columns[i] for i in order]]
 				allpossiblerecrud.columns = [0, 1]
-				closestrecrud = np.argmin(list(map(lambda y: unknownhelper_1(state, x, maxMOI, chosenlocus, allpossiblerecrud, y), np.arange(0, allpossiblerecrud.shape[0]))))
+
+				# Not sure what this list actually is, I suspect it refers to distances between
+				# microsatelites of alleles. Either way, we calculate it twice, and the calculation seems
+				# kinda expensive, so I'm defining it here to avoid that issue.
+				dist_list = list(map(lambda y: unknownhelper_1(state, x, maxMOI, chosenlocus, allpossiblerecrud, y), np.arange(0, allpossiblerecrud.shape[0])))
+
+				closestrecrud = np.argmin(dist_list)
 				state.mindistance[x][chosenlocus] = abs(state.alleles0[x][maxMOI * chosenlocus + allpossiblerecrud[0][closestrecrud]] - state.allelesf[x][maxMOI * chosenlocus + allpossiblerecrud[1][closestrecrud]])
-				state.alldistance[x][chosenlocus][0:allpossiblerecrud.shape[0]] = list(map(lambda y: unknownhelper_1(state, x, maxMOI, chosenlocus, allpossiblerecrud, y), np.arange(0, allpossiblerecrud.shape[0])))
+				state.alldistance[x][chosenlocus][0:allpossiblerecrud.shape[0]] = dist_list
 				state.allrecrf[x][chosenlocus][0:allpossiblerecrud.shape[0]] = state.recodedf[x][maxMOI * chosenlocus + allpossiblerecrud[1]]
 				state.recr0[x][chosenlocus] = maxMOI * chosenlocus + allpossiblerecrud[0][closestrecrud]
 				state.recrf[x][chosenlocus] = maxMOI * chosenlocus + allpossiblerecrud[1][closestrecrud]
@@ -182,6 +188,8 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 				state.recr0[x][chosenlocus] = maxMOI * (chosenlocus) + allpossiblerecrud[0][newclosestrecrud]
 				state.recrf[x][chosenlocus] = maxMOI * (chosenlocus) + allpossiblerecrud[1][newclosestrecrud]
 
+# TODO: Determine what this subroutine actually is.
+# I think its for calculating a distance between microsatelite alleles. Is that right?
 def unknownhelper_1(state,x,maxMOI,chosenlocus,allpossiblerecrud,y):
 	value = abs(state.alleles0[x][maxMOI * chosenlocus + allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * chosenlocus + allpossiblerecrud[1][y]])
 	return value
