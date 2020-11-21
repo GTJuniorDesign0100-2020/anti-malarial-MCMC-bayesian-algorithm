@@ -77,7 +77,7 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 				allpossiblerecrud = allpossiblerecrud[[allpossiblerecrud.columns[i] for i in order]]
 				allpossiblerecrud.columns = [0, 1]
 				closestrecrud = np.argmin(list(map(lambda y: unknownhelper_1(state, x, maxMOI, chosenlocus, allpossiblerecrud, y), np.arange(0, allpossiblerecrud.shape[0]))))
-				state.mindistance[x][chosenlocus] = abs(state.alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][closestrecrud]] - state.allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][closestrecrud]])
+				state.mindistance[x][chosenlocus] = abs(state.alleles0[x][maxMOI * chosenlocus + allpossiblerecrud[0][closestrecrud]] - state.allelesf[x][maxMOI * chosenlocus + allpossiblerecrud[1][closestrecrud]])
 				state.alldistance[x][chosenlocus][0:allpossiblerecrud.shape[0]] = list(map(lambda y: unknownhelper_1(state, x, maxMOI, chosenlocus, allpossiblerecrud, y), np.arange(0, allpossiblerecrud.shape[0])))
 				state.allrecrf[x][chosenlocus][0:allpossiblerecrud.shape[0]] = state.recodedf[x][maxMOI * chosenlocus + allpossiblerecrud[1]]
 				state.recr0[x][chosenlocus] = maxMOI * chosenlocus + allpossiblerecrud[0][closestrecrud]
