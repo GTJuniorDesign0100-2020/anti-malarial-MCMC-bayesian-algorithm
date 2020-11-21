@@ -119,9 +119,16 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 				temprecoded = state.recoded0[x][maxMOI * chosenlocus: maxMOI * chosenlocus + maxMOI]
 				temprecoded[chosen - chosenlocus * maxMOI] = new - 1
 
-				newclosestrecrud = np.argmin(list(map(lambda y: abs(tempalleles[allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * chosenlocus + allpossiblerecrud[1][y]]), np.arange(0, allpossiblerecrud.shape[0]))))
+				# This was seen in the earlier branch as well, I believe
+				# this is a distance calculation taking into account that we have
+				# no day0 data to work with. Either way, it was calculated twice,
+				# so I have put the list here again.
+
+				dist_list = list(map(lambda y: unknownhelper_2(state,tempalleles,x,maxMOI,chosenlocus,allpossiblerecrud,y), np.arange(0, allpossiblerecrud.shape[0])))
+
+				newclosestrecrud = np.argmin(dist_list)
 				newmindistance = abs(tempalleles[allpossiblerecrud[0][newclosestrecrud]] - state.allelesf[x][maxMOI * chosenlocus + allpossiblerecrud[1][newclosestrecrud]])
-				newalldistance = list(map(lambda y: abs(tempalleles[allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * chosenlocus + allpossiblerecrud[1][y]]), np.arange(0, allpossiblerecrud.shape[0])))
+				newalldistance = dist_list
 				newallrecrf = state.recodedf[x][maxMOI * chosenlocus + allpossiblerecrud[1]]
 			else:
 				tempalleles = state.allelesf[x][maxMOI * chosenlocus: maxMOI * chosenlocus + maxMOI]
@@ -192,4 +199,10 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 # I think its for calculating a distance between microsatelite alleles. Is that right?
 def unknownhelper_1(state,x,maxMOI,chosenlocus,allpossiblerecrud,y):
 	value = abs(state.alleles0[x][maxMOI * chosenlocus + allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * chosenlocus + allpossiblerecrud[1][y]])
+	return value
+
+# TODO: Determine what this subroutine actually is.
+# I think its for calculating a distance between microsatelite alleles, when we don't have day 0 data. Is that right?
+def unknownhelper_2(state,tempalleles,x,maxMOI,chosenlocus,allpossiblerecrud,y):
+	value = abs(tempalleles[allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * chosenlocus + allpossiblerecrud[1][y]])
 	return value
