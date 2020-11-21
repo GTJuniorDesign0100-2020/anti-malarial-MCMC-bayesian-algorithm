@@ -21,6 +21,8 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 	# inferred_allele_count = np.nansum(np.concatenate((state.hidden0[x], state.hiddenf[x])))
 	inferred_allele_count = np.nansum(state.hidden0) + np.nansum(state.hiddenf)
 
+	# Figure out chosen & chosenlocus
+	# QUESTION: What is 'chosen'? Chosen..... allele?
 	if (inferred_allele_count > 0):
 		# removed redundant calculation
 		inferred_alleles = np.where(np.concatenate((state.hidden0[x], state.hiddenf[x])) == 1)[0]
@@ -45,12 +47,10 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 
 		# If the sample is categorized as a reinfection...
 		if (reinfection):
-
 			old = state.recoded0[x][chosen].astype(np.int64)
 			new = np.random.choice(np.arange(state.frequencies_RR[0][chosenlocus])) + 1
 			oldalleles = state.recoded0[x, np.intersect1d(np.arange((chosenlocus * maxMOI), (chosenlocus + 1) * maxMOI), np.where(state.hidden0[x] == 1)[0])]
 			repeatednew = state.qq
-
 
 			if sum(oldalleles == new) >= 1:
 				repeatednew = 1
@@ -76,9 +76,9 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 				order = [1, 0] # setting column's order
 				allpossiblerecrud = allpossiblerecrud[[allpossiblerecrud.columns[i] for i in order]]
 				allpossiblerecrud.columns = [0, 1]
-				closestrecrud = np.argmin(list(map(lambda y: abs(state.alleles0[x][maxMOI * chosenlocus + allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * chosenlocus + allpossiblerecrud[1][y]]), np.arange(0, allpossiblerecrud.shape[0]))))
+				closestrecrud = np.argmin(list(map(lambda y: unknownhelper_1(state, x, maxMOI, chosenlocus, allpossiblerecrud, y), np.arange(0, allpossiblerecrud.shape[0]))))
 				state.mindistance[x][chosenlocus] = abs(state.alleles0[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[0][closestrecrud]] - state.allelesf[x][maxMOI * (chosenlocus - 1) + allpossiblerecrud[1][closestrecrud]])
-				state.alldistance[x][chosenlocus][0:allpossiblerecrud.shape[0]] = list(map(lambda y: abs(state.alleles0[x][maxMOI * chosenlocus + allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * chosenlocus + allpossiblerecrud[1][y]]), np.arange(0, allpossiblerecrud.shape[0])))
+				state.alldistance[x][chosenlocus][0:allpossiblerecrud.shape[0]] = list(map(lambda y: unknownhelper_1(state, x, maxMOI, chosenlocus, allpossiblerecrud, y), np.arange(0, allpossiblerecrud.shape[0])))
 				state.allrecrf[x][chosenlocus][0:allpossiblerecrud.shape[0]] = state.recodedf[x][maxMOI * chosenlocus + allpossiblerecrud[1]]
 				state.recr0[x][chosenlocus] = maxMOI * chosenlocus + allpossiblerecrud[0][closestrecrud]
 				state.recrf[x][chosenlocus] = maxMOI * chosenlocus + allpossiblerecrud[1][closestrecrud]
@@ -158,9 +158,10 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 				likelihoodold_denominator.append(sum(i))
 
 			likelihoodold_denominator = np.asarray(likelihoodold_denominator)
-
 			likelihoodold = np.nanmean(likelihoodold_numerator / likelihoodold_denominator) * repeatedold
 
+			# Prepare an 'alpha' from our previous likelihoods that will determine whether or not
+			# We are going to update the state.
 			if likelihoodnew == likelihoodold:
 				alpha = 1
 			else:
@@ -180,3 +181,7 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 				state.allrecrf[x][chosenlocus][0:allpossiblerecrud.shape[0]] = newallrecrf
 				state.recr0[x][chosenlocus] = maxMOI * (chosenlocus) + allpossiblerecrud[0][newclosestrecrud]
 				state.recrf[x][chosenlocus] = maxMOI * (chosenlocus) + allpossiblerecrud[1][newclosestrecrud]
+
+def unknownhelper_1(state,x,maxMOI,chosenlocus,allpossiblerecrud,y):
+	value = abs(state.alleles0[x][maxMOI * chosenlocus + allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * chosenlocus + allpossiblerecrud[1][y]])
+	return value
