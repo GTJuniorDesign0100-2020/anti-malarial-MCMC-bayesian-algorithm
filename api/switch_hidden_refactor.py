@@ -8,6 +8,7 @@ import itertools
 from tests.test_switch_hidden import save_switch_state;
 
 def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
+
 	# Comment and uncomment as needed during debugging.
 	# It's not the best way to do this, but for now it works.
 	# save_switch_state(x, nloci, maxMOI, alleles_definitions_RR, state,filename="debug_switch_state")
@@ -33,24 +34,24 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 		reinfection = state.classification[x] == 0
 		# TODO: Rename this. what is valid_chosen?
 		valid_chosen = chosen <= (nloci * maxMOI);
+
 		if (not valid_chosen):
 			chosen = chosen - nloci * maxMOI
 		chosenlocus = math.ceil(chosen / maxMOI)
 
+		# If the sample is categorized as a reinfection...
 		if (reinfection):
+
 			old = state.recoded0[x][chosen - 1].astype(np.int64)
 			new = np.random.choice(np.arange(state.frequencies_RR[0][chosenlocus - 1])) + 1
 			oldalleles = state.recoded0[x, np.intersect1d(np.arange(((chosenlocus - 1) * maxMOI), chosenlocus * maxMOI), np.where(state.hidden0[x] == 1)[0])]
-			newallele_length = (np.mean((alleles_definitions_RR[chosenlocus - 1]["0"][new-1], alleles_definitions_RR[chosenlocus - 1]["1"][new-1])) + np.random.normal(0, state.frequencies_RR[2][chosenlocus - 1], 1))[0]
-			# newallele_length = np.mean([alleles_definitions_RR[chosenlocus]["0"][new], alleles_definitions_RR[chosenlocus]["1"][new]]) + np.random.normal(0, state.frequencies_RR[2][chosenlocus], 1)
-			repeatedold = state.qq
 			repeatednew = state.qq
 
-			if sum(oldalleles == old) >= 1:
-				repeatedold = 1
+			
 			if sum(oldalleles == new) >= 1:
 				repeatednew = 1
 
+			''' THIS LINE REPRESENTS WHERE I AM IN A REFACTOR PASSTHROUGH AT THE MOMENT '''
 			numerator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][new - 1].astype(np.int64)]) * repeatednew
 			denominator = sum(state.frequencies_RR[1][chosenlocus - 1][0:state.frequencies_RR[0][chosenlocus - 1]] * state.dvect[state.correction_distance_matrix[chosenlocus - 1][old].astype(np.int64)]) * repeatednew
 
