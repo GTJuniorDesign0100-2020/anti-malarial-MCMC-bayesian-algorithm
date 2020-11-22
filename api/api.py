@@ -21,7 +21,8 @@ from api.algorithm_site_instance import LociRepeatError
 # Initialize Flask
 # =============================================================================
 
-app = Flask(__name__)
+#application variable name is necessary for recognition by aws
+application = app = Flask(__name__)
 
 MAX_FILE_SIZE_MB = 50
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE_MB*1024**2
