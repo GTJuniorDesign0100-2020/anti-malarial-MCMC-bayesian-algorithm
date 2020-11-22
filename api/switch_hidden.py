@@ -55,70 +55,13 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceS
     if is_reinfection:
         _update_reinfection(state, sh_state, x, maxMOI)
     else:
-
-        repeatedold = 1 if np.any(oldalleles == old) else state.qq
-        repeatednew = 1 if np.any(oldalleles == new) else state.qq
-
-        newclosestrecrud, newmindistance, newalldistance, newallrecrf = _calculate_new_distances(
-            state,
-            allpossiblerecrud,
-            new,
-            newallele_length,
-            x,
-            chosen,
-            chosenlocus,
-            maxMOI,
-            is_chosen_valid)
-
-        ## likelihoodnew
-        likelihoodnew_numerator = state.dvect[np.round(newalldistance).astype(np.int64)]
-        likelihoodnew_demominator = np.sum(state.frequencies_RR[1][chosenlocus][:state.frequencies_RR[0][chosenlocus]] * state.dvect[state.correction_distance_matrix[chosenlocus][newallrecrf[0].astype(np.int64)].astype(np.int64)])
-        likelihoodnew = np.nanmean(likelihoodnew_numerator / likelihoodnew_demominator) * repeatednew
-
-        ## likelihoodold
-        temp = np.round(state.alldistance[x, chosenlocus])
-        temp = temp[~np.isnan(temp)].astype(np.int64)
-        likelihoodold_numerator = state.dvect[temp]
-
-        ### NEED TO REVISIT
-        temp_allrecrf = state.allrecrf[x, chosenlocus, :maxMOI**2]
-        temp_allrecrf = temp_allrecrf[~np.isnan(temp_allrecrf)].astype(np.int64)
-
-        temp = state.frequencies_RR[1][chosenlocus, :state.frequencies_RR[0][chosenlocus]] * state.dvect[state.correction_distance_matrix[chosenlocus][temp_allrecrf].astype(np.int64)]
-        likelihoodold_denominator = []
-        for i in temp:
-            likelihoodold_denominator.append(np.sum(i))
-
-        likelihoodold_denominator = np.asarray(likelihoodold_denominator)
-        likelihoodold = np.nanmean(likelihoodold_numerator / likelihoodold_denominator) * repeatedold
-
-        # Prepare an 'alpha' from our previous likelihoods that will determine whether or not
-        # We are going to update the state.
-        alpha = 0
-        if likelihoodnew == likelihoodold:
-            alpha = 1
-        elif not likelihoodold == 0:
-            alpha = likelihoodnew / likelihoodold
-
-        if z >= alpha:
-            return
-
-        state.recoded0[x, chosen] = new - 1
-        if is_chosen_valid:
-            state.alleles0[x, chosen] = newallele_length
-        else:
-            state.allelesf[x, chosen] = newallele_length
-        state.mindistance[x, chosenlocus] = newmindistance
-        state.alldistance[x, chosenlocus, :allpossiblerecrud.shape[0]] = newalldistance
-        state.allrecrf[x, chosenlocus, :allpossiblerecrud.shape[0]] = newallrecrf
-        state.recr0[x, chosenlocus] = maxMOI * (chosenlocus) + allpossiblerecrud[0][newclosestrecrud]
-        state.recrf[x, chosenlocus] = maxMOI * (chosenlocus) + allpossiblerecrud[1][newclosestrecrud]
+        _update_reinfection(state, sh_state, x, maxMOI)
 
 
 # TODO: Refactor out commonalities between reinfection/recrudescence update
 def _update_reinfection(state: SiteInstanceState, sh: SwitchHiddenState, x: int, maxMOI: int):
     '''
-    Handle updating the hidden variables for a reinfected allele
+    Handle updating the hidden variables for a reinfected sample
 
     :param state: The current state of the algorithm
     :param sh: The computed local variables within switch hidden to operate on
@@ -153,10 +96,63 @@ def _update_reinfection(state: SiteInstanceState, sh: SwitchHiddenState, x: int,
     state.recrf[x, sh.chosenlocus] = maxMOI * sh.chosenlocus + sh.allpossiblerecrud[1][closestrecrud]
 
 
-def _update_recrudescence():
+def _update_recrudescence(state: SiteInstanceState, sh: SwitchHiddenState, x: int, maxMOI: int):
     '''
-    Handle updating the hidden variables for a recrudescing allele
+    Handle updating the hidden variables for a recrudescing sample
+
+    :param state: The current state of the algorithm
+    :param sh: The computed local variables within switch hidden to operate on
+    :param x: The sample ID to update
+    :param maxMOI: The maximum multiplicity of infection for the overall dataset
     '''
+    repeatedold = 1 if np.any(sh.oldalleles == sh.old) else state.qq
+    repeatednew = 1 if np.any(sh.oldalleles == sh.new) else state.qq
+
+    newclosestrecrud, newmindistance, newalldistance, newallrecrf = _calculate_new_distances(state, sh, x, maxMOI)
+
+    ## likelihoodnew
+    likelihoodnew_numerator = state.dvect[np.round(newalldistance).astype(np.int64)]
+    likelihoodnew_demominator = np.sum(state.frequencies_RR[1][sh.chosenlocus][:state.frequencies_RR[0][sh.chosenlocus]] * state.dvect[state.correction_distance_matrix[sh.chosenlocus][newallrecrf[0].astype(np.int64)].astype(np.int64)])
+    likelihoodnew = np.nanmean(likelihoodnew_numerator / likelihoodnew_demominator) * repeatednew
+
+    ## likelihoodold
+    temp = np.round(state.alldistance[x, sh.chosenlocus])
+    temp = temp[~np.isnan(temp)].astype(np.int64)
+    likelihoodold_numerator = state.dvect[temp]
+
+    ### NEED TO REVISIT
+    temp_allrecrf = state.allrecrf[x, sh.chosenlocus, :maxMOI**2]
+    temp_allrecrf = temp_allrecrf[~np.isnan(temp_allrecrf)].astype(np.int64)
+
+    temp = state.frequencies_RR[1][sh.chosenlocus, :state.frequencies_RR[0][sh.chosenlocus]] * state.dvect[state.correction_distance_matrix[sh.chosenlocus][temp_allrecrf].astype(np.int64)]
+    likelihoodold_denominator = []
+    for i in temp:
+        likelihoodold_denominator.append(np.sum(i))
+
+    likelihoodold_denominator = np.asarray(likelihoodold_denominator)
+    likelihoodold = np.nanmean(likelihoodold_numerator / likelihoodold_denominator) * repeatedold
+
+    # Prepare an 'alpha' from our previous likelihoods that will determine whether or not
+    # We are going to update the state.
+    alpha = 0
+    if likelihoodnew == likelihoodold:
+        alpha = 1
+    elif not likelihoodold == 0:
+        alpha = likelihoodnew / likelihoodold
+
+    if sh.z >= alpha:
+        return
+
+    state.recoded0[x, sh.chosen] = sh.new - 1
+    if is_chosen_valid:
+        state.alleles0[x, sh.chosen] = sh.newallele_length
+    else:
+        state.allelesf[x, sh.chosen] = sh.newallele_length
+    state.mindistance[x, sh.chosenlocus] = newmindistance
+    state.alldistance[x, sh.chosenlocus, :sh.allpossiblerecrud.shape[0]] = newalldistance
+    state.allrecrf[x, sh.chosenlocus, :sh.allpossiblerecrud.shape[0]] = newallrecrf
+    state.recr0[x, sh.chosenlocus] = maxMOI * (sh.chosenlocus) + sh.allpossiblerecrud[0][newclosestrecrud]
+    state.recrf[x, sh.chosenlocus] = maxMOI * (sh.chosenlocus) + sh.allpossiblerecrud[1][newclosestrecrud]
 
 
 def _get_old_alleles(recoded: np.ndarray, hidden: np.ndarray, id_index: int, chosen_locus: int, max_MOI: int):
@@ -192,37 +188,37 @@ def _get_all_possible_recrud(MOI0: np.ndarray, MOIf: np.ndarray, id_index: int):
 
     return allpossiblerecrud
 
-def _calculate_new_distances(state: SiteInstanceState, allpossiblerecrud, new, newallele_length, id_index: int, chosen: int, chosen_locus: int, max_MOI: int, is_chosen_valid: bool):
+def _calculate_new_distances(state: SiteInstanceState, sh: SwitchHiddenState, id_index: int, max_MOI: int):
     '''
     Returns the updated distance-based parameters for state
     '''
-    if is_chosen_valid:
-        tempalleles = state.alleles0[id_index, max_MOI * chosen_locus: max_MOI * (chosen_locus + 1)]
-        tempalleles[chosen - chosen_locus * max_MOI] = newallele_length
-        temprecoded = state.recoded0[id_index, max_MOI * chosen_locus: max_MOI * (chosen_locus + 1)]
-        temprecoded[chosen - chosen_locus * max_MOI] = new - 1
+    if sh.is_chosen_valid:
+        tempalleles = state.alleles0[id_index, max_MOI * sh.chosenlocus: max_MOI * (sh.chosenlocus + 1)]
+        tempalleles[sh.chosen - sh.chosenlocus * max_MOI] = sh.newallele_length
+        temprecoded = state.recoded0[id_index, max_MOI * sh.chosenlocus: max_MOI * (sh.chosenlocus + 1)]
+        temprecoded[sh.chosen - sh.chosenlocus * max_MOI] = sh.new - 1
 
         # This was seen in the earlier branch as well, I believe
         # this is a distance calculation taking into account that we have
         # no day0 data to work with. Either way, it was calculated twice,
         # so I have put the list here again.
 
-        newalldistance = list(map(lambda y: _unknownhelper_2(state,tempalleles,id_index,max_MOI,chosen_locus,allpossiblerecrud,y), np.arange(0, allpossiblerecrud.shape[0])))
+        newalldistance = list(map(lambda y: _unknownhelper_2(state,tempalleles,id_index,max_MOI,sh.chosenlocus,sh.allpossiblerecrud,y), np.arange(0, sh.allpossiblerecrud.shape[0])))
 
         newclosestrecrud = np.argmin(newalldistance)
         newmindistance = newalldistance[newclosestrecrud]
-        newallrecrf = state.recodedf[id_index, max_MOI * chosen_locus + allpossiblerecrud[1]]
+        newallrecrf = state.recodedf[id_index, max_MOI * sh.chosenlocus + sh.allpossiblerecrud[1]]
     else:
-        tempalleles = state.allelesf[id_index, max_MOI * chosen_locus: max_MOI * (chosen_locus + 1)]
-        tempalleles[chosen - chosen_locus * max_MOI] = newallele_length
-        temprecoded = state.recodedf[id_index, max_MOI * chosen_locus: max_MOI * (chosen_locus + 1)]
-        temprecoded[chosen - chosen_locus * max_MOI] = new - 1
+        tempalleles = state.allelesf[id_index, max_MOI * sh.chosenlocus: max_MOI * (sh.chosenlocus + 1)]
+        tempalleles[sh.chosen - sh.chosenlocus * max_MOI] = sh.newallele_length
+        temprecoded = state.recodedf[id_index, max_MOI * sh.chosenlocus: max_MOI * (sh.chosenlocus + 1)]
+        temprecoded[chosen - chosen_locus * max_MOI] = sh.new - 1
 
-        newalldistance = list(map(lambda y:_unknownhelper_3(state,tempalleles,id_index,max_MOI,chosen_locus,allpossiblerecrud,y) , np.arange(0, allpossiblerecrud.shape[0])))
+        newalldistance = list(map(lambda y:_unknownhelper_3(state,tempalleles,id_index,max_MOI,sh.chosenlocus,sh.allpossiblerecrud,y) , np.arange(0, sh.allpossiblerecrud.shape[0])))
 
         newclosestrecrud = np.argmin(newalldistance)
         newmindistance = newalldistance[newclosestrecrud]
-        newallrecrf = temprecoded[allpossiblerecrud[1]]
+        newallrecrf = temprecoded[sh.allpossiblerecrud[1]]
 
     return newclosestrecrud, newmindistance, newalldistance, newallrecrf
 
