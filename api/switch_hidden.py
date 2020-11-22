@@ -1,3 +1,4 @@
+from collections import namedtuple
 import itertools
 
 import numpy as np
@@ -5,15 +6,20 @@ import pandas as pd
 
 from api.site_instance_state import HiddenAlleleType, SampleType, SiteInstanceState
 
-def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceState, rand: np.random.RandomState):
-    z = rand.uniform(size=1)
 
+# State to hold shared local variables across calculations
+SwitchHiddenState = namedtuple('_SwitchState', 'z, chosen, chosenlocus, is_chosen_valid, old, new, newallele_length, oldalleles, allpossiblerecrud')
+
+
+def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceState, rand: np.random.RandomState):
     # Section A: If number of inferred alleles > 0
     # It will probably be more efficient to sum the two seperately, because concatenation
     # could induce memory-related performance cost, if a new memory block is being created behind the scenes.
     inferred_allele_count = np.nansum(state.hidden0) + np.nansum(state.hiddenf)
     if inferred_allele_count <= 0:
         return
+
+    z = rand.uniform(size=1)
 
     inferred_allele_indices = np.where(np.concatenate((state.hidden0[x], state.hiddenf[x])) == HiddenAlleleType.MISSING.value)[0]
 
@@ -43,35 +49,11 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceS
 
     allpossiblerecrud = _get_all_possible_recrud(state.MOI0, state.MOIf, x)
 
+    sh_state = SwitchHiddenState(z, chosen, chosenlocus, is_chosen_valid, old, new, newallele_length, oldalleles, allpossiblerecrud)
+
     is_reinfection = state.classification[x] == SampleType.REINFECTION.value
     if is_reinfection:
-        repeatednew = 1 if np.any(oldalleles == new) else state.qq
-
-        numerator = np.sum(state.frequencies_RR[1][chosenlocus, 0:state.frequencies_RR[0][chosenlocus]] * state.dvect[state.correction_distance_matrix[chosenlocus][new - 1].astype(np.int64)]) * repeatednew
-        denominator = np.sum(state.frequencies_RR[1][chosenlocus, 0:state.frequencies_RR[0][chosenlocus]] * state.dvect[state.correction_distance_matrix[chosenlocus][old].astype(np.int64)]) * repeatednew
-
-        alpha = numerator / denominator if denominator != 0 else 0
-        if z >= alpha:
-            return
-
-        if (is_chosen_valid):
-            state.recoded0[x, chosen] = new - 1
-        else:
-            state.recodedf[x, chosen] = new - 1
-        state.alleles0[x, chosen] = newallele_length
-
-        # Not sure what this list actually is, I suspect it refers to distances between
-        # microsatelites of alleles. Either way, we calculate it twice, and the calculation seems
-        # kinda expensive, so I'm defining it here to avoid that issue.
-        dist_list = list(map(lambda y: _unknownhelper_1(state, x, maxMOI, chosenlocus, allpossiblerecrud, y), np.arange(0, allpossiblerecrud.shape[0])))
-
-        closestrecrud = np.argmin(dist_list)
-        state.mindistance[x, chosenlocus] = abs(state.alleles0[x, maxMOI * chosenlocus + allpossiblerecrud[0][closestrecrud]] - state.allelesf[x, maxMOI * chosenlocus + allpossiblerecrud[1][closestrecrud]])
-        state.alldistance[x, chosenlocus, 0:allpossiblerecrud.shape[0]] = dist_list
-        state.allrecrf[x, chosenlocus, 0:allpossiblerecrud.shape[0]] = state.recodedf[x, maxMOI * chosenlocus + allpossiblerecrud[1]]
-        state.recr0[x, chosenlocus] = maxMOI * chosenlocus + allpossiblerecrud[0][closestrecrud]
-        state.recrf[x, chosenlocus] = maxMOI * chosenlocus + allpossiblerecrud[1][closestrecrud]
-
+        _update_reinfection(state, sh_state, x, maxMOI)
     else:
 
         repeatedold = 1 if np.any(oldalleles == old) else state.qq
@@ -131,6 +113,50 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceS
         state.allrecrf[x, chosenlocus, :allpossiblerecrud.shape[0]] = newallrecrf
         state.recr0[x, chosenlocus] = maxMOI * (chosenlocus) + allpossiblerecrud[0][newclosestrecrud]
         state.recrf[x, chosenlocus] = maxMOI * (chosenlocus) + allpossiblerecrud[1][newclosestrecrud]
+
+
+# TODO: Refactor out commonalities between reinfection/recrudescence update
+def _update_reinfection(state: SiteInstanceState, sh: SwitchHiddenState, x: int, maxMOI: int):
+    '''
+    Handle updating the hidden variables for a reinfected allele
+
+    :param state: The current state of the algorithm
+    :param sh: The computed local variables within switch hidden to operate on
+    :param x: The sample ID to update
+    :param maxMOI: The maximum multiplicity of infection for the overall dataset
+    '''
+    repeatednew = 1 if np.any(sh.oldalleles == sh.new) else state.qq
+
+    numerator = np.sum(state.frequencies_RR[1][sh.chosenlocus, 0:state.frequencies_RR[0][sh.chosenlocus]] * state.dvect[state.correction_distance_matrix[sh.chosenlocus][sh.new - 1].astype(np.int64)]) * repeatednew
+    denominator = np.sum(state.frequencies_RR[1][sh.chosenlocus, 0:state.frequencies_RR[0][sh.chosenlocus]] * state.dvect[state.correction_distance_matrix[sh.chosenlocus][sh.old].astype(np.int64)]) * repeatednew
+
+    alpha = numerator / denominator if denominator != 0 else 0
+    if sh.z >= alpha:
+        return
+
+    if (sh.is_chosen_valid):
+        state.recoded0[x, sh.chosen] = sh.new - 1
+    else:
+        state.recodedf[x, sh.chosen] = sh.new - 1
+    state.alleles0[x, sh.chosen] = sh.newallele_length
+
+    # Not sure what this list actually is, I suspect it refers to distances between
+    # microsatelites of alleles. Either way, we calculate it twice, and the calculation seems
+    # kinda expensive, so I'm defining it here to avoid that issue.
+    dist_list = list(map(lambda y: _unknownhelper_1(state, x, maxMOI, sh.chosenlocus, sh.allpossiblerecrud, y), np.arange(0, sh.allpossiblerecrud.shape[0])))
+
+    closestrecrud = np.argmin(dist_list)
+    state.mindistance[x, sh.chosenlocus] = dist_list[closestrecrud]
+    state.alldistance[x, sh.chosenlocus, :sh.allpossiblerecrud.shape[0]] = dist_list
+    state.allrecrf[x, sh.chosenlocus, :sh.allpossiblerecrud.shape[0]] = state.recodedf[x, maxMOI * sh.chosenlocus + sh.allpossiblerecrud[1]]
+    state.recr0[x, sh.chosenlocus] = maxMOI * sh.chosenlocus + sh.allpossiblerecrud[0][closestrecrud]
+    state.recrf[x, sh.chosenlocus] = maxMOI * sh.chosenlocus + sh.allpossiblerecrud[1][closestrecrud]
+
+
+def _update_recrudescence():
+    '''
+    Handle updating the hidden variables for a recrudescing allele
+    '''
 
 
 def _get_old_alleles(recoded: np.ndarray, hidden: np.ndarray, id_index: int, chosen_locus: int, max_MOI: int):
