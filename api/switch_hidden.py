@@ -32,15 +32,16 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state, rand: np.rand
     chosen -= 1
     chosenlocus -= 1
 
+    old = state.recoded0[x, chosen].astype(np.int64)
+    new = rand.choice(np.arange(state.frequencies_RR[0][chosenlocus])) + 1
+    if is_chosen_valid:
+        oldalleles = _get_old_alleles(state.recoded0, state.hidden0, x, chosenlocus, maxMOI)
+    else:
+        oldalleles = _get_old_alleles(state.recodedf, state.hiddenf, x, chosenlocus, maxMOI)
+
     is_reinfection = state.classification[x] == SampleType.REINFECTION.value
     if is_reinfection:
-        old = state.recoded0[x, chosen].astype(np.int64)
-        new = rand.choice(np.arange(state.frequencies_RR[0][chosenlocus])) + 1
-        oldalleles = state.recoded0[x, np.intersect1d(np.arange((chosenlocus * maxMOI), (chosenlocus + 1) * maxMOI), np.where(state.hidden0[x] == HiddenAlleleType.MISSING.value)[0])]
-        repeatednew = state.qq
-
-        if np.sum(oldalleles == new) >= 1:
-            repeatednew = 1
+        repeatednew = 1 if np.any(oldalleles == new) else state.qq
 
         numerator = np.sum(state.frequencies_RR[1][chosenlocus, 0:state.frequencies_RR[0][chosenlocus]] * state.dvect[state.correction_distance_matrix[chosenlocus][new - 1].astype(np.int64)]) * repeatednew
         denominator = np.sum(state.frequencies_RR[1][chosenlocus, 0:state.frequencies_RR[0][chosenlocus]] * state.dvect[state.correction_distance_matrix[chosenlocus][old].astype(np.int64)]) * repeatednew
@@ -74,17 +75,10 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state, rand: np.rand
         state.recr0[x, chosenlocus] = maxMOI * chosenlocus + allpossiblerecrud[0][closestrecrud]
         state.recrf[x, chosenlocus] = maxMOI * chosenlocus + allpossiblerecrud[1][closestrecrud]
     else:
-        old = state.recoded0[x, chosen].astype(np.int64)
-        new = rand.choice(np.arange(state.frequencies_RR[0][chosenlocus])) + 1
-        if is_chosen_valid:
-            oldalleles = state.recoded0[x, np.intersect1d(np.arange((chosenlocus * maxMOI), (chosenlocus + 1) * maxMOI), np.where(state.hidden0[x] == HiddenAlleleType.MISSING.value)[0])]
-        else:
-            oldalleles = state.recodedf[x, np.intersect1d(np.arange((chosenlocus * maxMOI), (chosenlocus + 1) * maxMOI), np.where(state.hidden0[x] == HiddenAlleleType.MISSING.value)[0])]
-
         newallele_length = (np.mean((alleles_definitions_RR[chosenlocus]["0"][new-1], alleles_definitions_RR[chosenlocus]["1"][new-1])) + rand.normal(0, state.frequencies_RR[2][chosenlocus], 1))[0]
 
-        repeatedold = 1 if np.sum(oldalleles == old) >= 1 else state.qq
-        repeatednew = 1 if np.sum(oldalleles == new) >= 1 else state.qq
+        repeatedold = 1 if np.any(oldalleles == old) else state.qq
+        repeatednew = 1 if np.any(oldalleles == new) else state.qq
 
         inputVectors = list(itertools.product(np.arange(state.MOIf[x]), np.arange(state.MOI0[x])))
         allpossiblerecrud = pd.DataFrame(inputVectors)
@@ -106,7 +100,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state, rand: np.rand
             dist_list = list(map(lambda y: _unknownhelper_2(state,tempalleles,x,maxMOI,chosenlocus,allpossiblerecrud,y), np.arange(0, allpossiblerecrud.shape[0])))
 
             newclosestrecrud = np.argmin(dist_list)
-            newmindistance = abs(tempalleles[allpossiblerecrud[0][newclosestrecrud]] - state.allelesf[x, maxMOI * chosenlocus + allpossiblerecrud[1][newclosestrecrud]])
+            newmindistance = np.abs(tempalleles[allpossiblerecrud[0][newclosestrecrud]] - state.allelesf[x, maxMOI * chosenlocus + allpossiblerecrud[1][newclosestrecrud]])
             newalldistance = dist_list
             newallrecrf = state.recodedf[x, maxMOI * chosenlocus + allpossiblerecrud[1]]
         else:
@@ -119,7 +113,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state, rand: np.rand
             dist_list = list(map(lambda y:_unknownhelper_3(state,tempalleles,x,maxMOI,chosenlocus,allpossiblerecrud,y) , np.arange(0, allpossiblerecrud.shape[0])))
 
             newclosestrecrud = np.argmin(dist_list)
-            newmindistance = abs(tempalleles[allpossiblerecrud[1][newclosestrecrud]] - state.alleles0[x, maxMOI * chosenlocus + allpossiblerecrud[0][newclosestrecrud]])
+            newmindistance = np.abs(tempalleles[allpossiblerecrud[1][newclosestrecrud]] - state.alleles0[x, maxMOI * chosenlocus + allpossiblerecrud[0][newclosestrecrud]])
             newalldistance = dist_list
             newallrecrf = temprecoded[allpossiblerecrud[1]]
 
@@ -184,3 +178,20 @@ def _unknownhelper_2(state,tempalleles,x,maxMOI,chosenlocus,allpossiblerecrud,y)
 def _unknownhelper_3(state,tempalleles,x,maxMOI,chosenlocus,allpossiblerecrud,y):
     value = np.abs(tempalleles[allpossiblerecrud[1][y]] - state.alleles0[x, maxMOI * chosenlocus + allpossiblerecrud[0][y]])
     return value
+
+def _get_old_alleles(recoded: np.ndarray, hidden: np.ndarray, id_index: int, chosen_locus: int, max_MOI: int):
+    '''
+    Returns the bin indices (in recoded) of the previous inferred alleles
+
+    :param recoded: The range bin indices of each allele
+    :param hidden: An array classifying each recoded allele as "hidden" or "observed"
+    :param id_index: The sample ID number to get alleles for
+    :param chosen_locus: The locus index to get alleles for
+    :param max_MOI: The max multiplicity of infection in the dataset
+    '''
+    return recoded[
+        id_index,
+        np.intersect1d(
+            np.arange((chosen_locus * max_MOI), (chosen_locus + 1) * max_MOI),
+            np.where(hidden[id_index] == HiddenAlleleType.MISSING.value)[0])
+    ]
