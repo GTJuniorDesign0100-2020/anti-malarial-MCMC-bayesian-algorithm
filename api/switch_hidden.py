@@ -12,6 +12,20 @@ SwitchHiddenState = namedtuple('_SwitchState', 'z, chosen, chosenlocus, is_chose
 
 
 def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceState, rand: np.random.RandomState):
+    '''
+    Update the hidden/inferred alleles for the samples
+
+    NOTE: Update takes place entirely via side-effects/in-place updates to the
+    state (this function doesn't currently return anything)
+
+    :param x: The index of the sample ID to update
+    :param nloci: The number of loci in the dataset
+    :param maxMOI: The maximum multiplicity of infection in the whole dataset
+    :param alleles_definitions_RR: ?
+    :param state: The current state of the algorithm
+    :param rand: The random number generator to use
+    '''
+
     # Section A: If number of inferred alleles > 0
     # It will probably be more efficient to sum the two seperately, because concatenation
     # could induce memory-related performance cost, if a new memory block is being created behind the scenes.
@@ -19,6 +33,35 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceS
     if inferred_allele_count <= 0:
         return
 
+    sh_state = _setup_initial_state(x, nloci, maxMOI, alleles_definitions_RR, state, rand)
+    is_reinfection = state.classification[x] == SampleType.REINFECTION.value
+    if is_reinfection:
+        _update_reinfection(state, sh_state, x, maxMOI)
+    else:
+        _update_reinfection(state, sh_state, x, maxMOI)
+
+
+def _setup_initial_state(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceState, rand: np.random.RandomState) -> SwitchHiddenState:
+    '''
+    Sets up the initial local variables switch_hidden uses throughout its calculations, including the following:
+        z - A random probability between 0 and 1 that's used to determine if we should update the allele
+        chosen - The randomly-selected index of the allele to update
+        chosenlocus - The locus of the allele we're updating
+        is_chosen_valid - A boolean indicating if the chosen allele index fits within the state's allele arrays
+        old - ?
+        new - ?
+        newallele_length - The length to update the allele to (?)
+        oldalleles - The bin indices of all the hidden alleles
+        allpossiblerecrud - An array of all possible combinations of recrudescing alleles
+
+    :param x: The index of the sample ID to update
+    :param nloci: The number of loci in the dataset
+    :param maxMOI: The maximum multiplicity of infection in the whole dataset
+    :param alleles_definitions_RR: ?
+    :param state: The current state of the algorithm
+    :param rand: The random number generator to use
+    :return: An initialized SwitchHiddenState tuple
+    '''
     z = rand.uniform(size=1)
 
     inferred_allele_indices = np.where(np.concatenate((state.hidden0[x], state.hiddenf[x])) == HiddenAlleleType.MISSING.value)[0]
@@ -50,12 +93,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceS
     allpossiblerecrud = _get_all_possible_recrud(state.MOI0, state.MOIf, x)
 
     sh_state = SwitchHiddenState(z, chosen, chosenlocus, is_chosen_valid, old, new, newallele_length, oldalleles, allpossiblerecrud)
-
-    is_reinfection = state.classification[x] == SampleType.REINFECTION.value
-    if is_reinfection:
-        _update_reinfection(state, sh_state, x, maxMOI)
-    else:
-        _update_reinfection(state, sh_state, x, maxMOI)
+    return sh_state
 
 
 # TODO: Refactor out commonalities between reinfection/recrudescence update
@@ -155,7 +193,7 @@ def _update_recrudescence(state: SiteInstanceState, sh: SwitchHiddenState, x: in
     state.recrf[x, sh.chosenlocus] = maxMOI * (sh.chosenlocus) + sh.allpossiblerecrud[1][newclosestrecrud]
 
 
-def _get_old_alleles(recoded: np.ndarray, hidden: np.ndarray, id_index: int, chosen_locus: int, max_MOI: int):
+def _get_old_alleles(recoded: np.ndarray, hidden: np.ndarray, id_index: int, chosen_locus: int, max_MOI: int) -> np.ndarray:
     '''
     Returns the bin indices (in recoded) of the previous inferred alleles
 
@@ -173,7 +211,7 @@ def _get_old_alleles(recoded: np.ndarray, hidden: np.ndarray, id_index: int, cho
     ]
 
 
-def _get_all_possible_recrud(MOI0: np.ndarray, MOIf: np.ndarray, id_index: int):
+def _get_all_possible_recrud(MOI0: np.ndarray, MOIf: np.ndarray, id_index: int) -> pd.DataFrame:
     '''
     TODO: Verify this description?
     Returns a dataframe of all possible recrudescence combinations
