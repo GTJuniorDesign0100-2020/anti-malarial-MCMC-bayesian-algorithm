@@ -136,14 +136,12 @@ def switch_hidden_refactor(x, nloci, maxMOI, alleles_definitions_RR, state):
 				temprecoded = state.recodedf[x][maxMOI * chosenlocus: maxMOI * chosenlocus + maxMOI]
 				temprecoded[chosen - chosenlocus * maxMOI] = new - 1
 
-				newclosestrecrud = np.argmin(list(map(lambda y: abs(
-					tempalleles[allpossiblerecrud[1][y]] - state.alleles0[x][
-						maxMOI * chosenlocus + allpossiblerecrud[0][y]]),
-													  np.arange(0, allpossiblerecrud.shape[0]))))
-				newmindistance = abs(tempalleles[allpossiblerecrud[1][newclosestrecrud]] - state.alleles0[x][
-					maxMOI * chosenlocus + allpossiblerecrud[0][newclosestrecrud]])
-				newalldistance = list(map(lambda y: abs(tempalleles[allpossiblerecrud[1][y]] - state.alleles0[x][
-					maxMOI * chosenlocus + allpossiblerecrud[0][y]]), np.arange(0, allpossiblerecrud.shape[0])))
+				# Same deal as twice before: Repeated calculation saved to this variable here.
+				dist_list = list(map(lambda y:unknownhelper_3(state,tempalleles,x,maxMOI,chosenlocus,allpossiblerecrud,y) , np.arange(0, allpossiblerecrud.shape[0])))
+
+				newclosestrecrud = np.argmin(dist_list)
+				newmindistance = abs(tempalleles[allpossiblerecrud[1][newclosestrecrud]] - state.alleles0[x][maxMOI * chosenlocus + allpossiblerecrud[0][newclosestrecrud]])
+				newalldistance = dist_list
 				newallrecrf = temprecoded[allpossiblerecrud[1]]
 
 			## likelihoodnew
@@ -205,4 +203,10 @@ def unknownhelper_1(state,x,maxMOI,chosenlocus,allpossiblerecrud,y):
 # I think its for calculating a distance between microsatelite alleles, when we don't have day 0 data. Is that right?
 def unknownhelper_2(state,tempalleles,x,maxMOI,chosenlocus,allpossiblerecrud,y):
 	value = abs(tempalleles[allpossiblerecrud[0][y]] - state.allelesf[x][maxMOI * chosenlocus + allpossiblerecrud[1][y]])
+	return value
+
+# TODO: Determine what this subroutine actually is.
+# Looks similar to our other evaluations, but we use day0 data. I guess this is the case where we don't have f data, but we have 0.
+def unknownhelper_3(state,tempalleles,x,maxMOI,chosenlocus,allpossiblerecrud,y):
+	value = abs(tempalleles[allpossiblerecrud[1][y]] - state.alleles0[x][maxMOI * chosenlocus + allpossiblerecrud[0][y]])
 	return value
