@@ -215,3 +215,20 @@ def test_switch_hidden_allele_recrudescence(mcmc_initial_state):
     assert 0.1 <= accumulate_alleles0[2, 0] <= 15.0
     np.testing.assert_almost_equal(accumulate_allelesf, copy_allelesf)
     np.testing.assert_almost_equal(accumulate_mindist, copy_mindistance)
+
+
+if __name__ == '__main__':
+    # Used for testing performance
+    state = mcmc_initial_state()
+    rand = np.random.RandomState()
+    for i in range(1000):
+        for j in range(state.num_ids):
+            switch_hidden(
+                x=j,
+                nloci=state.num_loci,
+                maxMOI=state.max_MOI,
+                alleles_definitions_RR=alleles_definitions_RR,
+                state=state.state,
+                rand=rand)
+        print('.', end='')
+    print('done!')
