@@ -120,6 +120,7 @@ def test_switch_hidden_basic(mcmc_initial_state):
     accumulate_allelesf = np.zeros((num_ids, max_MOI*num_loci))
     accumulate_mindist = np.zeros((num_ids, num_loci))
 
+    rand = np.random.RandomState(2020)
     num_iterations = 1000
     for i in range(num_iterations):
         state.alleles0 = copy_alleles0.copy()
@@ -137,7 +138,8 @@ def test_switch_hidden_basic(mcmc_initial_state):
             nloci=num_loci,
             maxMOI=max_MOI,
             alleles_definitions_RR=alleles_definitions_RR,
-            state=state)
+            state=state,
+            rand=rand)
 
         accumulate_alleles0 += state.alleles0
         accumulate_allelesf += state.allelesf

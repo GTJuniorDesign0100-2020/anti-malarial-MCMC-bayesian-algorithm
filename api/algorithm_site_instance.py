@@ -297,7 +297,7 @@ class AlgorithmSiteInstance:
         # propose new hidden states
         # TODO: What does switch_hidden do? Is it entirely side effects?
         for i in range(num_ids):
-            switch_hidden(i, num_loci, max_MOI, alleles_definitions_RR, state)
+            switch_hidden(i, num_loci, max_MOI, alleles_definitions_RR, state, rand)
 
         cls._update_q(state, rand)
         cls._update_dvect(state, rand)

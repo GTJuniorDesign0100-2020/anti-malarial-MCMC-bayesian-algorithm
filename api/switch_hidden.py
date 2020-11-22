@@ -1,13 +1,12 @@
-import random
-import math
+import itertools
+
 import numpy as np
 import pandas as pd
-import itertools
 
 from api.site_instance_state import HiddenAlleleType, SampleType
 
-def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
-    z = random.uniform(0,1)
+def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state, rand: np.random.RandomState):
+    z = rand.uniform(size=1)
 
     # Section A: If number of inferred alleles > 0
     # It will probably be more efficient to sum the two seperately, because concatenation
@@ -20,14 +19,14 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
 
     # Figure out chosen & chosenlocus
     # QUESTION: What is 'chosen'? Chosen..... allele?
-    chosen = np.random.choice(inferred_allele_indices) + 1
+    chosen = rand.choice(inferred_allele_indices) + 1
 
     # TODO: Rename this. what is is_chosen_valid?
     is_chosen_valid = chosen <= (nloci * maxMOI)
 
     if not is_chosen_valid:
         chosen -= nloci * maxMOI
-    chosenlocus = math.ceil(chosen / maxMOI)
+    chosenlocus = int(np.ceil(chosen / maxMOI))
 
     # Subtract by 1 to index from 0
     chosen -= 1
@@ -36,7 +35,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
     is_reinfection = state.classification[x] == SampleType.REINFECTION.value
     if is_reinfection:
         old = state.recoded0[x, chosen].astype(np.int64)
-        new = np.random.choice(np.arange(state.frequencies_RR[0][chosenlocus])) + 1
+        new = rand.choice(np.arange(state.frequencies_RR[0][chosenlocus])) + 1
         oldalleles = state.recoded0[x, np.intersect1d(np.arange((chosenlocus * maxMOI), (chosenlocus + 1) * maxMOI), np.where(state.hidden0[x] == HiddenAlleleType.MISSING.value)[0])]
         repeatednew = state.qq
 
@@ -54,7 +53,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
             state.recoded0[x, chosen] = new - 1
         else:
             state.recodedf[x, chosen] = new - 1
-        newallele_length = (np.mean((alleles_definitions_RR[chosenlocus]["0"][new-1], alleles_definitions_RR[chosenlocus]["1"][new-1])) + np.random.normal(0, state.frequencies_RR[2][chosenlocus], 1))[0]
+        newallele_length = (np.mean((alleles_definitions_RR[chosenlocus]["0"][new-1], alleles_definitions_RR[chosenlocus]["1"][new-1])) + rand.normal(0, state.frequencies_RR[2][chosenlocus], 1))[0]
         state.alleles0[x, chosen] = newallele_length
 
         inputVectors = list(itertools.product(np.arange(state.MOIf[x]), np.arange(state.MOI0[x])))
@@ -76,13 +75,13 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state):
         state.recrf[x, chosenlocus] = maxMOI * chosenlocus + allpossiblerecrud[1][closestrecrud]
     else:
         old = state.recoded0[x, chosen].astype(np.int64)
-        new = np.random.choice(np.arange(state.frequencies_RR[0][chosenlocus])) + 1
+        new = rand.choice(np.arange(state.frequencies_RR[0][chosenlocus])) + 1
         if is_chosen_valid:
             oldalleles = state.recoded0[x, np.intersect1d(np.arange((chosenlocus * maxMOI), (chosenlocus + 1) * maxMOI), np.where(state.hidden0[x] == HiddenAlleleType.MISSING.value)[0])]
         else:
             oldalleles = state.recodedf[x, np.intersect1d(np.arange((chosenlocus * maxMOI), (chosenlocus + 1) * maxMOI), np.where(state.hidden0[x] == HiddenAlleleType.MISSING.value)[0])]
 
-        newallele_length = (np.mean((alleles_definitions_RR[chosenlocus]["0"][new-1], alleles_definitions_RR[chosenlocus]["1"][new-1])) + np.random.normal(0, state.frequencies_RR[2][chosenlocus], 1))[0]
+        newallele_length = (np.mean((alleles_definitions_RR[chosenlocus]["0"][new-1], alleles_definitions_RR[chosenlocus]["1"][new-1])) + rand.normal(0, state.frequencies_RR[2][chosenlocus], 1))[0]
 
         repeatedold = 1 if np.sum(oldalleles == old) >= 1 else state.qq
         repeatednew = 1 if np.sum(oldalleles == new) >= 1 else state.qq
