@@ -1,5 +1,4 @@
 from collections import namedtuple
-import itertools
 
 import numpy as np
 import pandas as pd
@@ -90,7 +89,7 @@ def _setup_initial_state(x, nloci, maxMOI, alleles_definitions_RR, state: SiteIn
 
     newallele_length = np.mean(alleles_definitions_RR[chosenlocus].iloc[new-1, :]) + rand.normal(loc=0, scale=state.frequencies_RR[2][chosenlocus], size=1)
 
-    allpossiblerecrud = _get_all_possible_recrud(state.MOI0, state.MOIf, x)
+    allpossiblerecrud = state.get_all_possible_recrud(sample_id=x)
 
     sh_state = SwitchHiddenState(z, chosen, chosenlocus, is_chosen_valid, old, new, newallele_length, oldalleles, allpossiblerecrud)
     return sh_state
@@ -129,9 +128,9 @@ def _update_reinfection(state: SiteInstanceState, sh: SwitchHiddenState, x: int,
     closestrecrud = np.argmin(dist_list)
     state.mindistance[x, sh.chosenlocus] = dist_list[closestrecrud]
     state.alldistance[x, sh.chosenlocus, :sh.allpossiblerecrud.shape[0]] = dist_list
-    state.allrecrf[x, sh.chosenlocus, :sh.allpossiblerecrud.shape[0]] = state.recodedf[x, maxMOI * sh.chosenlocus + sh.allpossiblerecrud[1]]
-    state.recr0[x, sh.chosenlocus] = maxMOI * sh.chosenlocus + sh.allpossiblerecrud[0][closestrecrud]
-    state.recrf[x, sh.chosenlocus] = maxMOI * sh.chosenlocus + sh.allpossiblerecrud[1][closestrecrud]
+    state.allrecrf[x, sh.chosenlocus, :sh.allpossiblerecrud.shape[0]] = state.recodedf[x, maxMOI * sh.chosenlocus + sh.allpossiblerecrud[:, 1]]
+    state.recr0[x, sh.chosenlocus] = maxMOI * sh.chosenlocus + sh.allpossiblerecrud[:, 0][closestrecrud]
+    state.recrf[x, sh.chosenlocus] = maxMOI * sh.chosenlocus + sh.allpossiblerecrud[:, 1][closestrecrud]
 
 
 def _update_recrudescence(state: SiteInstanceState, sh: SwitchHiddenState, x: int, maxMOI: int):
@@ -189,8 +188,8 @@ def _update_recrudescence(state: SiteInstanceState, sh: SwitchHiddenState, x: in
     state.mindistance[x, sh.chosenlocus] = newmindistance
     state.alldistance[x, sh.chosenlocus, :sh.allpossiblerecrud.shape[0]] = newalldistance
     state.allrecrf[x, sh.chosenlocus, :sh.allpossiblerecrud.shape[0]] = newallrecrf
-    state.recr0[x, sh.chosenlocus] = maxMOI * (sh.chosenlocus) + sh.allpossiblerecrud[0][newclosestrecrud]
-    state.recrf[x, sh.chosenlocus] = maxMOI * (sh.chosenlocus) + sh.allpossiblerecrud[1][newclosestrecrud]
+    state.recr0[x, sh.chosenlocus] = maxMOI * (sh.chosenlocus) + sh.allpossiblerecrud[:, 0][newclosestrecrud]
+    state.recrf[x, sh.chosenlocus] = maxMOI * (sh.chosenlocus) + sh.allpossiblerecrud[:, 1][newclosestrecrud]
 
 
 def _get_old_alleles(recoded: np.ndarray, hidden: np.ndarray, id_index: int, chosen_locus: int, max_MOI: int) -> np.ndarray:
@@ -209,22 +208,6 @@ def _get_old_alleles(recoded: np.ndarray, hidden: np.ndarray, id_index: int, cho
             np.arange((chosen_locus * max_MOI), (chosen_locus + 1) * max_MOI),
             np.where(hidden[id_index] == HiddenAlleleType.MISSING.value)[0])
     ]
-
-
-def _get_all_possible_recrud(MOI0: np.ndarray, MOIf: np.ndarray, id_index: int) -> pd.DataFrame:
-    '''
-    TODO: Verify this description?
-    Returns a dataframe of all possible recrudescence combinations
-    '''
-    inputVectors = list(itertools.product(
-        np.arange(MOIf[id_index]),
-        np.arange(MOI0[id_index])))
-    allpossiblerecrud = pd.DataFrame(inputVectors)
-    order = [1, 0] # setting column's order
-    allpossiblerecrud = allpossiblerecrud[[allpossiblerecrud.columns[i] for i in order]]
-    allpossiblerecrud.columns = [0, 1]
-
-    return allpossiblerecrud
 
 def _calculate_new_distances(state: SiteInstanceState, sh: SwitchHiddenState, id_index: int, max_MOI: int):
     '''
@@ -256,7 +239,7 @@ def _calculate_new_distances(state: SiteInstanceState, sh: SwitchHiddenState, id
 
         newclosestrecrud = np.argmin(newalldistance)
         newmindistance = newalldistance[newclosestrecrud]
-        newallrecrf = temprecoded[sh.allpossiblerecrud[1]]
+        newallrecrf = temprecoded[sh.allpossiblerecrud[:, 1]]
 
     return newclosestrecrud, newmindistance, newalldistance, newallrecrf
 
@@ -264,19 +247,19 @@ def _calculate_new_distances(state: SiteInstanceState, sh: SwitchHiddenState, id
 # TODO: Determine what this subroutine actually is.
 # I think its for calculating a distance between microsatelite alleles. Is that right?
 def _unknownhelper_1(state,x,maxMOI,chosenlocus,allpossiblerecrud,y):
-    value = np.abs(state.alleles0[x, maxMOI * chosenlocus + allpossiblerecrud[0][y]] - state.allelesf[x, maxMOI * chosenlocus + allpossiblerecrud[1][y]])
+    value = np.abs(state.alleles0[x, maxMOI * chosenlocus + allpossiblerecrud[y, 0]] - state.allelesf[x, maxMOI * chosenlocus + allpossiblerecrud[y, 1]])
     return value
 
 
 # TODO: Determine what this subroutine actually is.
 # I think its for calculating a distance between microsatelite alleles, when we don't have day 0 data. Is that right?
 def _unknownhelper_2(state,tempalleles,x,maxMOI,chosenlocus,allpossiblerecrud,y):
-    value = np.abs(tempalleles[allpossiblerecrud[0][y]] - state.allelesf[x, maxMOI * chosenlocus + allpossiblerecrud[1][y]])
+    value = np.abs(tempalleles[allpossiblerecrud[y, 0]] - state.allelesf[x, maxMOI * chosenlocus + allpossiblerecrud[y, 1]])
     return value
 
 
 # TODO: Determine what this subroutine actually is.
 # Looks similar to our other evaluations, but we use day0 data. I guess this is the case where we don't have f data, but we have 0.
 def _unknownhelper_3(state,tempalleles,x,maxMOI,chosenlocus,allpossiblerecrud,y):
-    value = np.abs(tempalleles[allpossiblerecrud[1][y]] - state.alleles0[x, maxMOI * chosenlocus + allpossiblerecrud[0][y]])
+    value = np.abs(tempalleles[allpossiblerecrud[y, 1]] - state.alleles0[x, maxMOI * chosenlocus + allpossiblerecrud[y, 0]])
     return value

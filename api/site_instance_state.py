@@ -1,4 +1,5 @@
 import enum
+from functools import lru_cache
 from typing import List
 
 import numpy as np
@@ -436,6 +437,17 @@ class SiteInstanceState:
         alleles[i, missing_alleles_indices] = np.mean(alleles_definitions_RR[j], axis=1)[new_hidden_alleles]
         hidden[i, missing_alleles_indices] = HiddenAlleleType.MISSING.value
 
+    # TODO: Find some way to set the cache size = to number of samples?
+    @lru_cache(maxsize=128)
+    def get_all_possible_recrud(self, sample_id: int) -> np.ndarray:
+        '''
+        Returns all possible pairs of alleles that could be recrudescing for
+        this sample
+        '''
+        return np.stack(
+            np.meshgrid(np.arange(self.MOI0[sample_id]), np.arange(self.MOIf[sample_id]))
+        ).T.reshape(-1, 2)
+
     def _assign_closest_recrudescences(
         self,
         id_index: int,
@@ -459,9 +471,7 @@ class SiteInstanceState:
         # calculate all possible pairs of alleles that could be recrudescing for
         # this sample
         # NOTE: Correct indices generated, but in a different order than R code
-        allpossiblerecrud = np.stack(
-            np.meshgrid(np.arange(self.MOI0[i]), np.arange(self.MOIf[i]))
-        ).T.reshape(-1, 2)
+        allpossiblerecrud = self.get_all_possible_recrud(i)
 
         # TODO: Much of the below code near-duplicated?
         allele0_col_indices = max_MOI * j + allpossiblerecrud[:, 0]
