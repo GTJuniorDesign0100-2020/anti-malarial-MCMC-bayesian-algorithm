@@ -17,6 +17,7 @@ export default class Help extends React.Component {
 
   render() {
     return (
+
       <Popup
         trigger={
           <button className="help main-button">
@@ -24,7 +25,7 @@ export default class Help extends React.Component {
           </button>
         }
         position="right">
-        <div className="helpData">If you need help with how to use the application, check out the <u>FAQ</u>!</div>
+        <div>If you need help with how to use the application, check out the <a target='_blank' href='https://docs.google.com/document/d/14xnfxBzDkTYQqryIv3YDtga34cPTaUkFUND-bL-N7UY/edit?usp=sharing'>FAQ Page</a>!</div>
       </Popup>
     );
   }
