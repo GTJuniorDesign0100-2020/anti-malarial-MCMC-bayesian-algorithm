@@ -18,7 +18,7 @@ export default function DynTable(props) {
 
   return (
     <div>
-      <h1 align='center'>Results</h1>
+      <h2 align='center'>Results</h2>
 
       <SortableTable
         columnNames={['Date', 'Time', 'Input File Name', 'Status', 'Output']}

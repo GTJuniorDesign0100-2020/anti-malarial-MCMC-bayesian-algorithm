@@ -1,6 +1,6 @@
 body {
   font: 14px "Century Gothic", Futura, sans-serif;
-  margin: 20px;
+  margin: 40px;
 }
 
 ol, ul {
@@ -11,7 +11,7 @@ ol, ul {
   display: grid;
   grid-template-columns: 10% auto 10%;
   grid-template-rows: auto auto auto auto;
-  width: 100%
+  width: 100%;
 }
 
 .row:after {
@@ -28,7 +28,7 @@ ol, ul {
 }
 
 .main-button {
-  background: #CCC;
+  background: #99ff99;
   border: 1px solid #999;
   font-size: 24px;
   font-weight: bold;
@@ -37,15 +37,25 @@ ol, ul {
   padding: 0;
 }
 
+.main-button:hover {
+  background: #ccffff;
+}
+
 .help {
   grid-row-start: 3;
   grid-column-start: 2;
   text-align: center;
-  width: 100px;
+  margin-left:275px;
+  margin-top: 10px;
+  width: 60px;
+  height: 25px;
+  line-height: 10px;
+  border-radius: 14px;
+  font-size: 15px;
 }
 
 .settings {
-  grid-column-start: 3;
+  grid-column-start: 2;
   grid-row-start: 1;
   justify-self: end;
   float: right;
@@ -54,32 +64,39 @@ ol, ul {
   margin-top: -1px;
   text-align: right;
   align-content: right;
-  width: 150px;
+  width: 120px;
+  border-radius: 14px;
 }
 
 .testRun {
-  grid-column-start: 1;
+  grid-column-start: 2;
   grid-row-start: 4;
-  margin-top: 20px;
+  margin-top: 60px;
   text-align: center;
-  width: 150px;
+  width: 120px;
+  border-radius: 14px;
+  margin-left:520px;
 }
 
 .settingsData{
-  background: #CCC;
+  background: #e6ffe6;
   border: 1px solid #999;
   font-size: 12px;
-  width: 300px;
+  width: 120px;
   padding:10px;
   text-align: center;
+  border-radius: 14px;
+  align-content: right;
 }
 
 .testPop{
-  background: #CCC;
+  background: #e6ffe6;
   border: 1px solid #999;
   font-size: 12px;
   width: 300px;
   padding:10px;
+  border-radius: 14px;
+  margin-left: -100px;
 }
 
 .helpData {
@@ -90,9 +107,8 @@ ol, ul {
   font-weight: bold;
   line-height: 34px;
   height: 34px;
-  margin-right: 1px;
-  margin-top: -1px;
-  margin-left: 1px;
+  margin-top: 35px;
+  margin-left: -300px;
   padding-left: 10px;
   text-align: left;
 }
@@ -122,10 +138,9 @@ th > button {
   padding: 1em;
   margin: 0;
   text-decoration: none;
-  background: none;
+  background: #e6ffe6;
   color: black;
   font-size: 1em;
-  cursor: pointer;
   text-align: center;
   transition: background 250ms ease-in-out;
   -webkit-appearance: none;

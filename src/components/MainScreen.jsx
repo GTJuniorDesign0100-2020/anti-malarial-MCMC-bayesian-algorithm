@@ -62,27 +62,32 @@ export default class MainScreen extends React.Component {
 
   render() {
     const welcomeStyle = {
-      gridColumnStart: 1,
-      gridRowStart: 1
+      gridColumnStart: 2,
+      gridRowStart: 1,
+      textAlign: "center",
+      fontWeight: 'bold',
+      fontSize: 40
     };
     const helpTextStyle = {
-      gridColumnStart: 1,
-      gridRowStart: 3
-    };
-    const helpStyle = {
       gridColumnStart: 2,
       gridRowStart: 3
     };
+    const helpStyle = {
+      gridColumnStart: 3,
+      gridRowStart: 0,
+      textAlign: "center"
+    };
     const tableStyle = {
         gridColumnStart: 2,
-        gridRowStart: 5
+        gridRowStart: 5,
+        marginTop: 20,
     };
 
     return (
       <div className="main-screen">
-        <div className='status' style={welcomeStyle}>Welcome!</div>
+        <div className='status' style={welcomeStyle}>WELCOME!</div>
         <Settings />
-        <div style={helpTextStyle}>How to use application:</div>
+        <div style={helpTextStyle}></div>
         <Help style={helpStyle} />
         <RunButton handleSubmit={this.createNewAlgoRun}/>
         <div style={tableStyle}>
