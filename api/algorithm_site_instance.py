@@ -173,7 +173,8 @@ class AlgorithmSiteInstance:
         nruns: int=1000,
         burnin: int=100,
         record_interval: int=10,
-        seed: int=None) -> SavedState:
+        seed: int=None,
+        is_verbose: bool=False) -> SavedState:
         '''
         Runs the actual algorithm on this site's data and returns the results
         TODO: Expand on this
@@ -188,6 +189,8 @@ class AlgorithmSiteInstance:
         "record_interval" iterations
         :param seed: (optional) The seed to use for random numbers when running
         (defaults to completely random)
+        :param is_verbose: (optional) If true, print out information while
+        running (defaults to not printing)
         :return: Returns the saved state (including the summary statistics) of
         the algorithm run
         '''
@@ -222,7 +225,9 @@ class AlgorithmSiteInstance:
                 rand)
             self.saved_state.update_saved_state(self.state, self.locinames,
                 i, burnin, record_interval)
-            print(f'MCMC Iteration {i + 1}')
+
+            if is_verbose and i % record_interval == 0:
+                print(f'{jobname} Iteration {i + 1}')
 
         self.saved_state.post_process_saved_state(
             self.locinames,
