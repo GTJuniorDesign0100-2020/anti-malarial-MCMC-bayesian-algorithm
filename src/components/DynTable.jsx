@@ -1,4 +1,6 @@
 import React from 'react';
+import JSZip from 'jszip';
+import {saveAs} from 'file-saver';
 import SortableTable from './SortableTable';
 
 export default function DynTable(props) {
@@ -11,7 +13,7 @@ export default function DynTable(props) {
         <td>{date.toLocaleTimeString()}</td>
         <td>{inputFilename}</td>
         <td>{status}</td>
-        <td>{getCSVFilesLinks(csvFileText)}</td>
+        <td>{getResultDownloadLinks(csvFileText)}</td>
       </tr>
     );
   }
@@ -33,24 +35,53 @@ export default function DynTable(props) {
   );
 }
 
-function getCSVFilesLinks(csvFileText) {
+function getResultDownloadLinks(csvFileText) {
   if (!csvFileText) {
     return '';
   }
 
+  const probability_filename = 'probability_of_recrudescence.csv';
+
+  let extra_filenames = Object.keys(csvFileText);
+  // Remove probability file from those included in .zip
+  extra_filenames.splice(extra_filenames.indexOf(probability_filename), 1);
+
   return (
-    // TODO: Bundle links/files in a zip?
     <div>
-      {Object.keys(csvFileText).map(filename =>
-        <CSVDownloadLink
-          key={filename}
-          csvFileName={filename}
-          csvFileText={csvFileText[filename]}
-        />
-      )}
+      <CSVDownloadLink
+        key={probability_filename}
+        csvFileName={probability_filename}
+        csvFileText={csvFileText[probability_filename]}
+      />
+      <ZipDownloadLink
+        fileNames={extra_filenames}
+        fileContentDict={csvFileText}
+        downloadName="advanced_stats"
+      />
     </div>
   );
 }
+
+const ZipDownloadLink = ({fileNames, fileContentDict, downloadName}) => {
+  let zip = new JSZip();
+  for (let filename of fileNames) {
+    const csvText = fileContentDict[filename];
+    zip.file(filename, csvText);
+  }
+
+  return (
+    <p><a
+      href="#"
+      onClick={(evt) => {
+        evt.preventDefault();
+        zip.generateAsync({type: 'blob'}).then(
+          zipContent => saveAs(zipContent, `${downloadName}.zip`)
+        );
+      }}>
+        {downloadName}.zip
+    </a></p>
+  );
+};
 
 const CSVDownloadLink = ({csvFileName, csvFileText}) => {
   const csvText = `data:text/csv;charset=utf-8,${csvFileText}`;
