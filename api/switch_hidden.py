@@ -204,11 +204,10 @@ def _get_old_alleles(recoded: np.ndarray, hidden: np.ndarray, id_index: int, cho
     :param chosen_locus: The locus index to get alleles for
     :param max_MOI: The max multiplicity of infection in the dataset
     '''
-    return recoded[
-        id_index,
-        np.intersect1d(
-            np.arange((chosen_locus * max_MOI), (chosen_locus + 1) * max_MOI),
-            np.where(hidden[id_index] == HiddenAlleleType.MISSING.value)[0])
+    start_index = chosen_locus * max_MOI
+    end_index = start_index + max_MOI
+    return recoded[id_index, start_index: end_index][
+        hidden[id_index, start_index: end_index] == HiddenAlleleType.MISSING.value
     ]
 
 def _calculate_new_distances(state: SiteInstanceState, sh: SwitchHiddenState, id_index: int, max_MOI: int):
