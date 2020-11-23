@@ -4,14 +4,20 @@ import csv
 import numpy as np
 
 '''
+
+How to run:
+
+python integration_test.py 5
+
 This integration test algorithm tests the python algorithm output against the
 original R script outputs. Specifically, it checks microsatellite_correction.csv
 and probability_of_recrudescence.csv. It takes 1 argument that is a simple
-integer and represents the number of times you run the algorithm (each doing
-1000 iterations), so for example running with 'python integration_test.py 5'
+integer and represents the number of times you run main.py. 
+Main.py. runs the algorithm 'nruns' times. You can find and update nruns in main.py.
+For example, running with 'python integration_test.py 5'
 will run main.py 5 times. At the end, it outputs a csv file with the results
 in a file called integration_test_results.csv. To run this test, update
-lines that have 'UPDATE HERE' commented before.
+lines that have 'UPDATE HERE' commented before them.
 
 '''
 
@@ -37,11 +43,11 @@ def main(argv):
         # UPDATE HERE : point to your local python algorithm
         retP = subprocess.call(["python3", "anti-malarial-MCMC-bayesian-algorithm/main.py"])
 
-        por_data_r.append(get_probability_of_recrudescence_file('r'))
-        por_data_p.append(get_probability_of_recrudescence_file('p'))
+        por_data_r.append(get_probability_of_recrudescence_file(False))
+        por_data_p.append(get_probability_of_recrudescence_file(True))
 
-        mc_data_r.append(get_microsatellite_correction_file('r'))
-        mc_data_p.append(get_microsatellite_correction_file('p'))
+        mc_data_r.append(get_microsatellite_correction_file(False))
+        mc_data_p.append(get_microsatellite_correction_file(True))
 
 
     sum_p = np.array(por_data_p).T.tolist()
@@ -117,13 +123,12 @@ def main(argv):
 
 
 
-def get_probability_of_recrudescence_file(t):
+def get_probability_of_recrudescence_file(get_python):
     #open output files
-    if t == 'p':
+    if get_python:
         # UPDATE HERE: to point to the probability_of_recrudescence.csv outputted by the python script
         prob_file = open('anti-malarial-MCMC-bayesian-algorithm/probability_of_recrudescence.csv', 'r')
-
-    if t == 'r':
+    else:
         # UPDATE HERE: to point to the probability_of_recrudescence.csv outputted by the R script
         prob_file = open('probability_of_recrudescence.csv', 'r')
 
@@ -131,15 +136,15 @@ def get_probability_of_recrudescence_file(t):
     return list(prob_reader)
 
 
-def get_microsatellite_correction_file(t):
+def get_microsatellite_correction_file(get_python):
     #open output files
-    if t == 'r':
+    if get_python:
         # UPDATE HERE: to point to the microsatellite_correction.csv outputted by the python script
-        micro_file = open('microsatellite_correction.csv', 'r')
-
-    if t == 'p':
-        # UPDATE HERE: to point to the microsatellite_correction.csv outputted by the R script
         micro_file = open('anti-malarial-MCMC-bayesian-algorithm/microsatellite_correction.csv', 'r')
+
+    else:
+        # UPDATE HERE: to point to the microsatellite_correction.csv outputted by the R script
+        micro_file = open('microsatellite_correction.csv', 'r')
 
     micro_reader = csv.reader(micro_file)
     return list(micro_reader)

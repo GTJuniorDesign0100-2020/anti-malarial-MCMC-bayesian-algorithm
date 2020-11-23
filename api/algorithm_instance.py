@@ -105,6 +105,8 @@ class AlgorithmResults:
         some_site, some_site_sum = list(self.run_summary_stat_dfs.items())[0]
 
         loci_names = list(some_site_sum.index.values[2:-1])
+
+        #each locus is listed twice (once for frequency and once for simpsons index)
         num_loci = int(len(loci_names)/2)
         row_descriptions.append("Probability of Missing Allele")
         row_descriptions.append("Error Rate")
@@ -114,6 +116,7 @@ class AlgorithmResults:
             row_descriptions.append("Simpson's Diversity Index")
         row_descriptions.append("Average Simpson's Index")
 
+        #filling out loci_names to fit the table (some rows are not applicable)
         loci_names.append("N/A")
         loci_names.insert(0, "N/A")
         loci_names.insert(0, "N/A")
@@ -126,6 +129,7 @@ class AlgorithmResults:
             summary_df.columns = ["Description", "Locus Name", "Mean with Interquartile range (25%, 75%)"]
             output_files[filename] = summary_df.to_csv(index=False, line_terminator='\n')
 
+        #need to delete the 'N/A' row filler (in line with "Average Simpson's Index")
         del loci_names[-1]
         for site_name, param_df in self.saved_parameters_all.items():
             filename = f'{site_name}_state_parameters.csv'
