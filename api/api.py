@@ -144,7 +144,7 @@ class RecrudescenceTest(Resource):
             for sample_id in ids:
                 sample_info = {}
                 recrud_prob = probability_of_recrudescence_df.iloc[sample_index]
-                sample_info['recrud_probability'] = recrud_prob
+                sample_info['recrud_probability'] = recrud_prob.values[0]
                 site_samples[sample_id] = sample_info
                 sample_index += 1
 
