@@ -1,5 +1,6 @@
 from collections import namedtuple
 
+import bottleneck as bn
 import numpy as np
 import pandas as pd
 
@@ -28,7 +29,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceS
     # Section A: If number of inferred alleles > 0
     # It will probably be more efficient to sum the two seperately, because concatenation
     # could induce memory-related performance cost, if a new memory block is being created behind the scenes.
-    inferred_allele_count = np.nansum(state.hidden0) + np.nansum(state.hiddenf)
+    inferred_allele_count = bn.nansum(state.hidden0) + bn.nansum(state.hiddenf)
     if inferred_allele_count <= 0:
         return
 
