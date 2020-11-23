@@ -69,11 +69,9 @@ def test_likelihood_ratio_inner_loop_initial(mcmc_initial_state):
 
     inner_values = AlgorithmSiteInstance._likelihood_inner_loop(
         mcmc_initial_state.state,
-        mcmc_initial_state.max_MOI,
-        0,
         0)
 
-    np.testing.assert_array_almost_equal(inner_values, expected_inner_values, decimal=5)
+    np.testing.assert_array_almost_equal(inner_values[0], expected_inner_values, decimal=5)
 
 
 def test_likelihood_ratio_inner_loop_middle(mcmc_initial_state):
@@ -81,11 +79,9 @@ def test_likelihood_ratio_inner_loop_middle(mcmc_initial_state):
 
     inner_values = AlgorithmSiteInstance._likelihood_inner_loop(
         mcmc_initial_state.state,
-        mcmc_initial_state.max_MOI,
-        1,
         2)
 
-    np.testing.assert_array_almost_equal(inner_values, expected_inner_values, decimal=5)
+    np.testing.assert_array_almost_equal(inner_values[1], expected_inner_values, decimal=5)
 
 
 def test_likelihood_ratio(mcmc_initial_state):
@@ -94,8 +90,20 @@ def test_likelihood_ratio(mcmc_initial_state):
     likelihood_ratios = AlgorithmSiteInstance._likelihood_ratios(
         mcmc_initial_state.state,
         mcmc_initial_state.num_ids,
-        mcmc_initial_state.num_loci,
-        mcmc_initial_state.max_MOI)
+        mcmc_initial_state.num_loci)
+
+    np.testing.assert_array_almost_equal(likelihood_ratios, expected_likelihood_ratios, decimal=5)
+
+
+def test_likelihood_ratio_with_nans(mcmc_initial_state):
+    expected_likelihood_ratios = np.array([88.459268, 1.438889, 0.0])
+
+    mcmc_initial_state.state.alldistance[0, 1, 2:] = np.nan
+    mcmc_initial_state.state.allrecrf[0, 1, 2:] = np.nan
+    likelihood_ratios = AlgorithmSiteInstance._likelihood_ratios(
+        mcmc_initial_state.state,
+        mcmc_initial_state.num_ids,
+        mcmc_initial_state.num_loci)
 
     np.testing.assert_array_almost_equal(likelihood_ratios, expected_likelihood_ratios, decimal=5)
 

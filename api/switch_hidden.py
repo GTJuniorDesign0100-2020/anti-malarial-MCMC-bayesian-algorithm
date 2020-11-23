@@ -83,13 +83,13 @@ def _setup_initial_state(x, nloci, maxMOI, alleles_definitions_RR_arr: List[np.n
     chosenlocus -= 1
 
     old = state.recoded0[x, chosen].astype(np.int64)
-    new = rand.choice(np.arange(state.frequencies_RR[0][chosenlocus])) + 1
+    new = rand.choice(np.arange(state.frequencies_RR.lengths[chosenlocus])) + 1
     if is_chosen_valid:
         oldalleles = _get_old_alleles(state.recoded0, state.hidden0, x, chosenlocus, maxMOI)
     else:
         oldalleles = _get_old_alleles(state.recodedf, state.hiddenf, x, chosenlocus, maxMOI)
 
-    newallele_length = np.mean(alleles_definitions_RR_arr[chosenlocus][new-1, :]) + rand.normal(loc=0, scale=state.frequencies_RR[2][chosenlocus], size=1)
+    newallele_length = np.mean(alleles_definitions_RR_arr[chosenlocus][new-1, :]) + rand.normal(loc=0, scale=state.frequencies_RR.variability[chosenlocus], size=1)
 
     allpossiblerecrud = state.get_all_possible_recrud(sample_id=x)
 
@@ -109,8 +109,8 @@ def _update_reinfection(state: SiteInstanceState, sh: SwitchHiddenState, x: int,
     '''
     repeatednew = 1 if np.any(sh.oldalleles == sh.new) else state.qq
 
-    numerator = np.sum(state.frequencies_RR[1][sh.chosenlocus, 0:state.frequencies_RR[0][sh.chosenlocus]] * state.dvect[state.correction_distance_matrix[sh.chosenlocus][sh.new - 1].astype(np.int64)]) * repeatednew
-    denominator = np.sum(state.frequencies_RR[1][sh.chosenlocus, 0:state.frequencies_RR[0][sh.chosenlocus]] * state.dvect[state.correction_distance_matrix[sh.chosenlocus][sh.old].astype(np.int64)]) * repeatednew
+    numerator = np.sum(state.frequencies_RR.matrix[sh.chosenlocus, 0:state.frequencies_RR.lengths[sh.chosenlocus]] * state.dvect[state.correction_distance_matrix[sh.chosenlocus][sh.new - 1].astype(np.int64)]) * repeatednew
+    denominator = np.sum(state.frequencies_RR.matrix[sh.chosenlocus, 0:state.frequencies_RR.lengths[sh.chosenlocus]] * state.dvect[state.correction_distance_matrix[sh.chosenlocus][sh.old].astype(np.int64)]) * repeatednew
 
     alpha = numerator / denominator if denominator != 0 else 0
     if sh.z >= alpha:
@@ -151,7 +151,7 @@ def _update_recrudescence(state: SiteInstanceState, sh: SwitchHiddenState, x: in
 
     ## likelihoodnew
     likelihoodnew_numerator = state.dvect[np.round(newalldistance).astype(np.int64)]
-    likelihoodnew_demominator = np.sum(state.frequencies_RR[1][sh.chosenlocus][:state.frequencies_RR[0][sh.chosenlocus]] * state.dvect[state.correction_distance_matrix[sh.chosenlocus][newallrecrf[0].astype(np.int64)].astype(np.int64)])
+    likelihoodnew_demominator = np.sum(state.frequencies_RR.matrix[sh.chosenlocus][:state.frequencies_RR.lengths[sh.chosenlocus]] * state.dvect[state.correction_distance_matrix[sh.chosenlocus][newallrecrf[0].astype(np.int64)].astype(np.int64)])
     likelihoodnew = np.nanmean(likelihoodnew_numerator / likelihoodnew_demominator) * repeatednew
 
     ## likelihoodold
@@ -163,7 +163,7 @@ def _update_recrudescence(state: SiteInstanceState, sh: SwitchHiddenState, x: in
     temp_allrecrf = state.allrecrf[x, sh.chosenlocus, :maxMOI**2]
     temp_allrecrf = temp_allrecrf[~np.isnan(temp_allrecrf)].astype(np.int64)
 
-    temp = state.frequencies_RR[1][sh.chosenlocus, :state.frequencies_RR[0][sh.chosenlocus]] * state.dvect[state.correction_distance_matrix[sh.chosenlocus][temp_allrecrf].astype(np.int64)]
+    temp = state.frequencies_RR.matrix[sh.chosenlocus, :state.frequencies_RR.lengths[sh.chosenlocus]] * state.dvect[state.correction_distance_matrix[sh.chosenlocus][temp_allrecrf].astype(np.int64)]
     likelihoodold_denominator = []
     for i in temp:
         likelihoodold_denominator.append(np.sum(i))
