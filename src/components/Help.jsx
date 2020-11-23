@@ -1,4 +1,5 @@
 import React from 'react';
+import Popup from 'reactjs-popup';
 
 /*
 Creates a button that directs to help document.
@@ -12,31 +13,19 @@ export default class Help extends React.Component {
   constructor(props) {
       super(props);
       this.state = { help: null };
-
-      this.handleHelpClick = this.handleHelpClick.bind(this);
-  }
-
-  handleHelpClick() {
-    let helpElement = null
-    if (!this.state.help) {
-      helpElement = <span className="helpData">If you need help with how to use the application, check out the <u>FAQ</u>!</span>;
-    }
-    this.setState({help: helpElement});
   }
 
   render() {
-    const helpContainerStyles = {
-      display: 'flex',
-      width: '100%'
-    };
-
     return (
-      <div className="help" style={helpContainerStyles}>
-        <button className="help main-button" onClick={() => this.handleHelpClick()}>
-          Help
-        </button>
-        {this.state.help}
-      </div>
+      <Popup
+        trigger={
+          <button className="help main-button">
+            Help
+          </button>
+        }
+        position="right">
+        <div className="helpData">If you need help with how to use the application, check out the <u>FAQ</u>!</div>
+      </Popup>
     );
   }
 }

@@ -1,9 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
 
 body {
+  margin: 1em;
   font-family: "Open Sans", sans-serif;
   font-size: 1em;
-  margin: 1em;
+  font-color: #212;
+  background: white;
 }
 
 button {
@@ -12,11 +14,12 @@ button {
   margin: 0;
   text-decoration: none;
   background: none;
-  color: black;
+  color: #212;
   font-size: 1em;
   cursor: pointer;
   text-align: center;
   transition: background 250ms ease-in-out;
+  border-radius: 3px;
 }
 
 .main-screen {
@@ -40,23 +43,55 @@ button {
 }
 
 .main-button {
-  background: #CCC;
+  background: #ccc;
   border: 1px solid #999;
-  font-size: 24px;
+  font-size: 1.5em;
   font-weight: bold;
-  line-height: 34px;
-  height: 34px;
+  line-height: 2em;
+  height: 2em;
   padding: 0;
 }
+.main-button:hover {
+  background: #ddd;
+}
 .main-button:focus {
-  outline: none
+  outline: none;
+  border: 1px solid #555;
+}
+
+.run-button {
+  background: #22a465;
+  border: none;
+  margin-right: 10px;
+  min-width: 150px;
+  box-shadow: 0px 4px 8px #888;
+}
+.run-button:hover {
+  background: #3cc281;
+}
+.run-button:focus {
+  outline: none;
+  border: 1px solid #1f774c;
+}
+.run-button::before {
+  display: inline;
+  content: "＋";
+  margin-right: 5px;
 }
 
 .help {
-  grid-row-start: 3;
-  grid-column-start: 2;
   text-align: center;
-  width: 100px;
+  min-width: 100px;
+}
+
+.top-left {
+  grid-column-start: 1;
+  grid-row-start: 1;
+}
+
+.joined-buttons {
+  display: flex;
+  flex-direction: row;
 }
 
 .settings {
@@ -74,10 +109,7 @@ button {
 
 .testRun {
   grid-column-start: 1;
-  grid-row-start: 4;
-  margin-top: 20px;
-  text-align: center;
-  width: 150px;
+  grid-row-start: 1;
 }
 
 .settingsData{
@@ -98,25 +130,11 @@ button {
 }
 
 .helpData {
-  background: #fff;
-  border: 0px solid #999;
-  float: left;
-  font-size: 16px;
-  font-weight: bold;
-  line-height: 34px;
-  height: 34px;
-  margin-right: 1px;
-  margin-top: -1px;
-  margin-left: 1px;
-  padding-left: 10px;
-  text-align: left;
-}
-
-.logOut {
-  grid-column-start: 3;
-  grid-row-start: 2;
-  justify-self: end;
-  float: right;
+  background: #CCC;
+  border: 1px solid #999;
+  font-size: 12px;
+  width: 300px;
+  padding:10px;
 }
 
 .kbd-navigation .square:focus {
@@ -130,12 +148,13 @@ button {
 table {
   border-spacing: 1;
   border-collapse: collapse;
-  background: white;
+  background: #fefefe;
   border-radius: 10px;
   overflow: hidden;
   width: 100%;
   margin: 0 auto;
   position: relative;
+  box-shadow: 0px 4px 8px #888;
 }
 table * {
   position: relative;
@@ -182,7 +201,7 @@ th > button {
   margin: 0;
   text-decoration: none;
   background: none;
-  color: black;
+  color: #212;
   font-size: 1em;
   cursor: pointer;
   text-align: center;
