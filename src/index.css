@@ -1,10 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
+
 body {
-  font: 14px "Century Gothic", Futura, sans-serif;
-  margin: 20px;
+  font-family: "Open Sans", sans-serif;
+  font-size: 1em;
+  margin: 1em;
 }
 
-ol, ul {
-  padding-left: 30px;
+button {
+  border: none;
+  padding: 1em;
+  margin: 0;
+  text-decoration: none;
+  background: none;
+  color: black;
+  font-size: 1em;
+  cursor: pointer;
+  text-align: center;
+  transition: background 250ms ease-in-out;
 }
 
 .main-screen {
@@ -35,6 +47,9 @@ ol, ul {
   line-height: 34px;
   height: 34px;
   padding: 0;
+}
+.main-button:focus {
+  outline: none
 }
 
 .help {
@@ -112,9 +127,53 @@ ol, ul {
   margin-left: 20px;
 }
 
-table, td, th {
-  border: 1px solid black;
+table {
+  border-spacing: 1;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
 }
+table * {
+  position: relative;
+}
+table td, table th {
+  padding-left: 8px;
+}
+table thead tr {
+  height: 60px;
+  background: #2c6cbb;
+}
+table tbody tr {
+  height: 50px;
+}
+table tbody tr:last-child {
+  border: 0;
+}
+table td, table th {
+  text-align: left;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #efefef;
+}
+
+tbody tr {
+  font-size: 1em;
+  color: #888;
+  line-height: 1.2;
+  font-weight: unset;
+}
+
+tbody tr:hover {
+  color: #555;
+  background-color: #c8e3fa;
+  cursor: pointer;
+}
+
 /* Clear button styles in table */
 th > button {
   display: inline-block;
@@ -128,8 +187,10 @@ th > button {
   cursor: pointer;
   text-align: center;
   transition: background 250ms ease-in-out;
-  -webkit-appearance: none;
-  -moz-appearance: none;
+  border-radius: 8px;
+}
+th > button:hover {
+  background: #3b79c5;
 }
 th > button:focus {
   outline: none;
