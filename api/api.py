@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from typing import List
 import datetime
 import math
 import os
@@ -6,24 +7,31 @@ import time
 
 from flask import Flask, request
 from flask_restful import Resource, Api
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import numpy as np
 import pandas as pd
 import werkzeug
 
 from api.algorithm_instance import AlgorithmInstance, AlgorithmResults
+from api.algorithm_site_instance import LociRepeatError
 
 
 # =============================================================================
 # Initialize Flask
 # =============================================================================
 
-app = Flask(__name__)
+#application variable name is necessary for recognition by aws
+application = app = Flask(__name__)
 
 MAX_FILE_SIZE_MB = 50
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE_MB*1024**2
 app.config['UPLOAD_EXTENSIONS'] = ['.xlsx']      # Valid filetypes
 
 api = Api(app)
+
+limiter = Limiter(app, key_func=get_remote_address)
+limiter.init_app(app)
 
 # =============================================================================
 # Define actual functionality
@@ -44,13 +52,22 @@ def too_large(e):
 
 
 class RecrudescenceTest(Resource):
+
+    decorators = [
+     limiter.limit("250/hour", error_message="Requests per hour limit exceeded"),
+     limiter.limit("5/minute", error_message="Requests per minute limit exceeded"),
+     limiter.limit("1/second", error_message="Requests per second limit exceeded")
+     ]
     def post(self):
         '''
-        Takes in a posted CSV data file, analyzes it to determine if each
+        Takes in a posted xlsx data file, analyzes it to determine if each
         case is a recrudescence/reinfection, and returns the calculated results
         '''
         uploaded_file = request.files.get('file')
         iterations = request.args.get('iterations', default=10000, type=int)
+        loci_repeats = request.args.getlist('locirepeat', type=int)
+        if not loci_repeats:
+            return error_response('Mandatory paramater locirepeats not included')
         # TODO: Find cleaner way of doing validation?
         if not (uploaded_file and uploaded_file.filename):
             return error_response('No input file provided')
@@ -64,7 +81,10 @@ class RecrudescenceTest(Resource):
 
         json_results = {}
         try:
-            json_results = self._get_test_results_json(uploaded_file, iterations)
+            json_results = self._get_test_results_json(uploaded_file, iterations, loci_repeats)
+        except LociRepeatError as e:
+            print(e)
+            return error_response(str(e), 400)
         except Exception as e:
             # TODO: Return more specific error message?
             print(e)
@@ -76,11 +96,12 @@ class RecrudescenceTest(Resource):
         self,
         uploaded_file: werkzeug.datastructures.FileStorage,
         iterations: int,
-        locirepeats=[2,2,3,3,3,3,3]):
+        locirepeats: List[int],
+        ):
         '''
         Runs a recrudescence test on the given data and returns the test results
-        via JSON (plus the status code of the test). If an error occurs,
-        returns an error message and a 500 status code.
+        via JSON (plus the status code of the test). If an error occurs, raises
+        an exception.
         '''
         run_start_datetime = datetime.datetime.utcnow()
         start_time = time.time()
@@ -91,7 +112,10 @@ class RecrudescenceTest(Resource):
         record_interval = math.ceil(iterations / 1000)
         burnin = math.ceil(iterations * 0.25)
 
-        results = test_run.run_algorithm(iterations, burnin, record_interval)
+        try:
+            results = test_run.run_algorithm(iterations, burnin, record_interval)
+        except LociRepeatError as e:
+            raise e
 
         posterior_recrudescence_distribution_df, probability_of_recrudescence_df = results.get_summary_stats()
 

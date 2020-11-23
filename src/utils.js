@@ -9,8 +9,12 @@ export function recrudescenceAPIRequest(inputFile, locirepeats, numIterations) {
   let formData = new FormData();
   formData.append('file', inputFile);
 
+  const locirepeats_params = locirepeats.reduce(
+    (param_string, locirepeat) => `${param_string}&locirepeat=${locirepeat}`,
+    '')
+
   return new Promise((resolve, reject) => {
-    fetch(`/api/v1/recrudescences?iterations=${numIterations}`, {
+    fetch(`/api/v1/recrudescences?iterations=${numIterations}${locirepeats_params}`, {
       method: 'POST',
       body: formData
     })

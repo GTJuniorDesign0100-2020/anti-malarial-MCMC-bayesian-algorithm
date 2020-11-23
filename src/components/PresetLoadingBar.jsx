@@ -6,7 +6,7 @@ import LoadingBar from './LoadingBar';
  */
 
 export default function PresetLoadingBar({timeToComplete=10.0}) {
-    const [startTime, setStartTime] = useState(Date.now());
+    const [startTime] = useState(Date.now());
     const [secondsSinceStart, setSecondsSince] = useState(0.0);
 
     // Set null completion times = 100% completion
