@@ -48,18 +48,24 @@ Any modern desktop or laptop computer can run this application. Before beginning
 
 ### Installing Libraries
 
-1.  On your command line, install the following Python packages via pip (if you aren't sure how to do this, see this [pip installer guide](https://packaging.python.org/tutorials/installing-packages/))
+1.  On your command line, install the Python packages via pip by running the following command (this might take several minutes):
 
 ```bash
-pip install numpy
-pip install pandas
-pip install scipy
-pip install bottleneck
-
-pip install flask
-pip install flask-restful
-pip install flask_limiter
+pip install .
 ```
+
+-   If this gives you any errors, you can manually install the necessary packages one-by-one via pip (if you aren't sure how to do this, see this [pip installer guide](https://packaging.python.org/tutorials/installing-packages/)):
+
+    ```bash
+    pip install numpy
+    pip install pandas
+    pip install scipy
+    pip install bottleneck
+
+    pip install flask
+    pip install flask-restful
+    pip install flask_limiter
+    ```
 
 2.  (Optional) If you want to develop for this project, make sure to also install [pytest](https://docs.pytest.org/en/stable/getting-started.html) to run our unit tests and verify the code is working.
 
