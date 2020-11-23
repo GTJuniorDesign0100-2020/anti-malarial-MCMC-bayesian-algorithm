@@ -8,7 +8,7 @@ An application for running recrudescence tests on malaria data, created as part 
 
 For most users, the best and easiest option is to use our online application without installing anything! Visit this link to use it:
 
-[FINAL URL TBD]()
+[<<Final URL TBD>>]()
 
 ### Using the Online GUI
 
@@ -23,7 +23,7 @@ You can learn more about how to run a new recrudescence test itself on your data
 2.  Submit the input file you want to analyze
 3.  Submit your known loci repeat values
 4.  Select how many iterations to run your file for (10000 is a good starting value)
-5.  Hit "Run Test". You should see the test begin running with a loading bar:
+5.  Hit "Run Test"; you should see the test begin running with a loading bar:
 
 ![](./img/loading_bar.png)
 
@@ -54,20 +54,20 @@ Any modern desktop or laptop computer can run this application. Before beginning
 pip install .
 ```
 
--   If this gives you any errors, you can manually install the necessary packages one-by-one via pip (if you aren't sure how to do this, see this [pip installer guide](https://packaging.python.org/tutorials/installing-packages/)):
+> TROUBLESHOOTING: If this gives you any errors, you can manually install the necessary packages one-by-one via pip (if you aren't sure how to do this, see this [pip installer guide](https://packaging.python.org/tutorials/installing-packages/)):
+>
+>    ```bash
+>    pip install numpy
+>    pip install pandas
+>    pip install scipy
+>    pip install bottleneck
+>
+>    pip install flask
+>    pip install flask-restful
+>    pip install flask_limiter
+>    ```
 
-    ```bash
-    pip install numpy
-    pip install pandas
-    pip install scipy
-    pip install bottleneck
-
-    pip install flask
-    pip install flask-restful
-    pip install flask_limiter
-    ```
-
-2.  (Optional) If you want to develop for this project, make sure to also install [pytest](https://docs.pytest.org/en/stable/getting-started.html) to run our unit tests and verify the code is working.
+2.  (Optional) If you want to develop for this project, make sure to also install [pytest](https://docs.pytest.org/en/stable/getting-started.html) to run our unit tests and verify the code is working
 
 ```bash
 pip install pytest
