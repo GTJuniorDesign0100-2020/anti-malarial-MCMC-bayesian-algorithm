@@ -33,6 +33,9 @@ expected_ids = pd.unique(["BQ17-269", "BD17-040", "BD17-083", "BD17-085", "BD17-
 expected_locinames = pd.unique(["313", "383", "TA1", "POLYA", "PFPK2", "2490", "TA109"])
 alleles_definitions_RR = AlgorithmSiteInstance._get_allele_definitions(
         genotypedata_RR, additional_neutral, expected_locinames.size, locirepeats)
+alleles_definitions_RR_array = []
+for df in alleles_definitions_RR:
+    alleles_definitions_RR_array.append(df.to_numpy())
 
 
 BasicState = namedtuple('BasicState', 'state num_ids num_loci max_MOI')
@@ -139,7 +142,7 @@ def test_switch_hidden_allele_reinfection(mcmc_initial_state):
             x=0,
             nloci=num_loci,
             maxMOI=max_MOI,
-            alleles_definitions_RR=alleles_definitions_RR,
+            alleles_definitions_RR_arr=alleles_definitions_RR_array,
             state=state,
             rand=rand)
 
@@ -197,7 +200,7 @@ def test_switch_hidden_allele_recrudescence(mcmc_initial_state):
             x=2,
             nloci=num_loci,
             maxMOI=max_MOI,
-            alleles_definitions_RR=alleles_definitions_RR,
+            alleles_definitions_RR_arr=alleles_definitions_RR_array,
             state=state,
             rand=rand)
 
@@ -220,14 +223,14 @@ def test_switch_hidden_allele_recrudescence(mcmc_initial_state):
 if __name__ == '__main__':
     # Used for testing performance
     state = mcmc_initial_state()
-    rand = np.random.RandomState()
+    rand = np.random.RandomState(2020)
     for i in range(1000):
         for j in range(state.num_ids):
             switch_hidden(
                 x=j,
                 nloci=state.num_loci,
                 maxMOI=state.max_MOI,
-                alleles_definitions_RR=alleles_definitions_RR,
+                alleles_definitions_RR_arr=alleles_definitions_RR_array,
                 state=state.state,
                 rand=rand)
         print('.', end='')

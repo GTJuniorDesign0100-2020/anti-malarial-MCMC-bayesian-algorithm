@@ -197,10 +197,15 @@ class AlgorithmSiteInstance:
             self.max_MOI)
 
         rand = np.random.RandomState(seed=seed)
+        # Use numpy array instead of pandas df for performance reasons
+        alleles_definitions_RR_array = []
+        for df in self.alleles_definitions_RR:
+            alleles_definitions_RR_array.append(df.to_numpy())
+
         for i in range(nruns):
             self._run_mcmc(
                 self.state,
-                self.alleles_definitions_RR,
+                alleles_definitions_RR_array,
                 self.ids.size,
                 self.locinames.size,
                 self.max_MOI,
@@ -275,7 +280,7 @@ class AlgorithmSiteInstance:
     def _run_mcmc(
         cls,
         state: SiteInstanceState,
-        alleles_definitions_RR: List[pd.DataFrame],
+        alleles_definitions_RR_arrays: List[np.ndarray],
         num_ids: int,
         num_loci: int,
         max_MOI: int,
@@ -297,7 +302,7 @@ class AlgorithmSiteInstance:
         # propose new hidden states
         # TODO: What does switch_hidden do? Is it entirely side effects?
         for i in range(num_ids):
-            switch_hidden(i, num_loci, max_MOI, alleles_definitions_RR, state, rand)
+            switch_hidden(i, num_loci, max_MOI, alleles_definitions_RR_arrays, state, rand)
 
         cls._update_q(state, rand)
         cls._update_dvect(state, rand)

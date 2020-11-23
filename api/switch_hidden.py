@@ -1,4 +1,5 @@
 from collections import namedtuple
+from typing import List
 
 import bottleneck as bn
 import numpy as np
@@ -11,7 +12,7 @@ from api.site_instance_state import HiddenAlleleType, SampleType, SiteInstanceSt
 SwitchHiddenState = namedtuple('_SwitchState', 'z, chosen, chosenlocus, is_chosen_valid, old, new, newallele_length, oldalleles, allpossiblerecrud')
 
 
-def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceState, rand: np.random.RandomState):
+def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR_arr: List[np.ndarray], state: SiteInstanceState, rand: np.random.RandomState):
     '''
     Update the hidden/inferred alleles for the samples
 
@@ -21,7 +22,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceS
     :param x: The index of the sample ID to update
     :param nloci: The number of loci in the dataset
     :param maxMOI: The maximum multiplicity of infection in the whole dataset
-    :param alleles_definitions_RR: ?
+    :param alleles_definitions_RR_arr: ?
     :param state: The current state of the algorithm
     :param rand: The random number generator to use
     '''
@@ -33,7 +34,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceS
     if inferred_allele_count <= 0:
         return
 
-    sh_state = _setup_initial_state(x, nloci, maxMOI, alleles_definitions_RR, state, rand)
+    sh_state = _setup_initial_state(x, nloci, maxMOI, alleles_definitions_RR_arr, state, rand)
     is_reinfection = state.classification[x] == SampleType.REINFECTION.value
     if is_reinfection:
         _update_reinfection(state, sh_state, x, maxMOI)
@@ -41,7 +42,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceS
         _update_reinfection(state, sh_state, x, maxMOI)
 
 
-def _setup_initial_state(x, nloci, maxMOI, alleles_definitions_RR, state: SiteInstanceState, rand: np.random.RandomState) -> SwitchHiddenState:
+def _setup_initial_state(x, nloci, maxMOI, alleles_definitions_RR_arr: List[np.ndarray], state: SiteInstanceState, rand: np.random.RandomState) -> SwitchHiddenState:
     '''
     Sets up the initial local variables switch_hidden uses throughout its calculations, including the following:
         z - A random probability between 0 and 1 that's used to determine if we should update the allele
@@ -57,7 +58,7 @@ def _setup_initial_state(x, nloci, maxMOI, alleles_definitions_RR, state: SiteIn
     :param x: The index of the sample ID to update
     :param nloci: The number of loci in the dataset
     :param maxMOI: The maximum multiplicity of infection in the whole dataset
-    :param alleles_definitions_RR: ?
+    :param alleles_definitions_RR_arr: ?
     :param state: The current state of the algorithm
     :param rand: The random number generator to use
     :return: An initialized SwitchHiddenState tuple
@@ -88,7 +89,7 @@ def _setup_initial_state(x, nloci, maxMOI, alleles_definitions_RR, state: SiteIn
     else:
         oldalleles = _get_old_alleles(state.recodedf, state.hiddenf, x, chosenlocus, maxMOI)
 
-    newallele_length = np.mean(alleles_definitions_RR[chosenlocus].iloc[new-1, :]) + rand.normal(loc=0, scale=state.frequencies_RR[2][chosenlocus], size=1)
+    newallele_length = np.mean(alleles_definitions_RR_arr[chosenlocus][new-1, :]) + rand.normal(loc=0, scale=state.frequencies_RR[2][chosenlocus], size=1)
 
     allpossiblerecrud = state.get_all_possible_recrud(sample_id=x)
 
