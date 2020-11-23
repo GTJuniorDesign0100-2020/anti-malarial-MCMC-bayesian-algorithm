@@ -59,9 +59,9 @@ export default function SortableTable({
         </tr>
       </thead>
       <tbody>
-        {sortedItems
+        {(sortedItems && sortedItems.length > 0)
           ? sortedItems.map(item => itemToTableRowFunc(item))
-          : undefined
+          : <tr><td style={{width: '100%', textAlign: 'center'}} colspan={columnNames.length}>You haven't run any tests yet</td></tr>
         }
       </tbody>
     </table>

@@ -61,18 +61,6 @@ export default class MainScreen extends React.Component {
   }
 
   render() {
-    const welcomeStyle = {
-      gridColumnStart: 1,
-      gridRowStart: 1
-    };
-    const helpTextStyle = {
-      gridColumnStart: 1,
-      gridRowStart: 3
-    };
-    const helpStyle = {
-      gridColumnStart: 2,
-      gridRowStart: 3
-    };
     const tableStyle = {
         gridColumnStart: 2,
         gridRowStart: 5
@@ -80,11 +68,12 @@ export default class MainScreen extends React.Component {
 
     return (
       <div className="main-screen">
-        <div className='status' style={welcomeStyle}>Welcome!</div>
+        <div className="joined-buttons top-left">
+          <RunButton handleSubmit={this.createNewAlgoRun}/>
+          <Help />
+        </div>
         <Settings />
-        <div style={helpTextStyle}>How to use application:</div>
-        <Help style={helpStyle} />
-        <RunButton handleSubmit={this.createNewAlgoRun}/>
+
         <div style={tableStyle}>
           <DynTable data={this.state.tableData}/>
         </div>
