@@ -81,6 +81,18 @@ button {
   border: 1px solid #555;
 }
 
+.shadow {
+  box-shadow: 0px 4px 8px #888;
+}
+
+.popup-box {
+  background: #CCC;
+  border: 1px solid #999;
+  font-size: 1em;
+  width: 300px;
+  padding:10px;
+}
+
 .run-button {
   background: #22a465;
   border: none;
@@ -105,10 +117,6 @@ button {
   min-width: 100px;
 }
 
-.shadow {
-  box-shadow: 0px 4px 8px #888;
-}
-
 .top-left {
   grid-column-start: 1;
   grid-row-start: 1;
@@ -131,35 +139,8 @@ button {
   align-content: right;
   width: 150px;
 }
-
-.testRun {
-  grid-column-start: 1;
-  grid-row-start: 1;
-}
-
-.settingsData{
-  background: #CCC;
-  border: 1px solid #999;
-  font-size: 12px;
-  width: 300px;
-  padding:10px;
+.settings-data {
   text-align: center;
-}
-
-.testPop{
-  background: #CCC;
-  border: 1px solid #999;
-  font-size: 12px;
-  width: 300px;
-  padding:10px;
-}
-
-.help-data {
-  background: #CCC;
-  border: 1px solid #999;
-  font-size: 12px;
-  width: 300px;
-  padding:10px;
 }
 
 .kbd-navigation .square:focus {
