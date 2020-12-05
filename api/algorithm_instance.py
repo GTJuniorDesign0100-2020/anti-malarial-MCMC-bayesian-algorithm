@@ -50,7 +50,7 @@ class AlgorithmResults:
         self.saved_parameters_all[site_name] = pd.DataFrame(site_results.parameters)
         self.sample_ids = np.append(self.sample_ids, site_results.ids)
 
-        self.site_sample_ids[site_name] =  site_results.ids
+        self.site_sample_ids[site_name] = site_results.ids
         self.run_posterior_dfs[site_name] = pd.DataFrame(site_results.posterior_df)
         self.run_summary_stat_dfs[site_name] = pd.DataFrame(site_results.summary_stats_df)
 
@@ -111,7 +111,7 @@ class AlgorithmResults:
         row_descriptions.append("Probability of Missing Allele")
         row_descriptions.append("Error Rate")
         for i in range(num_loci):
-            row_descriptions.append("Frequency of most Common Allele")
+            row_descriptions.append("Frequency of Most Common Allele")
         for i in range(num_loci):
             row_descriptions.append("Simpson's Diversity Index")
         row_descriptions.append("Average Simpson's Index")

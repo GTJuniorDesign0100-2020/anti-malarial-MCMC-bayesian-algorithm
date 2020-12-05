@@ -112,7 +112,7 @@ class SavedState:
                     np.mean(self.parameters[2 + num_loci:, :]),
                 ).reshape(1, -1)))
         summary_statisticsmatrix = np.array([
-                f"{summary_statisticsmatrix[i,0]:.2f} ({summary_statisticsmatrix[i,1]:.2f}, {summary_statisticsmatrix[i,2]:.2f})"
+                f"{summary_statisticsmatrix[i,0]:.3f} ({summary_statisticsmatrix[i,1]:.3f}, {summary_statisticsmatrix[i,2]:.3f})"
                 for i in range(summary_statisticsmatrix.shape[0])
             ])
         summary_statistics_df = pd.DataFrame(
