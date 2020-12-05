@@ -20,12 +20,12 @@ export default class Help extends React.Component {
 
       <Popup
         trigger={
-          <button className="help main-button">
+          <button className="help main-button shadow">
             Help
           </button>
         }
         position="right">
-        <div>If you need help with how to use the application, check out the <a target="_blank" rel="noopener noreferrer" href="https://docs.google.com/document/d/14xnfxBzDkTYQqryIv3YDtga34cPTaUkFUND-bL-N7UY/edit?usp=sharing">FAQ Page</a>!</div>
+        <div className="help-data">If you need help with how to use the application, check out the <a target="_blank" rel="noopener noreferrer" href="https://docs.google.com/document/d/14xnfxBzDkTYQqryIv3YDtga34cPTaUkFUND-bL-N7UY/edit?usp=sharing">FAQ Page</a>!</div>
       </Popup>
     );
   }

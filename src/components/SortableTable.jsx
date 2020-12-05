@@ -37,7 +37,7 @@ export default function SortableTable({
   }
 
   return (
-    <table style={styles}>
+    <table style={styles} className="shadow">
       <thead>
         <tr>
           {

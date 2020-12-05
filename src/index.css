@@ -86,7 +86,6 @@ button {
   border: none;
   margin-right: 10px;
   min-width: 150px;
-  box-shadow: 0px 4px 8px #888;
 }
 .run-button:hover {
   background: #3cc281;
@@ -104,6 +103,9 @@ button {
 .help {
   text-align: center;
   min-width: 100px;
+}
+
+.shadow {
   box-shadow: 0px 4px 8px #888;
 }
 
@@ -128,7 +130,6 @@ button {
   text-align: right;
   align-content: right;
   width: 150px;
-  box-shadow: 0px 4px 8px #888;
 }
 
 .testRun {
@@ -143,7 +144,6 @@ button {
   width: 300px;
   padding:10px;
   text-align: center;
-  box-shadow: 0px 4px 8px #888;
 }
 
 .testPop{
@@ -154,13 +154,12 @@ button {
   padding:10px;
 }
 
-.helpData {
+.help-data {
   background: #CCC;
   border: 1px solid #999;
   font-size: 12px;
   width: 300px;
   padding:10px;
-  box-shadow: 0px 4px 8px #888;
 }
 
 .kbd-navigation .square:focus {
@@ -180,7 +179,6 @@ table {
   width: 100%;
   margin: 0 auto;
   position: relative;
-  box-shadow: 0px 4px 8px #888;
 }
 table * {
   position: relative;
