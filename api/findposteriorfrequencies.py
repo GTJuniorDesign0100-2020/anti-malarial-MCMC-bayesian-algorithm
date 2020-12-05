@@ -1,29 +1,20 @@
 import numpy as np
+import pandas as pd
 
 from api.calculate_frequencies import Frequencies
 
 def findposteriorfrequencies(x: int, tempdata: np.ndarray, maxMOI: int, frequencies_RR, rand: np.random.RandomState):
-    data = tempdata[:,np.arange(1, maxMOI+1) + (x * maxMOI) - 1]
     nalleles = frequencies_RR.lengths[x]
 
-    freq_prior_alpha = [1] * nalleles
-
     # hard coded table() function from R
-    dictionary = [[i, 0] for i in range(1, nalleles + 1)]
+    data = tempdata[:, x*maxMOI: (x+1)*maxMOI].astype(int)
     data_1d_array = data.flatten()
     data_1d_array = data_1d_array[data_1d_array != 0]
+    data_1d_array = data_1d_array[data_1d_array <= nalleles]
 
-    for d in data_1d_array:
-        if d <= nalleles:
-            dictionary[d.astype(int) - 1][1] = dictionary[d.astype(int) - 1][1] + 1
+    data_unique, data_counts = np.unique(data_1d_array, return_counts=True)
+    # Start as ones for the frequency prior
+    counts_table = np.ones(nalleles)
+    counts_table[data_unique - 1] += data_counts
 
-    table = []
-    for entry in dictionary:
-        table.append(entry[1])
-
-    freq_prior_alpha = np.asarray(freq_prior_alpha)
-    table = np.asarray(table)
-
-    freq_posterior_alpha = freq_prior_alpha + table
-    freq_posterior_alpha = freq_posterior_alpha.tolist()
-    frequencies_RR.matrix[x, 0:nalleles] = rand.dirichlet(freq_posterior_alpha, 1)
+    frequencies_RR.matrix[x, :nalleles] = rand.dirichlet(counts_table, 1)

@@ -173,7 +173,8 @@ class AlgorithmSiteInstance:
         nruns: int=1000,
         burnin: int=100,
         record_interval: int=10,
-        seed: int=None) -> SavedState:
+        seed: int=None,
+        is_verbose: bool=False) -> SavedState:
         '''
         Runs the actual algorithm on this site's data and returns the results
         TODO: Expand on this
@@ -188,6 +189,8 @@ class AlgorithmSiteInstance:
         "record_interval" iterations
         :param seed: (optional) The seed to use for random numbers when running
         (defaults to completely random)
+        :param is_verbose: (optional) If true, print out information while
+        running (defaults to not printing)
         :return: Returns the saved state (including the summary statistics) of
         the algorithm run
         '''
@@ -207,17 +210,24 @@ class AlgorithmSiteInstance:
             self.max_MOI)
 
         rand = np.random.RandomState(seed=seed)
+        # Use numpy array instead of pandas df for performance reasons
+        alleles_definitions_RR_array = []
+        for df in self.alleles_definitions_RR:
+            alleles_definitions_RR_array.append(df.to_numpy())
+
         for i in range(nruns):
             self._run_mcmc(
                 self.state,
-                self.alleles_definitions_RR,
+                alleles_definitions_RR_array,
                 self.ids.size,
                 self.locinames.size,
                 self.max_MOI,
                 rand)
             self.saved_state.update_saved_state(self.state, self.locinames,
                 i, burnin, record_interval)
-            print(f'MCMC Iteration {i + 1}')
+
+            if is_verbose and i % record_interval == 0:
+                print(f'{jobname} Iteration {i + 1}')
 
         self.saved_state.post_process_saved_state(
             self.locinames,
@@ -285,7 +295,7 @@ class AlgorithmSiteInstance:
     def _run_mcmc(
         cls,
         state: SiteInstanceState,
-        alleles_definitions_RR: List[pd.DataFrame],
+        alleles_definitions_RR_arrays: List[np.ndarray],
         num_ids: int,
         num_loci: int,
         max_MOI: int,
@@ -306,7 +316,7 @@ class AlgorithmSiteInstance:
         # propose new hidden states
         # TODO: What does switch_hidden do? Is it entirely side effects?
         for i in range(num_ids):
-            switch_hidden(i, num_loci, max_MOI, alleles_definitions_RR, state)
+            switch_hidden(i, num_loci, max_MOI, alleles_definitions_RR_arrays, state, rand)
 
         cls._update_q(state, rand)
         cls._update_dvect(state, rand)

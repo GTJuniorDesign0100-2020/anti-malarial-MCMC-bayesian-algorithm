@@ -17,7 +17,7 @@ if __name__ == '__main__':
     record_interval = np.ceil(nruns / 1000)
     burnin = np.ceil(nruns * 0.25)
 
-    results = test_run.run_algorithm(nruns, burnin, record_interval)
+    results = test_run.run_algorithm(nruns, burnin, record_interval, is_verbose=True)
 
     # Output summary data to .csv files
     file_content = results.get_output_file_text()

@@ -10,7 +10,7 @@ from api.data_file_parser import DataFileParser
 from api.recrudescence_file_parser import RecrudescenceFileParser
 
 
-RunInputArgs = namedtuple('RunInputArgs', 'nruns burnin record_interval seed')
+RunInputArgs = namedtuple('RunInputArgs', 'nruns burnin record_interval seed is_verbose')
 
 
 class AlgorithmResults:
@@ -237,7 +237,7 @@ class AlgorithmInstance:
         samples_df['Sample ID'] = new_sample_names
         return samples_df
 
-    def run_algorithm(self, nruns: int=1000, burnin: int=100, record_interval: int=10, seed=None) -> AlgorithmResults:
+    def run_algorithm(self, nruns: int=1000, burnin: int=100, record_interval: int=10, seed=None, is_verbose: bool=False) -> AlgorithmResults:
         '''
         Runs the actual MCMC algorithm for each site, and returns the combined
         data for all of the sites
@@ -247,7 +247,7 @@ class AlgorithmInstance:
 
         num_sites = len(self.algorithm_instances)
         with multiprocessing.Pool(processes=num_sites) as pool:
-            run_inputs = [RunInputArgs(nruns, burnin, record_interval, seed)] * num_sites
+            run_inputs = [RunInputArgs(nruns, burnin, record_interval, seed, is_verbose)] * num_sites
             all_site_arguments = zip(self.algorithm_instances, run_inputs)
             site_results = pool.starmap(
                 self._run_site_algorithm,
@@ -276,5 +276,6 @@ class AlgorithmInstance:
             run_inputs.nruns,
             run_inputs.burnin,
             run_inputs.record_interval,
-            run_inputs.seed)
+            run_inputs.seed,
+            run_inputs.is_verbose)
         return site_name, site_result
