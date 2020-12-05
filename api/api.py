@@ -4,6 +4,7 @@ import datetime
 import math
 import os
 import time
+import traceback
 
 from flask import Flask, request
 from flask_restful import Resource, Api
@@ -87,7 +88,7 @@ class RecrudescenceTest(Resource):
             return error_response(str(e), 400)
         except Exception as e:
             # TODO: Return more specific error message?
-            print(e)
+            print(traceback.format_exc())
             return error_response('A problem occurred while the server was processing this data', 500)
 
         return json_results, 200
