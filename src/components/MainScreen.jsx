@@ -6,7 +6,6 @@ import Settings from './Settings';
 import DynTable from './DynTable';
 import PresetLoadingBar from './PresetLoadingBar';
 import Footer from './Footer';
-import Info from './Info';
 import {recrudescenceAPIRequest, estimateRunTime} from '../utils';
 
 export default class MainScreen extends React.Component {
