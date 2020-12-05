@@ -22,7 +22,7 @@ from api.algorithm_site_instance import LociRepeatError
 # =============================================================================
 
 #application variable name is necessary for recognition by aws
-application = app = Flask(__name__)
+application = app = Flask(__name__, static_folder='../build', static_url_path='/')
 
 MAX_FILE_SIZE_MB = 50
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE_MB*1024**2
@@ -158,5 +158,13 @@ class RecrudescenceTest(Resource):
 
 api.add_resource(RecrudescenceTest, '/api/v1/recrudescences')
 
+@app.route('/')
+@app.errorhandler(404)
+def index():
+    '''
+    By default, serve the frontend webpage itself
+    '''
+    return app.send_static_file('index.html')
+
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    app.run(host='0.0.0.0', debug=False, port=5000)
