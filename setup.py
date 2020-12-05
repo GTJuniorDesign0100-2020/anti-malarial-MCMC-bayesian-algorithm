@@ -87,7 +87,8 @@ setup(
         'bottleneck',
         'flask',
         'flask-restful',
-        'flask_limiter'
+        'flask_limiter',
+        'xlrd'  # Excel file support
     ],
 
     # List additional groups of dependencies here (e.g. development
