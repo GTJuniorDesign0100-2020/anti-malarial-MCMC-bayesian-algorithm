@@ -11,8 +11,8 @@ to allow for language changes
 
 export default function Settings(props) {
   return (
-    <Popup trigger={<button className="settings main-button" style={{display:'flex', justifyContent:'center'}}>Settings</button>} position="bottom right">
-      <div className="settingsData">Select a language: <br/><select name='language'><option value='english'>English</option></select></div>
+    <Popup trigger={<button className="settings main-button shadow" style={{display:'flex', justifyContent:'center'}}>Settings</button>} position="bottom right">
+      <div className="settings-data popup-box">Select a language: <br/><select name='language'><option value='english'>English</option></select></div>
     </Popup>
   );
 }

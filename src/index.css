@@ -22,6 +22,28 @@ button {
   border-radius: 3px;
 }
 
+.footer {
+  margin-top: 1rem;
+  padding: 0rem;
+  background-color: rgb(235, 195, 64);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.info {
+  margin-top: 1rem;
+  padding: 0rem;
+  background-color: rgb(256, 256, 256);
+
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+}
+
 .main-screen {
   display: grid;
   grid-template-columns: 10% auto 10%;
@@ -59,12 +81,23 @@ button {
   border: 1px solid #555;
 }
 
+.shadow {
+  box-shadow: 0px 4px 8px #888;
+}
+
+.popup-box {
+  background: #CCC;
+  border: 1px solid #999;
+  font-size: 1em;
+  width: 300px;
+  padding:10px;
+}
+
 .run-button {
   background: #22a465;
   border: none;
   margin-right: 10px;
   min-width: 150px;
-  box-shadow: 0px 4px 8px #888;
 }
 .run-button:hover {
   background: #3cc281;
@@ -106,35 +139,8 @@ button {
   align-content: right;
   width: 150px;
 }
-
-.testRun {
-  grid-column-start: 1;
-  grid-row-start: 1;
-}
-
-.settingsData{
-  background: #CCC;
-  border: 1px solid #999;
-  font-size: 12px;
-  width: 300px;
-  padding:10px;
+.settings-data {
   text-align: center;
-}
-
-.testPop{
-  background: #CCC;
-  border: 1px solid #999;
-  font-size: 12px;
-  width: 300px;
-  padding:10px;
-}
-
-.helpData {
-  background: #CCC;
-  border: 1px solid #999;
-  font-size: 12px;
-  width: 300px;
-  padding:10px;
 }
 
 .kbd-navigation .square:focus {
@@ -154,7 +160,6 @@ table {
   width: 100%;
   margin: 0 auto;
   position: relative;
-  box-shadow: 0px 4px 8px #888;
 }
 table * {
   position: relative;

@@ -5,6 +5,7 @@ import RunButton from './RunButton';
 import Settings from './Settings';
 import DynTable from './DynTable';
 import PresetLoadingBar from './PresetLoadingBar';
+import Footer from './Footer';
 import {recrudescenceAPIRequest, estimateRunTime} from '../utils';
 
 export default class MainScreen extends React.Component {
@@ -77,6 +78,7 @@ export default class MainScreen extends React.Component {
         <div style={tableStyle}>
           <DynTable data={this.state.tableData}/>
         </div>
+        <Footer />
       </div>
     );
   }
