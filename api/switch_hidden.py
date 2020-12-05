@@ -39,7 +39,7 @@ def switch_hidden(x, nloci, maxMOI, alleles_definitions_RR_arr: List[np.ndarray]
     if is_reinfection:
         _update_reinfection(state, sh_state, x, maxMOI)
     else:
-        _update_reinfection(state, sh_state, x, maxMOI)
+        _update_recrudescence(state, sh_state, x, maxMOI)
 
 
 def _setup_initial_state(x, nloci, maxMOI, alleles_definitions_RR_arr: List[np.ndarray], state: SiteInstanceState, rand: np.random.RandomState) -> SwitchHiddenState:
@@ -183,7 +183,7 @@ def _update_recrudescence(state: SiteInstanceState, sh: SwitchHiddenState, x: in
         return
 
     state.recoded0[x, sh.chosen] = sh.new - 1
-    if is_chosen_valid:
+    if sh.is_chosen_valid:
         state.alleles0[x, sh.chosen] = sh.newallele_length
     else:
         state.allelesf[x, sh.chosen] = sh.newallele_length
@@ -234,7 +234,7 @@ def _calculate_new_distances(state: SiteInstanceState, sh: SwitchHiddenState, id
         tempalleles = state.allelesf[id_index, max_MOI * sh.chosenlocus: max_MOI * (sh.chosenlocus + 1)]
         tempalleles[sh.chosen - sh.chosenlocus * max_MOI] = sh.newallele_length
         temprecoded = state.recodedf[id_index, max_MOI * sh.chosenlocus: max_MOI * (sh.chosenlocus + 1)]
-        temprecoded[chosen - chosen_locus * max_MOI] = sh.new - 1
+        temprecoded[sh.chosen - sh.chosen_locus * max_MOI] = sh.new - 1
 
         newalldistance = list(map(lambda y:_unknownhelper_3(state,tempalleles,id_index,max_MOI,sh.chosenlocus,sh.allpossiblerecrud,y) , np.arange(0, sh.allpossiblerecrud.shape[0])))
 
