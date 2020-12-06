@@ -161,7 +161,7 @@ api.add_resource(RecrudescenceTest, '/api/v1/recrudescences')
 
 @app.route('/')
 @app.errorhandler(404)
-def index():
+def index(e=None):
     '''
     By default, serve the frontend webpage itself
     '''
