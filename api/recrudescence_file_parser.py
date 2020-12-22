@@ -32,7 +32,7 @@ class RecrudescenceFileParser(DataFileParser):
         latter being background samples
         # TODO: Add proper exceptions/error handling
         '''
-        raw_file_info = pd.ExcelFile(input_file)
+        raw_file_info = pd.ExcelFile(input_file, engine='openpyxl')
         genotypedata_latefailures = cls._get_genotype_late_failures(raw_file_info)
         additional_genotypedata = cls._get_additional_genotype_data(raw_file_info)
 

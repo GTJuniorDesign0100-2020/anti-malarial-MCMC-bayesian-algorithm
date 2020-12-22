@@ -85,6 +85,7 @@ setup(
         'pandas',
         'scipy',
         'bottleneck',
+        'openpyxl',
         'flask',
         'flask-restful',
         'flask_limiter'
