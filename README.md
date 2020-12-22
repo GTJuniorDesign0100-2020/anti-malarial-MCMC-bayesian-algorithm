@@ -40,7 +40,7 @@ Any modern desktop or laptop computer can run this application. Before beginning
 1.  [Clone or download](https://docs.github.com/en/free-pro-team@latest/github/creating-cloning-and-archiving-repositories/cloning-a-repository) this GitHub repository to your computer
 2.  Ensure you have the following programs installed:
 
--   [Python 3.8+](https://www.python.org/downloads/)
+-   [Python 3.6+](https://www.python.org/downloads/)
 -   [pip](https://pip.pypa.io/en/stable/installing/)
 -   [npm](https://www.npmjs.com/get-npm)
 
